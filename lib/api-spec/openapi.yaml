@@ -24,6 +24,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /health:
+    get:
+      operationId: health
+      tags: [health]
+      summary: Health check (alias)
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /db-check:
+    get:
+      operationId: dbCheck
+      tags: [health]
+      summary: Database connectivity check
+      description: Verifies connectivity to the Supabase Postgres database
+      responses:
+        "200":
+          description: Database reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DbCheckStatus"
+        "500":
+          description: Database unreachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +65,21 @@ components:
           type: string
       required:
         - status
+    DbCheckStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+      required:
+        - status
+        - database
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
 
