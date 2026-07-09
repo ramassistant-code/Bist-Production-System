@@ -239,7 +239,8 @@ Key structure:
 
 ## Gotchas
 
-- The Supabase direct DB host (`db.<ref>.supabase.co`) is IPv6-only and unreachable from Replit — always use the pooler URL (`aws-1-ap-south-1.pooler.supabase.com:5432`) in `SUPABASE_DB_URL`.
+- The Supabase direct DB host (`db.<ref>.supabase.co`) is IPv6-only and unreachable from Replit — always use the pooler URL (`aws-1-ap-south-1.pooler.supabase.com:5432`) in `SUPABASE_DB_URL`. The db package auto-rewrites direct-host URLs to the pooler at startup as a safety net.
+- `SUPABASE_DB_URL` is a Replit Secret — never store it in `.replit` or any committed file.
 - Replit's built-in `DATABASE_URL` points to Replit-managed Postgres, NOT Supabase. The db package prefers `SUPABASE_DB_URL`.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend.
 - Always snapshot quote data at creation — never reference live prices from later changes.
