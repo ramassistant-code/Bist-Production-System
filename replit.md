@@ -13,7 +13,7 @@ Core flow: Customer → Products / Components → Quote → Quote Version Snapsh
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only — **only when milestone requires it**)
-- Required env: `DATABASE_URL` — Supabase Postgres connection string
+- Required env: `SUPABASE_DB_URL` — Supabase Postgres connection string (via pooler: `aws-1-ap-south-1.pooler.supabase.com:5432`, user `postgres.<project_ref>`)
 - Required env: `SUPABASE_URL` — Supabase project URL
 - Required env: `SUPABASE_ANON_KEY` — Supabase anon/public key
 - Required env: `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (backend only, never expose to frontend)
@@ -224,8 +224,23 @@ Internal production management system for BIST Productions. Manages the full lif
 
 ---
 
+## Supabase Schema (source of truth — NEVER change without explicit milestone)
+
+Existing tables (18): `app_users`, `audit_logs`, `component_resources`, `components`, `credits`, `customers`, `deals`, `leads`, `monday_import_records`, `payments`, `product_components`, `products`, `quote_components`, `quote_products`, `quote_status_history`, `quotes`, `resources`, `special_tasks`.
+Views: `v_deal_summary`, `v_quote_summary`.
+
+Key structure:
+- Quotes are versioned via `quote_version_group_id` + `version_number`; `quote_products` / `quote_components` hold full price/name snapshots (`*_snapshot`, `original_*` columns) — this implements the Quote History Rule at DB level.
+- Soft deletes via `deleted_at` on most tables.
+- Monday.com import lineage on most tables (`monday_board_id`, `monday_item_id`, `monday_group_id`, `monday_raw_data`).
+- `deals` are created from approved quotes; `payments` and `credits` hang off deals.
+
+**Never run `drizzle-kit push` / DDL against this database unless a milestone explicitly requires it.**
+
 ## Gotchas
 
+- The Supabase direct DB host (`db.<ref>.supabase.co`) is IPv6-only and unreachable from Replit — always use the pooler URL (`aws-1-ap-south-1.pooler.supabase.com:5432`) in `SUPABASE_DB_URL`.
+- Replit's built-in `DATABASE_URL` points to Replit-managed Postgres, NOT Supabase. The db package prefers `SUPABASE_DB_URL`.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend.
 - Always snapshot quote data at creation — never reference live prices from later changes.
 - Run codegen after any OpenAPI spec change before touching frontend code.
