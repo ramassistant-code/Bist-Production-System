@@ -77,8 +77,6 @@ const customerFormSchema = z.object({
   customer_type: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
   pain_points: z.string().nullable().optional(),
-  account_manager_contact_status: z.string().nullable().optional(),
-  account_manager_contact_date: z.string().nullable().optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -96,8 +94,6 @@ function toFormValues(c?: Customer): CustomerFormValues {
     customer_type: c?.customer_type ?? "",
     industry: c?.industry ?? "",
     pain_points: c?.pain_points ?? "",
-    account_manager_contact_status: c?.account_manager_contact_status ?? "",
-    account_manager_contact_date: c?.account_manager_contact_date ?? "",
   };
 }
 
@@ -206,17 +202,6 @@ function CustomerForm({ defaultValues, onSubmit, isLoading, onCancel }: Customer
         <Textarea id="pain_points" {...register("pain_points")} rows={3} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label htmlFor="account_manager_contact_status">סטטוס יצירת קשר</Label>
-          <Input id="account_manager_contact_status" {...register("account_manager_contact_status")} />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="account_manager_contact_date">תאריך יצירת קשר אחרון</Label>
-          <Input id="account_manager_contact_date" type="date" {...register("account_manager_contact_date")} />
-        </div>
-      </div>
-
       <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "שומר..." : "שמירה"}
@@ -236,7 +221,12 @@ interface CustomerDetailsProps {
 }
 
 function CustomerDetails({ customer }: CustomerDetailsProps) {
+  const mondayRaw = customer.monday_raw_data
+    ? JSON.stringify(customer.monday_raw_data, null, 2)
+    : null;
+
   const rows: { label: string; value: string }[] = [
+    { label: "מזהה (ID)", value: customer.id },
     { label: "מספר לקוח", value: customer.customer_number },
     { label: "שם", value: customer.name },
     { label: "טלפון", value: empty(customer.phone) },
@@ -249,12 +239,19 @@ function CustomerDetails({ customer }: CustomerDetailsProps) {
     { label: "מספר עוסק / ח.פ.", value: empty(customer.tax_id) },
     { label: "אימייל לחשבוניות", value: empty(customer.invoice_email) },
     { label: "צרכים / נקודות כאב", value: empty(customer.pain_points) },
-    { label: "סטטוס יצירת קשר", value: empty(customer.account_manager_contact_status) },
-    { label: "תאריך יצירת קשר", value: formatDate(customer.account_manager_contact_date) },
     { label: "מחזור עסקאות (LTV)", value: formatCurrency(customer.ltv_amount) },
     { label: "צבר עסקאות (לפני מע״מ)", value: formatCurrency(customer.pipeline_amount_ex_vat) },
+    { label: "מנהל תיק (ID)", value: empty(customer.account_manager_id) },
+    { label: "סטטוס יצירת קשר", value: empty(customer.account_manager_contact_status) },
+    { label: "תאריך יצירת קשר", value: formatDate(customer.account_manager_contact_date) },
+    { label: "ליד מקושר (ID)", value: empty(customer.lead_id) },
+    { label: "Monday - לוח", value: empty(customer.monday_board_id) },
+    { label: "Monday - פריט", value: empty(customer.monday_item_id) },
+    { label: "Monday - קבוצה", value: empty(customer.monday_group_id) },
+    { label: "Monday - נתונים גולמיים", value: mondayRaw ? mondayRaw.slice(0, 120) + (mondayRaw.length > 120 ? "…" : "") : "—" },
     { label: "נוצר ב", value: formatDate(customer.created_at) },
     { label: "עודכן ב", value: formatDate(customer.updated_at) },
+    { label: "נמחק ב", value: formatDate(customer.deleted_at) },
   ];
 
   return (

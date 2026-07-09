@@ -63,6 +63,7 @@ export const ListCustomersResponseItem = zod.object({
   "monday_board_id": zod.string().nullish(),
   "monday_item_id": zod.string().nullish(),
   "monday_group_id": zod.string().nullish(),
+  "monday_raw_data": zod.unknown().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()
@@ -84,9 +85,7 @@ export const CreateCustomerBody = zod.object({
   "invoice_email": zod.string().nullish(),
   "customer_type": zod.string().nullish(),
   "industry": zod.string().nullish(),
-  "pain_points": zod.string().nullish(),
-  "account_manager_contact_status": zod.string().nullish(),
-  "account_manager_contact_date": zod.string().nullish()
+  "pain_points": zod.string().nullish()
 })
 
 export const CreateCustomerResponse = zod.object({
@@ -112,6 +111,7 @@ export const CreateCustomerResponse = zod.object({
   "monday_board_id": zod.string().nullish(),
   "monday_item_id": zod.string().nullish(),
   "monday_group_id": zod.string().nullish(),
+  "monday_raw_data": zod.unknown().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()
@@ -148,6 +148,7 @@ export const GetCustomerResponse = zod.object({
   "monday_board_id": zod.string().nullish(),
   "monday_item_id": zod.string().nullish(),
   "monday_group_id": zod.string().nullish(),
+  "monday_raw_data": zod.unknown().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()
@@ -172,9 +173,7 @@ export const UpdateCustomerBody = zod.object({
   "invoice_email": zod.string().nullish(),
   "customer_type": zod.string().nullish(),
   "industry": zod.string().nullish(),
-  "pain_points": zod.string().nullish(),
-  "account_manager_contact_status": zod.string().nullish(),
-  "account_manager_contact_date": zod.string().nullish()
+  "pain_points": zod.string().nullish()
 })
 
 export const UpdateCustomerResponse = zod.object({
@@ -200,6 +199,7 @@ export const UpdateCustomerResponse = zod.object({
   "monday_board_id": zod.string().nullish(),
   "monday_item_id": zod.string().nullish(),
   "monday_group_id": zod.string().nullish(),
+  "monday_raw_data": zod.unknown().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()

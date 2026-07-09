@@ -41,6 +41,7 @@ export interface Customer {
   monday_board_id?: string | null;
   monday_item_id?: string | null;
   monday_group_id?: string | null;
+  monday_raw_data?: unknown | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
@@ -58,8 +59,6 @@ export interface CreateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
-  account_manager_contact_status?: string | null;
-  account_manager_contact_date?: string | null;
 }
 
 export interface UpdateCustomerBody {
@@ -74,7 +73,5 @@ export interface UpdateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
-  account_manager_contact_status?: string | null;
-  account_manager_contact_date?: string | null;
 }
 

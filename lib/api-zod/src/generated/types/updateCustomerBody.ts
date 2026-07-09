@@ -18,6 +18,4 @@ export interface UpdateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
-  account_manager_contact_status?: string | null;
-  account_manager_contact_date?: string | null;
 }

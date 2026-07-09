@@ -275,6 +275,8 @@ components:
         monday_group_id:
           type: string
           nullable: true
+        monday_raw_data:
+          nullable: true
         created_at:
           type: string
         updated_at:
@@ -324,12 +326,6 @@ components:
         pain_points:
           type: string
           nullable: true
-        account_manager_contact_status:
-          type: string
-          nullable: true
-        account_manager_contact_date:
-          type: string
-          nullable: true
       required:
         - name
 
@@ -366,11 +362,5 @@ components:
           type: string
           nullable: true
         pain_points:
-          type: string
-          nullable: true
-        account_manager_contact_status:
-          type: string
-          nullable: true
-        account_manager_contact_date:
           type: string
           nullable: true

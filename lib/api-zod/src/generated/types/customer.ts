@@ -29,6 +29,7 @@ export interface Customer {
   monday_board_id?: string | null;
   monday_item_id?: string | null;
   monday_group_id?: string | null;
+  monday_raw_data?: unknown | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;

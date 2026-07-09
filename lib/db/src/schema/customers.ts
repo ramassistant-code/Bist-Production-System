@@ -43,8 +43,6 @@ const USER_EDITABLE_FIELDS = {
   customer_type: true,
   industry: true,
   pain_points: true,
-  account_manager_contact_status: true,
-  account_manager_contact_date: true,
 } as const;
 
 export const insertCustomerSchema = createInsertSchema(customersTable)
