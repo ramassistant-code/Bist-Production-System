@@ -1,0 +1,106 @@
+import { Router, type IRouter, type Request, type Response } from "express";
+import { db } from "@workspace/db";
+import { customersTable, insertCustomerSchema, updateCustomerSchema } from "@workspace/db/schema";
+import type { Customer } from "@workspace/db/schema";
+import { isNull, asc, eq, sql } from "drizzle-orm";
+import { logger } from "../lib/logger";
+
+const router: IRouter = Router();
+
+// GET /customers — list all active customers
+router.get("/customers", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const customers = await db
+      .select()
+      .from(customersTable)
+      .where(isNull(customersTable.deleted_at))
+      .orderBy(asc(customersTable.name));
+    res.json(customers);
+  } catch (err) {
+    logger.error({ err }, "Failed to list customers");
+    res.status(500).json({ error: "שגיאה בטעינת רשימת הלקוחות" });
+  }
+});
+
+// POST /customers — create a customer
+const FIELD_LABELS: Record<string, string> = {
+  name: "שם הלקוח הוא שדה חובה",
+  email: "כתובת אימייל אינה תקינה",
+  invoice_email: "כתובת אימייל לחשבוניות אינה תקינה",
+};
+
+function hebrewValidationError(issues: Array<{ path: Array<string | number>; message: string }>): string {
+  if (!issues.length) return "שגיאת אימות";
+  const issue = issues[0];
+  const field = String(issue.path[0] ?? "");
+  return FIELD_LABELS[field] ?? issue.message;
+}
+
+router.post("/customers", async (req: Request, res: Response): Promise<void> => {
+  const parsed = insertCustomerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: hebrewValidationError(parsed.error.issues as Array<{ path: Array<string | number>; message: string }>) });
+    return;
+  }
+  try {
+    // Drizzle insert expects the table's infer type; cast through unknown to avoid schema type drift
+    const rows = await db
+      .insert(customersTable)
+      .values(parsed.data as unknown as typeof customersTable.$inferInsert)
+      .returning();
+    res.status(201).json(rows[0] ?? null);
+  } catch (err) {
+    logger.error({ err }, "Failed to create customer");
+    res.status(500).json({ error: "שגיאה ביצירת הלקוח" });
+  }
+});
+
+// GET /customers/:id — get one customer
+router.get("/customers/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = await db
+      .select()
+      .from(customersTable)
+      .where(
+        sql`${customersTable.id} = ${req.params.id} AND ${customersTable.deleted_at} IS NULL`,
+      );
+    const customer = rows[0] as Customer | undefined;
+    if (!customer) {
+      res.status(404).json({ error: "לקוח לא נמצא" });
+      return;
+    }
+    res.json(customer);
+  } catch (err) {
+    logger.error({ err }, "Failed to get customer");
+    res.status(500).json({ error: "שגיאה בטעינת הלקוח" });
+  }
+});
+
+// PATCH /customers/:id — update a customer
+router.patch("/customers/:id", async (req: Request, res: Response): Promise<void> => {
+  const parsed = updateCustomerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: hebrewValidationError(parsed.error.issues as Array<{ path: Array<string | number>; message: string }>) });
+    return;
+  }
+  try {
+    const rows = await db
+      .update(customersTable)
+      .set({ ...(parsed.data as Partial<typeof customersTable.$inferInsert>), updated_at: new Date() })
+      .where(
+        sql`${customersTable.id} = ${req.params.id} AND ${customersTable.deleted_at} IS NULL`,
+      )
+      .returning();
+    const customer = rows[0] as Customer | undefined;
+    if (!customer) {
+      res.status(404).json({ error: "לקוח לא נמצא" });
+      return;
+    }
+    res.json(customer);
+  } catch (err) {
+    logger.error({ err }, "Failed to update customer");
+    res.status(500).json({ error: "שגיאה בעדכון הלקוח" });
+  }
+});
+
+export default router;

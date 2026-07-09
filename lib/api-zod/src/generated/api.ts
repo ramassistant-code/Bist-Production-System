@@ -36,3 +36,173 @@ export const DbCheckResponse = zod.object({
 })
 
 
+/**
+ * Returns all active (non-deleted) customers, sorted by name
+ * @summary List all customers
+ */
+export const ListCustomersResponseItem = zod.object({
+  "id": zod.string(),
+  "customer_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "account_manager_id": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "lead_id": zod.string().nullish(),
+  "ltv_amount": zod.string().nullish(),
+  "pipeline_amount_ex_vat": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
+
+
+/**
+ * @summary Create a new customer
+ */
+export const CreateCustomerBody = zod.object({
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish()
+})
+
+export const CreateCustomerResponse = zod.object({
+  "id": zod.string(),
+  "customer_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "account_manager_id": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "lead_id": zod.string().nullish(),
+  "ltv_amount": zod.string().nullish(),
+  "pipeline_amount_ex_vat": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get customer by ID
+ */
+export const GetCustomerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCustomerResponse = zod.object({
+  "id": zod.string(),
+  "customer_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "account_manager_id": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "lead_id": zod.string().nullish(),
+  "ltv_amount": zod.string().nullish(),
+  "pipeline_amount_ex_vat": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a customer
+ */
+export const UpdateCustomerParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateCustomerBody = zod.object({
+  "name": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish()
+})
+
+export const UpdateCustomerResponse = zod.object({
+  "id": zod.string(),
+  "customer_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "joined_at": zod.string().nullish(),
+  "birthday": zod.string().nullish(),
+  "account_manager_id": zod.string().nullish(),
+  "invoice_name": zod.string().nullish(),
+  "tax_id": zod.string().nullish(),
+  "invoice_email": zod.string().nullish(),
+  "customer_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "pain_points": zod.string().nullish(),
+  "lead_id": zod.string().nullish(),
+  "ltv_amount": zod.string().nullish(),
+  "pipeline_amount_ex_vat": zod.string().nullish(),
+  "account_manager_contact_status": zod.string().nullish(),
+  "account_manager_contact_date": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+

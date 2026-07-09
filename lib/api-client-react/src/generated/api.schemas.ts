@@ -18,3 +18,63 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface Customer {
+  id: string;
+  customer_number: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  joined_at?: string | null;
+  birthday?: string | null;
+  account_manager_id?: string | null;
+  invoice_name?: string | null;
+  tax_id?: string | null;
+  invoice_email?: string | null;
+  customer_type?: string | null;
+  industry?: string | null;
+  pain_points?: string | null;
+  lead_id?: string | null;
+  ltv_amount?: string | null;
+  pipeline_amount_ex_vat?: string | null;
+  account_manager_contact_status?: string | null;
+  account_manager_contact_date?: string | null;
+  monday_board_id?: string | null;
+  monday_item_id?: string | null;
+  monday_group_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface CreateCustomerBody {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  joined_at?: string | null;
+  birthday?: string | null;
+  invoice_name?: string | null;
+  tax_id?: string | null;
+  invoice_email?: string | null;
+  customer_type?: string | null;
+  industry?: string | null;
+  pain_points?: string | null;
+  account_manager_contact_status?: string | null;
+  account_manager_contact_date?: string | null;
+}
+
+export interface UpdateCustomerBody {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  joined_at?: string | null;
+  birthday?: string | null;
+  invoice_name?: string | null;
+  tax_id?: string | null;
+  invoice_email?: string | null;
+  customer_type?: string | null;
+  industry?: string | null;
+  pain_points?: string | null;
+  account_manager_contact_status?: string | null;
+  account_manager_contact_date?: string | null;
+}
+

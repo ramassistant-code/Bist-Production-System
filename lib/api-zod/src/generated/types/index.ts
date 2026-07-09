@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './createCustomerBody';
+export * from './customer';
 export * from './dbCheckStatus';
 export * from './errorResponse';
 export * from './healthStatus';
+export * from './updateCustomerBody';

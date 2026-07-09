@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: customers
+    description: Customer management
 paths:
   /healthz:
     get:
@@ -56,6 +58,130 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List all customers
+      description: Returns all active (non-deleted) customers, sorted by name
+      responses:
+        "200":
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerBody"
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      summary: Get customer by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomerBody"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -83,3 +209,168 @@ components:
       required:
         - error
 
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        customer_number:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joined_at:
+          type: string
+          nullable: true
+        birthday:
+          type: string
+          nullable: true
+        account_manager_id:
+          type: string
+          nullable: true
+        invoice_name:
+          type: string
+          nullable: true
+        tax_id:
+          type: string
+          nullable: true
+        invoice_email:
+          type: string
+          nullable: true
+        customer_type:
+          type: string
+          nullable: true
+        industry:
+          type: string
+          nullable: true
+        pain_points:
+          type: string
+          nullable: true
+        lead_id:
+          type: string
+          nullable: true
+        ltv_amount:
+          type: string
+          nullable: true
+        pipeline_amount_ex_vat:
+          type: string
+          nullable: true
+        account_manager_contact_status:
+          type: string
+          nullable: true
+        account_manager_contact_date:
+          type: string
+          nullable: true
+        monday_board_id:
+          type: string
+          nullable: true
+        monday_item_id:
+          type: string
+          nullable: true
+        monday_group_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        deleted_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - customer_number
+        - name
+        - created_at
+        - updated_at
+
+    CreateCustomerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joined_at:
+          type: string
+          nullable: true
+        birthday:
+          type: string
+          nullable: true
+        invoice_name:
+          type: string
+          nullable: true
+        tax_id:
+          type: string
+          nullable: true
+        invoice_email:
+          type: string
+          nullable: true
+        customer_type:
+          type: string
+          nullable: true
+        industry:
+          type: string
+          nullable: true
+        pain_points:
+          type: string
+          nullable: true
+        account_manager_contact_status:
+          type: string
+          nullable: true
+        account_manager_contact_date:
+          type: string
+          nullable: true
+      required:
+        - name
+
+    UpdateCustomerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joined_at:
+          type: string
+          nullable: true
+        birthday:
+          type: string
+          nullable: true
+        invoice_name:
+          type: string
+          nullable: true
+        tax_id:
+          type: string
+          nullable: true
+        invoice_email:
+          type: string
+          nullable: true
+        customer_type:
+          type: string
+          nullable: true
+        industry:
+          type: string
+          nullable: true
+        pain_points:
+          type: string
+          nullable: true
+        account_manager_contact_status:
+          type: string
+          nullable: true
+        account_manager_contact_date:
+          type: string
+          nullable: true
