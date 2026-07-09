@@ -22,4 +22,3 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-SUPABASE_DB_URL = "postgresql://postgres.baaoemfjxeuqxtojrkig:Eylon2026!1234@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
