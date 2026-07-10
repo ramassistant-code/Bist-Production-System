@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Dashboard from "@/pages/dashboard";
+import Leads from "@/pages/leads";
 import Customers from "@/pages/customers";
 import Products from "@/pages/products";
 import Components from "@/pages/components";
@@ -19,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/leads" component={Leads} />
       <Route path="/customers" component={Customers} />
       <Route path="/products" component={Products} />
       <Route path="/components" component={Components} />

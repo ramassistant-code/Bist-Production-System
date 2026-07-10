@@ -207,6 +207,201 @@ export const UpdateCustomerResponse = zod.object({
 
 
 /**
+ * Returns all active (non-deleted) leads, sorted by lead_created_at
+ * @summary List all leads
+ */
+export const ListLeadsResponseItem = zod.object({
+  "id": zod.string(),
+  "lead_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "phone_link": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "salesperson_id": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempt_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "reminder_at": zod.string().nullish(),
+  "reminder_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "lead_created_at": zod.string().nullish(),
+  "closed_at": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "lead_count": zod.number().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "task_text": zod.string().nullish(),
+  "task_due_at": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string().nullish(),
+  "updated_at": zod.string().nullish(),
+  "deleted_at": zod.string().nullish()
+})
+export const ListLeadsResponse = zod.array(ListLeadsResponseItem)
+
+
+/**
+ * @summary Create a lead
+ */
+export const CreateLeadBody = zod.object({
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempt_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "task_text": zod.string().nullish()
+})
+
+export const CreateLeadResponse = zod.object({
+  "id": zod.string(),
+  "lead_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "phone_link": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "salesperson_id": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempt_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "reminder_at": zod.string().nullish(),
+  "reminder_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "lead_created_at": zod.string().nullish(),
+  "closed_at": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "lead_count": zod.number().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "task_text": zod.string().nullish(),
+  "task_due_at": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string().nullish(),
+  "updated_at": zod.string().nullish(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a lead by ID
+ */
+export const GetLeadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetLeadResponse = zod.object({
+  "id": zod.string(),
+  "lead_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "phone_link": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "salesperson_id": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempt_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "reminder_at": zod.string().nullish(),
+  "reminder_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "lead_created_at": zod.string().nullish(),
+  "closed_at": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "lead_count": zod.number().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "task_text": zod.string().nullish(),
+  "task_due_at": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string().nullish(),
+  "updated_at": zod.string().nullish(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a lead
+ */
+export const UpdateLeadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateLeadBody = zod.object({
+  "name": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "task_text": zod.string().nullish()
+})
+
+export const UpdateLeadResponse = zod.object({
+  "id": zod.string(),
+  "lead_number": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "phone_link": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "salesperson_id": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempt_status": zod.string().nullish(),
+  "lead_source": zod.string().nullish(),
+  "activity_field": zod.string().nullish(),
+  "followup_at": zod.string().nullish(),
+  "followup_note": zod.string().nullish(),
+  "reminder_at": zod.string().nullish(),
+  "reminder_note": zod.string().nullish(),
+  "rejection_reason": zod.string().nullish(),
+  "rejection_reason_text": zod.string().nullish(),
+  "lead_created_at": zod.string().nullish(),
+  "closed_at": zod.string().nullish(),
+  "first_deal_amount": zod.string().nullish(),
+  "lead_count": zod.number().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "task_text": zod.string().nullish(),
+  "task_due_at": zod.string().nullish(),
+  "monday_board_id": zod.string().nullish(),
+  "monday_item_id": zod.string().nullish(),
+  "monday_group_id": zod.string().nullish(),
+  "created_at": zod.string().nullish(),
+  "updated_at": zod.string().nullish(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
  * @summary List all products
  */
 export const ListProductsQueryParams = zod.object({

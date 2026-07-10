@@ -18,6 +18,73 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface Lead {
+  id: string;
+  lead_number: string;
+  name: string;
+  phone?: string | null;
+  phone_link?: string | null;
+  email?: string | null;
+  salesperson_id?: string | null;
+  status?: string | null;
+  answer_status?: string | null;
+  capture_attempt_status?: string | null;
+  lead_source?: string | null;
+  activity_field?: string | null;
+  followup_at?: string | null;
+  followup_note?: string | null;
+  reminder_at?: string | null;
+  reminder_note?: string | null;
+  rejection_reason?: string | null;
+  rejection_reason_text?: string | null;
+  lead_created_at?: string | null;
+  closed_at?: string | null;
+  first_deal_amount?: string | null;
+  lead_count?: number | null;
+  linked_customer_id?: string | null;
+  task_text?: string | null;
+  task_due_at?: string | null;
+  monday_board_id?: string | null;
+  monday_item_id?: string | null;
+  monday_group_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  deleted_at?: string | null;
+}
+
+export interface CreateLeadBody {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  answer_status?: string | null;
+  capture_attempt_status?: string | null;
+  lead_source?: string | null;
+  activity_field?: string | null;
+  followup_at?: string | null;
+  followup_note?: string | null;
+  rejection_reason?: string | null;
+  rejection_reason_text?: string | null;
+  first_deal_amount?: string | null;
+  task_text?: string | null;
+}
+
+export interface UpdateLeadBody {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  answer_status?: string | null;
+  lead_source?: string | null;
+  activity_field?: string | null;
+  followup_at?: string | null;
+  followup_note?: string | null;
+  rejection_reason?: string | null;
+  rejection_reason_text?: string | null;
+  first_deal_amount?: string | null;
+  task_text?: string | null;
+}
+
 export interface Customer {
   id: string;
   customer_number: string;

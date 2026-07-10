@@ -16,6 +16,8 @@ tags:
     description: Product management
   - name: components
     description: Component management
+  - name: leads
+    description: Lead management
 paths:
   /healthz:
     get:
@@ -167,6 +169,129 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Customer"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [leads]
+      summary: List all leads
+      description: Returns all active (non-deleted) leads, sorted by lead_created_at
+      responses:
+        "200":
+          description: List of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createLead
+      tags: [leads]
+      summary: Create a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeadBody"
+      responses:
+        "201":
+          description: Created lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /leads/{id}:
+    get:
+      operationId: getLead
+      tags: [leads]
+      summary: Get a lead by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lead record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateLead
+      tags: [leads]
+      summary: Update a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeadBody"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
         "400":
           description: Validation error
           content:
@@ -603,6 +728,193 @@ components:
           type: string
       required:
         - error
+
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+        lead_number:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        phone_link:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        salesperson_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        answer_status:
+          type: string
+          nullable: true
+        capture_attempt_status:
+          type: string
+          nullable: true
+        lead_source:
+          type: string
+          nullable: true
+        activity_field:
+          type: string
+          nullable: true
+        followup_at:
+          type: string
+          nullable: true
+        followup_note:
+          type: string
+          nullable: true
+        reminder_at:
+          type: string
+          nullable: true
+        reminder_note:
+          type: string
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        rejection_reason_text:
+          type: string
+          nullable: true
+        lead_created_at:
+          type: string
+          nullable: true
+        closed_at:
+          type: string
+          nullable: true
+        first_deal_amount:
+          type: string
+          nullable: true
+        lead_count:
+          type: integer
+          nullable: true
+        linked_customer_id:
+          type: string
+          nullable: true
+        task_text:
+          type: string
+          nullable: true
+        task_due_at:
+          type: string
+          nullable: true
+        monday_board_id:
+          type: string
+          nullable: true
+        monday_item_id:
+          type: string
+          nullable: true
+        monday_group_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        deleted_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - lead_number
+        - name
+
+    CreateLeadBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        answer_status:
+          type: string
+          nullable: true
+        capture_attempt_status:
+          type: string
+          nullable: true
+        lead_source:
+          type: string
+          nullable: true
+        activity_field:
+          type: string
+          nullable: true
+        followup_at:
+          type: string
+          nullable: true
+        followup_note:
+          type: string
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        rejection_reason_text:
+          type: string
+          nullable: true
+        first_deal_amount:
+          type: string
+          nullable: true
+        task_text:
+          type: string
+          nullable: true
+      required:
+        - name
+
+    UpdateLeadBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        answer_status:
+          type: string
+          nullable: true
+        lead_source:
+          type: string
+          nullable: true
+        activity_field:
+          type: string
+          nullable: true
+        followup_at:
+          type: string
+          nullable: true
+        followup_note:
+          type: string
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        rejection_reason_text:
+          type: string
+          nullable: true
+        first_deal_amount:
+          type: string
+          nullable: true
+        task_text:
+          type: string
+          nullable: true
 
     Customer:
       type: object
