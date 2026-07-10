@@ -207,9 +207,49 @@ export const UpdateCustomerResponse = zod.object({
 
 
 /**
- * Returns all active (non-deleted) leads, sorted by lead_created_at
- * @summary List all leads
+ * Returns aggregated KPIs computed server-side
+ * @summary Get dashboard statistics
  */
+export const GetDashboardStatsResponse = zod.object({
+  "leads": zod.object({
+  "total": zod.number(),
+  "this_month": zod.number(),
+  "followup_overdue": zod.number(),
+  "followup_week": zod.number()
+}),
+  "customers": zod.object({
+  "total": zod.number(),
+  "this_month": zod.number()
+}),
+  "by_status": zod.array(zod.object({
+  "status": zod.string(),
+  "count": zod.number()
+})),
+  "by_source": zod.array(zod.object({
+  "source": zod.string(),
+  "count": zod.number()
+})),
+  "followup_soon": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string().nullish(),
+  "followup_at": zod.string(),
+  "followup_note": zod.string().nullish()
+}))
+})
+
+
+/**
+ * Returns paginated active leads. Supports search, status filter, limit and offset.
+ * @summary List active leads with optional server-side filtering
+ */
+export const ListLeadsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().optional(),
+  "offset": zod.coerce.number().optional()
+})
+
 export const ListLeadsResponseItem = zod.object({
   "id": zod.string(),
   "lead_number": zod.string(),

@@ -18,6 +18,44 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface FollowupItem {
+  id: string;
+  name: string;
+  phone?: string | null;
+  followup_at: string;
+  followup_note?: string | null;
+}
+
+export interface StatusCount {
+  status: string;
+  count: number;
+}
+
+export interface SourceCount {
+  source: string;
+  count: number;
+}
+
+export type DashboardStatsLeads = {
+  total: number;
+  this_month: number;
+  followup_overdue: number;
+  followup_week: number;
+};
+
+export type DashboardStatsCustomers = {
+  total: number;
+  this_month: number;
+};
+
+export interface DashboardStats {
+  leads: DashboardStatsLeads;
+  customers: DashboardStatsCustomers;
+  by_status: StatusCount[];
+  by_source: SourceCount[];
+  followup_soon: FollowupItem[];
+}
+
 export interface Lead {
   id: string;
   lead_number: string;
@@ -253,6 +291,13 @@ export interface UpdateComponentBody {
   cost?: string | null;
   is_active?: boolean | null;
 }
+
+export type ListLeadsParams = {
+search?: string;
+status?: string;
+limit?: number;
+offset?: number;
+};
 
 export type ListProductsParams = {
 search?: string;

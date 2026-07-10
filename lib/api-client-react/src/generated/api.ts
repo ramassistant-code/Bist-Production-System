@@ -27,11 +27,13 @@ import type {
   CreateLeadBody,
   CreateProductBody,
   Customer,
+  DashboardStats,
   DbCheckStatus,
   ErrorResponse,
   HealthStatus,
   Lead,
   ListComponentsParams,
+  ListLeadsParams,
   ListProductsParams,
   Product,
   ProductComponentRow,
@@ -602,21 +604,21 @@ export const useUpdateCustomer = <TError = ErrorType<ErrorResponse>,
       return useMutation(getUpdateCustomerMutationOptions(options));
     }
 
-export const getListLeadsUrl = () => {
+export const getGetDashboardStatsUrl = () => {
 
 
 
 
-  return `/api/leads`
+  return `/api/stats`
 }
 
 /**
- * Returns all active (non-deleted) leads, sorted by lead_created_at
- * @summary List all leads
+ * Returns aggregated KPIs computed server-side
+ * @summary Get dashboard statistics
  */
-export const listLeads = async ( options?: RequestInit): Promise<Lead[]> => {
+export const getDashboardStats = async ( options?: RequestInit): Promise<DashboardStats> => {
 
-  return customFetch<Lead[]>(getListLeadsUrl(),
+  return customFetch<DashboardStats>(getGetDashboardStatsUrl(),
   {
     ...options,
     method: 'GET'
@@ -629,23 +631,108 @@ export const listLeads = async ( options?: RequestInit): Promise<Lead[]> => {
 
 
 
-export const getListLeadsQueryKey = () => {
+export const getGetDashboardStatsQueryKey = () => {
     return [
-    `/api/leads`
+    `/api/stats`
     ] as const;
     }
 
 
-export const getListLeadsQueryOptions = <TData = Awaited<ReturnType<typeof listLeads>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetDashboardStatsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListLeadsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardStatsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLeads>>> = ({ signal }) => listLeads({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardStats>>> = ({ signal }) => getDashboardStats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardStats>>>
+export type GetDashboardStatsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get dashboard statistics
+ */
+
+export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListLeadsUrl = (params?: ListLeadsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/leads?${stringifiedParams}` : `/api/leads`
+}
+
+/**
+ * Returns paginated active leads. Supports search, status filter, limit and offset.
+ * @summary List active leads with optional server-side filtering
+ */
+export const listLeads = async (params?: ListLeadsParams, options?: RequestInit): Promise<Lead[]> => {
+
+  return customFetch<Lead[]>(getListLeadsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLeadsQueryKey = (params?: ListLeadsParams,) => {
+    return [
+    `/api/leads`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLeadsQueryOptions = <TData = Awaited<ReturnType<typeof listLeads>>, TError = ErrorType<ErrorResponse>>(params?: ListLeadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLeadsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLeads>>> = ({ signal }) => listLeads(params, { signal, ...requestOptions });
 
 
 
@@ -659,15 +746,15 @@ export type ListLeadsQueryError = ErrorType<ErrorResponse>
 
 
 /**
- * @summary List all leads
+ * @summary List active leads with optional server-side filtering
  */
 
 export function useListLeads<TData = Awaited<ReturnType<typeof listLeads>>, TError = ErrorType<ErrorResponse>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListLeadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListLeadsQueryOptions(options)
+  const queryOptions = getListLeadsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

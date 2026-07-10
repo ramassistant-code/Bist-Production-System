@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { leadsTable, insertLeadSchema, updateLeadSchema } from "@workspace/db/schema";
 import type { Lead } from "@workspace/db/schema";
-import { isNull, asc, sql } from "drizzle-orm";
+import { isNull, asc, sql, and, or, ilike, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -18,14 +18,47 @@ function hebrewValidationError(issues: Array<{ path: Array<string | number>; mes
   return LABELS[field] ?? issue.message;
 }
 
-// GET /leads — list all active leads
-router.get("/leads", async (_req: Request, res: Response): Promise<void> => {
+// GET /leads — list active leads with optional server-side filtering
+router.get("/leads", async (req: Request, res: Response): Promise<void> => {
   try {
-    const leads = await db
-      .select()
-      .from(leadsTable)
-      .where(isNull(leadsTable.deleted_at))
-      .orderBy(asc(leadsTable.lead_created_at));
+    const search = typeof req.query["search"] === "string" ? req.query["search"].trim() : "";
+    const status = typeof req.query["status"] === "string" ? req.query["status"].trim() : "";
+    const limit = Math.min(Number(req.query["limit"] ?? 300), 500);
+    const offset = Number(req.query["offset"] ?? 0);
+
+    const conditions = [isNull(leadsTable.deleted_at)];
+    if (search) {
+      conditions.push(
+        or(
+          ilike(leadsTable.name, `%${search}%`),
+          ilike(leadsTable.phone, `%${search}%`),
+          ilike(leadsTable.email, `%${search}%`),
+          ilike(leadsTable.lead_number, `%${search}%`),
+        )!
+      );
+    }
+    if (status) {
+      conditions.push(eq(leadsTable.status, status));
+    }
+
+    const where = and(...conditions);
+
+    const [leads, countResult] = await Promise.all([
+      db
+        .select()
+        .from(leadsTable)
+        .where(where)
+        .orderBy(asc(leadsTable.lead_created_at))
+        .limit(limit)
+        .offset(offset),
+      db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(leadsTable)
+        .where(where),
+    ]);
+
+    const total = countResult[0]?.count ?? 0;
+    res.setHeader("X-Total-Count", String(total));
     res.json(leads);
   } catch (err) {
     logger.error({ err }, "Failed to list leads");

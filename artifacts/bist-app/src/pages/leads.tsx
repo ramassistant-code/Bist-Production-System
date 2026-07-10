@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,7 +53,6 @@ function empty(val: string | null | undefined): string {
   return val?.trim() ? val.trim() : "—";
 }
 
-// סטטוס → צבע badge
 function statusVariant(status: string | null | undefined): "default" | "secondary" | "outline" | "destructive" {
   if (!status) return "secondary";
   if (status.includes("פעיל") || status.includes("סגור")) return "default";
@@ -66,12 +65,7 @@ function statusVariant(status: string | null | undefined): "default" | "secondar
 const leadFormSchema = z.object({
   name: z.string().min(1, "שם הליד הוא שדה חובה"),
   phone: z.string().nullable().optional(),
-  email: z
-    .string()
-    .email("כתובת אימייל אינה תקינה")
-    .or(z.literal(""))
-    .nullable()
-    .optional(),
+  email: z.string().email("כתובת אימייל אינה תקינה").or(z.literal("")).nullable().optional(),
   status: z.string().nullable().optional(),
   answer_status: z.string().nullable().optional(),
   lead_source: z.string().nullable().optional(),
@@ -95,7 +89,7 @@ function toFormValues(l?: Lead): LeadFormValues {
     answer_status: l?.answer_status ?? "",
     lead_source: l?.lead_source ?? "",
     activity_field: l?.activity_field ?? "",
-    followup_at: l?.followup_at ? l.followup_at.slice(0, 10) : "",
+    followup_at: l?.followup_at ? String(l.followup_at).slice(0, 10) : "",
     followup_note: l?.followup_note ?? "",
     rejection_reason: l?.rejection_reason ?? "",
     rejection_reason_text: l?.rejection_reason_text ?? "",
@@ -120,26 +114,18 @@ interface LeadFormProps {
 }
 
 function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LeadFormValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: defaultValues ?? toFormValues(),
   });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" dir="rtl">
-      {/* Name */}
       <div className="space-y-1">
-        <Label htmlFor="name">
-          שם הליד <span className="text-destructive">*</span>
-        </Label>
+        <Label htmlFor="name">שם הליד <span className="text-destructive">*</span></Label>
         <Input id="name" {...register("name")} />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="phone">טלפון</Label>
@@ -151,10 +137,8 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
       </div>
-
       <Separator />
       <p className="text-sm font-medium text-muted-foreground">פרטי ליד</p>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="status">סטטוס</Label>
@@ -165,7 +149,6 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
           <Input id="answer_status" {...register("answer_status")} placeholder="לדוגמה: ענה, לא ענה" />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="lead_source">מקור הגעה</Label>
@@ -176,7 +159,6 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
           <Input id="activity_field" {...register("activity_field")} />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="followup_at">תאריך פולואפ</Label>
@@ -184,24 +166,15 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
         </div>
         <div className="space-y-1">
           <Label htmlFor="first_deal_amount">סכום עסקה ראשונה (₪)</Label>
-          <Input
-            id="first_deal_amount"
-            type="number"
-            step="0.01"
-            {...register("first_deal_amount")}
-            dir="ltr"
-          />
+          <Input id="first_deal_amount" type="number" step="0.01" {...register("first_deal_amount")} dir="ltr" />
         </div>
       </div>
-
       <div className="space-y-1">
         <Label htmlFor="followup_note">הערה לפולואפ</Label>
         <Textarea id="followup_note" {...register("followup_note")} rows={2} />
       </div>
-
       <Separator />
       <p className="text-sm font-medium text-muted-foreground">דחייה / משימה</p>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="rejection_reason">סיבת דחייה</Label>
@@ -212,19 +185,13 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
           <Input id="rejection_reason_text" {...register("rejection_reason_text")} />
         </div>
       </div>
-
       <div className="space-y-1">
         <Label htmlFor="task_text">משימה</Label>
         <Textarea id="task_text" {...register("task_text")} rows={2} />
       </div>
-
       <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "שומר..." : "שמירה"}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-          ביטול
-        </Button>
+        <Button type="submit" disabled={isLoading}>{isLoading ? "שומר..." : "שמירה"}</Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>ביטול</Button>
       </DialogFooter>
     </form>
   );
@@ -232,16 +199,11 @@ function LeadForm({ defaultValues, onSubmit, isLoading, onCancel }: LeadFormProp
 
 // ---------- LeadDetails ----------
 
-interface LeadDetailsProps {
-  lead: Lead;
-}
-
-function LeadDetails({ lead }: LeadDetailsProps) {
+function LeadDetails({ lead }: { lead: Lead }) {
   const rows: { label: string; value: string }[] = [
     { label: "מספר ליד", value: lead.lead_number },
     { label: "שם", value: lead.name },
     { label: "טלפון", value: empty(lead.phone) },
-    { label: "טלפון (קישור)", value: empty(lead.phone_link) },
     { label: "אימייל", value: empty(lead.email) },
     { label: "סטטוס", value: empty(lead.status) },
     { label: "סטטוס מענה", value: empty(lead.answer_status) },
@@ -250,21 +212,14 @@ function LeadDetails({ lead }: LeadDetailsProps) {
     { label: "תחום פעילות", value: empty(lead.activity_field) },
     { label: "תאריך פולואפ", value: formatDate(lead.followup_at) },
     { label: "הערה לפולואפ", value: empty(lead.followup_note) },
-    { label: "תאריך תזכורת", value: formatDate(lead.reminder_at) },
-    { label: "הערה לתזכורת", value: empty(lead.reminder_note) },
     { label: "סיבת דחייה", value: empty(lead.rejection_reason) },
     { label: "פירוט דחייה", value: empty(lead.rejection_reason_text) },
     { label: "תאריך השארת פנייה", value: formatDate(lead.lead_created_at) },
     { label: "תאריך סגירה", value: formatDate(lead.closed_at) },
     { label: "סכום עסקה ראשונה", value: formatCurrency(lead.first_deal_amount) },
-    { label: "כמות לידים", value: lead.lead_count != null ? String(lead.lead_count) : "—" },
     { label: "משימה", value: empty(lead.task_text) },
-    { label: "תאריך משימה", value: formatDate(lead.task_due_at) },
     { label: "לקוח מקושר (ID)", value: empty(lead.linked_customer_id) },
-    { label: "נוצר ב", value: formatDate(lead.created_at) },
-    { label: "עודכן ב", value: formatDate(lead.updated_at) },
   ];
-
   return (
     <div className="divide-y divide-gray-100" dir="rtl">
       {rows.map(({ label, value }) => (
@@ -279,18 +234,55 @@ function LeadDetails({ lead }: LeadDetailsProps) {
 
 // ---------- Main Page ----------
 
+const DEBOUNCE_MS = 400;
+
 export default function Leads() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  // Server-side filter state (committed to API)
+  const [apiSearch, setApiSearch] = useState("");
+  const [apiStatus, setApiStatus] = useState("");
+
+  // Input state (local, debounced)
+  const [inputSearch, setInputSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [page, setPage] = useState(0);
+  const LIMIT = 300;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editLead, setEditLead] = useState<Lead | null>(null);
   const [detailsLead, setDetailsLead] = useState<Lead | null>(null);
 
-  const { data: leads, isLoading, isError } = useListLeads();
+  const params = {
+    ...(apiSearch ? { search: apiSearch } : {}),
+    ...(apiStatus ? { status: apiStatus } : {}),
+    limit: LIMIT,
+    offset: page * LIMIT,
+  };
+
+  const { data: leads, isLoading, isError } = useListLeads(params, {
+    query: { queryKey: getListLeadsQueryKey(params) },
+  });
+
+  const totalHeader = typeof document !== "undefined"
+    ? undefined
+    : undefined; // X-Total-Count read from response header (not exposed via orval by default)
+
+  const handleSearchChange = useCallback((val: string) => {
+    setInputSearch(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setApiSearch(val);
+      setPage(0);
+    }, DEBOUNCE_MS);
+  }, []);
+
+  const handleStatusChange = useCallback((val: string) => {
+    setApiStatus(val);
+    setPage(0);
+  }, []);
 
   const createMutation = useCreateLead({
     mutation: {
@@ -300,8 +292,7 @@ export default function Leads() {
         toast({ title: "הליד נוצר בהצלחה" });
       },
       onError: (err: Error & { data?: { error?: string } }) => {
-        const msg = err?.data?.error ?? "שגיאה ביצירת הליד";
-        toast({ title: msg, variant: "destructive" });
+        toast({ title: err?.data?.error ?? "שגיאה ביצירת הליד", variant: "destructive" });
       },
     },
   });
@@ -314,8 +305,7 @@ export default function Leads() {
         toast({ title: "הליד עודכן בהצלחה" });
       },
       onError: (err: Error & { data?: { error?: string } }) => {
-        const msg = err?.data?.error ?? "שגיאה בעדכון הליד";
-        toast({ title: msg, variant: "destructive" });
+        toast({ title: err?.data?.error ?? "שגיאה בעדכון הליד", variant: "destructive" });
       },
     },
   });
@@ -329,22 +319,9 @@ export default function Leads() {
     updateMutation.mutate({ id: editLead.id, data: sanitizeValues(values) });
   }
 
-  // סינון
-  const allStatuses = Array.from(
-    new Set((leads ?? []).map((l) => l.status).filter(Boolean))
-  ) as string[];
-
-  const filtered = (leads ?? []).filter((l) => {
-    const matchSearch =
-      !search ||
-      l.name.includes(search) ||
-      (l.phone ?? "").includes(search) ||
-      (l.email ?? "").includes(search) ||
-      (l.lead_number ?? "").includes(search);
-    const matchStatus =
-      filterStatus === "all" || l.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  const showingCount = leads?.length ?? 0;
+  const hasMore = showingCount === LIMIT;
+  const hasPrev = page > 0;
 
   return (
     <Shell title="לידים">
@@ -355,26 +332,31 @@ export default function Leads() {
             <div className="flex gap-2 flex-wrap">
               <Input
                 placeholder="חיפוש לפי שם, טלפון, מספר..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={inputSearch}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-64"
                 dir="rtl"
               />
               <select
                 className="border rounded-md px-3 py-2 text-sm bg-background"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={apiStatus}
+                onChange={(e) => handleStatusChange(e.target.value)}
                 dir="rtl"
               >
-                <option value="all">כל הסטטוסים</option>
-                {allStatuses.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                <option value="">כל הסטטוסים</option>
+                <option value="ליד חדש">ליד חדש</option>
+                <option value="לקוח פעיל">לקוח פעיל</option>
+                <option value="לא רלוונטי">לא רלוונטי</option>
+                <option value="אימון מכירות Inbound">אימון מכירות Inbound</option>
+                <option value="פולואפ ארוך">פולואפ ארוך</option>
+                <option value="חדש">חדש</option>
               </select>
             </div>
             <div className="flex items-center gap-3">
-              {!isLoading && !isError && leads && (
-                <span className="text-sm text-muted-foreground">{filtered.length} לידים</span>
+              {!isLoading && !isError && (
+                <span className="text-sm text-muted-foreground">
+                  {showingCount} לידים{hasMore ? ` (עמוד ${page + 1})` : ""}
+                </span>
               )}
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="w-4 h-4 ml-1" />
@@ -385,7 +367,7 @@ export default function Leads() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden px-8 pb-6">
+        <div className="flex-1 overflow-hidden px-8 pb-2">
           {isLoading && (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="flex flex-col items-center gap-3">
@@ -405,17 +387,14 @@ export default function Leads() {
 
           {!isLoading && !isError && leads?.length === 0 && (
             <div className="flex items-center justify-center h-full">
-              <EmptyState title="אין לידים להצגה" description="לחצו על 'ליד חדש' להוספת הליד הראשון." />
+              <EmptyState
+                title={apiSearch || apiStatus ? "לא נמצאו לידים תואמים" : "אין לידים להצגה"}
+                description={apiSearch || apiStatus ? "נסו חיפוש אחר או שנו את הסינון" : "לחצו על 'ליד חדש' להוספת הליד הראשון."}
+              />
             </div>
           )}
 
-          {!isLoading && !isError && leads && leads.length > 0 && filtered.length === 0 && (
-            <div className="flex items-center justify-center h-full">
-              <EmptyState title="לא נמצאו לידים תואמים" description="נסו חיפוש אחר או שנו את הסינון" />
-            </div>
-          )}
-
-          {!isLoading && !isError && filtered.length > 0 && (
+          {!isLoading && !isError && leads && leads.length > 0 && (
             <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
@@ -431,12 +410,10 @@ export default function Leads() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filtered.map((lead) => (
+                  {leads.map((lead) => (
                     <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {lead.lead_number}
-                        </Badge>
+                        <Badge variant="secondary" className="font-mono text-xs">{lead.lead_number}</Badge>
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-900">
                         <div className="flex items-center gap-2">
@@ -448,37 +425,21 @@ export default function Leads() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
                         {lead.phone ? (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {lead.phone}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">—</span>
-                        )}
+                          <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
+                        ) : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
                         {lead.email ? (
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {lead.email}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">—</span>
-                        )}
+                          <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{lead.email}</span>
+                        ) : <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3">
-                        {lead.status ? (
-                          <Badge variant={statusVariant(lead.status)}>{lead.status}</Badge>
-                        ) : (
-                          <span className="text-gray-300">—</span>
-                        )}
+                        {lead.status
+                          ? <Badge variant={statusVariant(lead.status)}>{lead.status}</Badge>
+                          : <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
-                        {empty(lead.lead_source)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
-                        {formatDate(lead.followup_at)}
-                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{empty(lead.lead_source)}</td>
+                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">{formatDate(lead.followup_at)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 justify-end">
                           <Button size="sm" variant="ghost" onClick={() => setDetailsLead(lead)} title="פרטים">
@@ -496,28 +457,33 @@ export default function Leads() {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {!isLoading && !isError && (hasPrev || hasMore) && (
+          <div className="shrink-0 flex items-center justify-center gap-3 px-8 py-3 border-t border-gray-100 bg-white">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={!hasPrev}>
+              הקודם
+            </Button>
+            <span className="text-sm text-muted-foreground">עמוד {page + 1}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!hasMore}>
+              הבא
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>ליד חדש</DialogTitle>
-          </DialogHeader>
-          <LeadForm
-            onSubmit={handleCreate}
-            isLoading={createMutation.isPending}
-            onCancel={() => setCreateOpen(false)}
-          />
+          <DialogHeader><DialogTitle>ליד חדש</DialogTitle></DialogHeader>
+          <LeadForm onSubmit={handleCreate} isLoading={createMutation.isPending} onCancel={() => setCreateOpen(false)} />
         </DialogContent>
       </Dialog>
 
       {/* Edit dialog */}
       <Dialog open={!!editLead} onOpenChange={(open) => !open && setEditLead(null)}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>עריכת ליד — {editLead?.name}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>עריכת ליד — {editLead?.name}</DialogTitle></DialogHeader>
           {editLead && (
             <LeadForm
               key={editLead.id}
@@ -541,13 +507,7 @@ export default function Leads() {
           </DialogHeader>
           {detailsLead && <LeadDetails lead={detailsLead} />}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDetailsLead(null);
-                setEditLead(detailsLead);
-              }}
-            >
+            <Button variant="outline" onClick={() => { setDetailsLead(null); setEditLead(detailsLead); }}>
               <Pencil className="w-3.5 h-3.5 ml-1" />
               עריכה
             </Button>
