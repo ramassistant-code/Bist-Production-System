@@ -14,10 +14,8 @@ export function Shell({ title, children }: ShellProps) {
         <header className="h-16 flex items-center px-8 bg-white border-b border-gray-200 shrink-0">
           <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         </header>
-        <main className="flex-1 overflow-auto p-8">
-          <div className="max-w-7xl mx-auto h-full">
-            {children}
-          </div>
+        <main className="flex-1 overflow-hidden">
+          {children}
         </main>
       </div>
     </div>

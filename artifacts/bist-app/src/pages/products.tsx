@@ -579,90 +579,103 @@ export default function Products() {
 
   return (
     <Shell title="מוצרים">
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2 flex-wrap">
-          <Input
-            placeholder="חיפוש לפי שם או קטגוריה..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
-            dir="rtl"
-          />
-          <select
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-            value={filterActive}
-            onChange={(e) => setFilterActive(e.target.value as typeof filterActive)}
-            dir="rtl"
-          >
-            <option value="all">כל המוצרים</option>
-            <option value="active">פעילים בלבד</option>
-            <option value="inactive">לא פעילים</option>
-          </select>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="w-4 h-4 ml-1" />
-          מוצר חדש
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center text-muted-foreground py-16">טוען מוצרים...</div>
-      ) : !filtered.length ? (
-        <EmptyState
-          title={search ? "לא נמצאו מוצרים תואמים" : "אין מוצרים להצגה"}
-          description={search ? "נסה חיפוש אחר" : "לחץ על 'מוצר חדש' להוספת מוצר ראשון"}
-        />
-      ) : (
-        <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 border-b">
-              <tr>
-                <th className="text-right py-3 px-4 font-semibold">מספר</th>
-                <th className="text-right py-3 px-4 font-semibold">שם המוצר</th>
-                <th className="text-right py-3 px-4 font-semibold">קטגוריה</th>
-                <th className="text-right py-3 px-4 font-semibold">מחיר מכירה</th>
-                <th className="text-right py-3 px-4 font-semibold">סטטוס</th>
-                <th className="py-3 px-4 w-16" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-t hover:bg-muted/20 transition-colors cursor-pointer"
-                  onClick={() => openEdit(p.id)}
-                >
-                  <td className="py-3 px-4 text-muted-foreground font-mono text-xs">
-                    {p.product_number}
-                  </td>
-                  <td className="py-3 px-4 font-medium">{p.name}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{empty(p.category)}</td>
-                  <td className="py-3 px-4">{formatCurrency(p.consumer_price)}</td>
-                  <td className="py-3 px-4">
-                    <Badge variant={p.is_active !== false ? "default" : "secondary"}>
-                      {p.is_active !== false ? "פעיל" : "לא פעיל"}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8"
-                      onClick={() => openEdit(p.id)}
-                      title="עריכה ורכיבים"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-2 text-xs text-muted-foreground border-t">
-            {filtered.length} מוצרים
+      <div className="flex flex-col h-full">
+        {/* Top controls */}
+        <div className="shrink-0 px-8 pt-6 pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                placeholder="חיפוש לפי שם או קטגוריה..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-64"
+                dir="rtl"
+              />
+              <select
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+                value={filterActive}
+                onChange={(e) => setFilterActive(e.target.value as typeof filterActive)}
+                dir="rtl"
+              >
+                <option value="all">כל המוצרים</option>
+                <option value="active">פעילים בלבד</option>
+                <option value="inactive">לא פעילים</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              {!isLoading && !!filtered.length && (
+                <span className="text-sm text-muted-foreground">{filtered.length} מוצרים</span>
+              )}
+              <Button onClick={openCreate}>
+                <Plus className="w-4 h-4 ml-1" />
+                מוצר חדש
+              </Button>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden px-8 pb-6">
+          {isLoading && (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">טוען מוצרים...</span>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !filtered.length && (
+            <div className="flex items-center justify-center h-full">
+              <EmptyState
+                title={search ? "לא נמצאו מוצרים תואמים" : "אין מוצרים להצגה"}
+                description={search ? "נסה חיפוש אחר" : "לחץ על 'מוצר חדש' להוספת מוצר ראשון"}
+              />
+            </div>
+          )}
+
+          {!isLoading && filtered.length > 0 && (
+            <div className="h-full overflow-y-auto bg-white rounded-xl border shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-muted/40 border-b">
+                  <tr>
+                    <th className="text-right py-3 px-4 font-semibold">מספר</th>
+                    <th className="text-right py-3 px-4 font-semibold">שם המוצר</th>
+                    <th className="text-right py-3 px-4 font-semibold">קטגוריה</th>
+                    <th className="text-right py-3 px-4 font-semibold">מחיר מכירה</th>
+                    <th className="text-right py-3 px-4 font-semibold">סטטוס</th>
+                    <th className="py-3 px-4 w-16" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-t hover:bg-muted/20 transition-colors cursor-pointer"
+                      onClick={() => openEdit(p.id)}
+                    >
+                      <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{p.product_number}</td>
+                      <td className="py-3 px-4 font-medium">{p.name}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{empty(p.category)}</td>
+                      <td className="py-3 px-4">{formatCurrency(p.consumer_price)}</td>
+                      <td className="py-3 px-4">
+                        <Badge variant={p.is_active !== false ? "default" : "secondary"}>
+                          {p.is_active !== false ? "פעיל" : "לא פעיל"}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => openEdit(p.id)} title="עריכה ורכיבים">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Unified product modal */}
       <ProductModal

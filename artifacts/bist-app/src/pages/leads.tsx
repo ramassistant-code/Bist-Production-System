@@ -348,160 +348,155 @@ export default function Leads() {
 
   return (
     <Shell title="לידים">
-      {/* Header bar */}
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2 flex-wrap">
-          <Input
-            placeholder="חיפוש לפי שם, טלפון, מספר..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
-            dir="rtl"
-          />
-          <select
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            dir="rtl"
-          >
-            <option value="all">כל הסטטוסים</option>
-            {allStatuses.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          {!isLoading && !isError && leads && (
-            <span className="text-sm text-muted-foreground">{filtered.length} לידים</span>
-          )}
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4 ml-1" />
-            ליד חדש
-          </Button>
-        </div>
-      </div>
-
-      {/* Loading */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">טוען לידים...</span>
+      <div className="flex flex-col h-full">
+        {/* Top controls */}
+        <div className="shrink-0 px-8 pt-6 pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                placeholder="חיפוש לפי שם, טלפון, מספר..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-64"
+                dir="rtl"
+              />
+              <select
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                dir="rtl"
+              >
+                <option value="all">כל הסטטוסים</option>
+                {allStatuses.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              {!isLoading && !isError && leads && (
+                <span className="text-sm text-muted-foreground">{filtered.length} לידים</span>
+              )}
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="w-4 h-4 ml-1" />
+                ליד חדש
+              </Button>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Error */}
-      {isError && !isLoading && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center">
-          <p className="text-sm text-destructive font-medium">שגיאה בטעינת הלידים. אנא נסו שנית.</p>
+        {/* Content */}
+        <div className="flex-1 overflow-hidden px-8 pb-6">
+          {isLoading && (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">טוען לידים...</span>
+              </div>
+            </div>
+          )}
+
+          {isError && !isLoading && (
+            <div className="flex items-center justify-center h-full">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
+                <p className="text-sm text-destructive font-medium">שגיאה בטעינת הלידים. אנא נסו שנית.</p>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !isError && leads?.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <EmptyState title="אין לידים להצגה" description="לחצו על 'ליד חדש' להוספת הליד הראשון." />
+            </div>
+          )}
+
+          {!isLoading && !isError && leads && leads.length > 0 && filtered.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <EmptyState title="לא נמצאו לידים תואמים" description="נסו חיפוש אחר או שנו את הסינון" />
+            </div>
+          )}
+
+          {!isLoading && !isError && filtered.length > 0 && (
+            <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">מספר ליד</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">סטטוס</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">מקור</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">פולואפ</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filtered.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {lead.lead_number}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          {lead.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                        {lead.phone ? (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {lead.phone}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
+                        {lead.email ? (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {lead.email}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {lead.status ? (
+                          <Badge variant={statusVariant(lead.status)}>{lead.status}</Badge>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
+                        {empty(lead.lead_source)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
+                        {formatDate(lead.followup_at)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => setDetailsLead(lead)} title="פרטים">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditLead(lead)} title="עריכה">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Empty */}
-      {!isLoading && !isError && leads?.length === 0 && (
-        <EmptyState
-          title="אין לידים להצגה"
-          description="לחצו על 'ליד חדש' להוספת הליד הראשון."
-        />
-      )}
-
-      {/* No results after filter */}
-      {!isLoading && !isError && leads && leads.length > 0 && filtered.length === 0 && (
-        <EmptyState title="לא נמצאו לידים תואמים" description="נסו חיפוש אחר או שנו את הסינון" />
-      )}
-
-      {/* Table */}
-      {!isLoading && !isError && filtered.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-right px-4 py-3 font-medium text-gray-600">מספר ליד</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">סטטוס</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">מקור</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">פולואפ</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {lead.lead_number}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="w-3.5 h-3.5 text-primary" />
-                      </div>
-                      {lead.name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
-                    {lead.phone ? (
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {lead.phone}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
-                    {lead.email ? (
-                      <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {lead.email}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {lead.status ? (
-                      <Badge variant={statusVariant(lead.status)}>{lead.status}</Badge>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
-                    {empty(lead.lead_source)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
-                    {formatDate(lead.followup_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDetailsLead(lead)}
-                        title="פרטים"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditLead(lead)}
-                        title="עריכה"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </div>
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

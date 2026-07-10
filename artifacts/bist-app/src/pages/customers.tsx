@@ -317,131 +317,121 @@ export default function Customers() {
 
   return (
     <Shell title="לקוחות">
-      {/* Header bar */}
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-muted-foreground">
-          {!isLoading && !isError && customers
-            ? `${customers.length} לקוחות`
-            : ""}
-        </p>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="w-4 h-4 ml-1" />
-          לקוח חדש
-        </Button>
+      <div className="flex flex-col h-full">
+        {/* Top controls */}
+        <div className="shrink-0 flex items-center justify-between px-8 pt-6 pb-4">
+          <p className="text-sm text-muted-foreground">
+            {!isLoading && !isError && customers ? `${customers.length} לקוחות` : ""}
+          </p>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4 ml-1" />
+            לקוח חדש
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden px-8 pb-6">
+          {isLoading && (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">טוען לקוחות...</span>
+              </div>
+            </div>
+          )}
+
+          {isError && !isLoading && (
+            <div className="flex items-center justify-center h-full">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
+                <p className="text-sm text-destructive font-medium">שגיאה בטעינת הלקוחות. אנא נסו שנית.</p>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !isError && customers?.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <EmptyState title="אין לקוחות להצגה" description="לחצו על 'לקוח חדש' להוספת הלקוח הראשון." />
+            </div>
+          )}
+
+          {!isLoading && !isError && customers && customers.length > 0 && (
+            <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">מספר לקוח</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">סוג לקוח</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">הצטרף</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {customer.customer_number}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          {customer.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                        {customer.phone ? (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {customer.phone}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
+                        {customer.email ? (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {customer.email}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {customer.customer_type ? (
+                          <Badge variant="outline">{customer.customer_type}</Badge>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
+                        {formatDate(customer.joined_at)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => setDetailsCustomer(customer)} title="פרטים">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditCustomer(customer)} title="עריכה">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Loading */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm">טוען לקוחות...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {isError && !isLoading && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center">
-          <p className="text-sm text-destructive font-medium">שגיאה בטעינת הלקוחות. אנא נסו שנית.</p>
-        </div>
-      )}
-
-      {/* Empty */}
-      {!isLoading && !isError && customers?.length === 0 && (
-        <EmptyState
-          title="אין לקוחות להצגה"
-          description="לחצו על 'לקוח חדש' להוספת הלקוח הראשון."
-        />
-      )}
-
-      {/* Table */}
-      {!isLoading && !isError && customers && customers.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-right px-4 py-3 font-medium text-gray-600">מספר לקוח</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">סוג לקוח</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">הצטרף</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {customer.customer_number}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="w-3.5 h-3.5 text-primary" />
-                      </div>
-                      {customer.name}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
-                    {customer.phone ? (
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {customer.phone}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
-                    {customer.email ? (
-                      <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {customer.email}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    {customer.customer_type ? (
-                      <Badge variant="outline">{customer.customer_type}</Badge>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
-                    {formatDate(customer.joined_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDetailsCustomer(customer)}
-                        title="פרטים"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditCustomer(customer)}
-                        title="עריכה"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
