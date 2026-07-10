@@ -53,3 +53,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# The .replit [userenv] section can hold secrets; never commit tokens there.
+# Replit Secrets (environment variables) is the correct place for credentials.
+# The pre-commit hook in scripts/hooks/pre-commit enforces this automatically.
