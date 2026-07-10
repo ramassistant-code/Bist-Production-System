@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Customers from "@/pages/customers";
 import Products from "@/pages/products";
+import Components from "@/pages/components";
 import Quotes from "@/pages/quotes";
 import Production from "@/pages/production";
 import Tasks from "@/pages/tasks";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/customers" component={Customers} />
       <Route path="/products" component={Products} />
+      <Route path="/components" component={Components} />
       <Route path="/quotes" component={Quotes} />
       <Route path="/production" component={Production} />
       <Route path="/tasks" component={Tasks} />

@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: customers
     description: Customer management
+  - name: products
+    description: Product management
+  - name: components
+    description: Component management
 paths:
   /healthz:
     get:
@@ -163,6 +167,397 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Customer"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductBody"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get product by ID (with components)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product with components
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductWithComponents"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductBody"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{id}/components:
+    post:
+      operationId: addProductComponent
+      tags: [products]
+      summary: Add a component to a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddProductComponentBody"
+      responses:
+        "201":
+          description: Product component added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductComponentRow"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /products/{id}/components/{pc_id}:
+    patch:
+      operationId: updateProductComponent
+      tags: [products]
+      summary: Update a product component row
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: pc_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductComponentBody"
+      responses:
+        "200":
+          description: Updated product component
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductComponentRow"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: removeProductComponent
+      tags: [products]
+      summary: Remove a component from a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: pc_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /components:
+    get:
+      operationId: listComponents
+      tags: [components]
+      summary: List all components
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of components
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Component"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createComponent
+      tags: [components]
+      summary: Create a new component
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComponentBody"
+      responses:
+        "201":
+          description: Component created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /components/{id}:
+    get:
+      operationId: getComponent
+      tags: [components]
+      summary: Get component by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Component
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateComponent
+      tags: [components]
+      summary: Update a component
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateComponentBody"
+      responses:
+        "200":
+          description: Updated component
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
         "400":
           description: Validation error
           content:
@@ -363,4 +758,297 @@ components:
           nullable: true
         pain_points:
           type: string
+          nullable: true
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        product_number:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable_type:
+          type: string
+          nullable: true
+        consumer_price:
+          type: string
+          nullable: true
+        production_cost:
+          type: string
+          nullable: true
+        product_explanation:
+          type: string
+          nullable: true
+        sales_notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        deleted_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - product_number
+        - name
+        - created_at
+        - updated_at
+
+    ProductWithComponents:
+      type: object
+      properties:
+        id:
+          type: string
+        product_number:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable_type:
+          type: string
+          nullable: true
+        consumer_price:
+          type: string
+          nullable: true
+        production_cost:
+          type: string
+          nullable: true
+        product_explanation:
+          type: string
+          nullable: true
+        sales_notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        deleted_at:
+          type: string
+          nullable: true
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductComponentRow"
+        calculated_cost:
+          type: string
+          nullable: true
+      required:
+        - id
+        - product_number
+        - name
+        - created_at
+        - updated_at
+        - components
+
+    ProductComponentRow:
+      type: object
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+        component_id:
+          type: string
+        default_quantity:
+          type: string
+          nullable: true
+        default_unit_price:
+          type: string
+          nullable: true
+        total_cost:
+          type: string
+          nullable: true
+        sort_order:
+          type: integer
+          nullable: true
+        component_name:
+          type: string
+          nullable: true
+        component_number:
+          type: string
+          nullable: true
+        component_deliverable:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+        - id
+        - product_id
+        - component_id
+        - created_at
+        - updated_at
+
+    CreateProductBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable_type:
+          type: string
+          nullable: true
+        consumer_price:
+          type: string
+          nullable: true
+        product_explanation:
+          type: string
+          nullable: true
+        sales_notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+      required:
+        - name
+
+    UpdateProductBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable_type:
+          type: string
+          nullable: true
+        consumer_price:
+          type: string
+          nullable: true
+        product_explanation:
+          type: string
+          nullable: true
+        sales_notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+
+    AddProductComponentBody:
+      type: object
+      properties:
+        component_id:
+          type: string
+        default_quantity:
+          type: string
+          nullable: true
+        default_unit_price:
+          type: string
+          nullable: true
+      required:
+        - component_id
+
+    UpdateProductComponentBody:
+      type: object
+      properties:
+        default_quantity:
+          type: string
+          nullable: true
+        default_unit_price:
+          type: string
+          nullable: true
+
+    Component:
+      type: object
+      properties:
+        id:
+          type: string
+        component_number:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable:
+          type: string
+          nullable: true
+        internal_notes:
+          type: string
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        deleted_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - component_number
+        - name
+        - created_at
+        - updated_at
+
+    CreateComponentBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable:
+          type: string
+          nullable: true
+        internal_notes:
+          type: string
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+          nullable: true
+      required:
+        - name
+
+    UpdateComponentBody:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+          nullable: true
+        deliverable:
+          type: string
+          nullable: true
+        internal_notes:
+          type: string
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
           nullable: true

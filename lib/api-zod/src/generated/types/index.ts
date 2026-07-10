@@ -6,9 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addProductComponentBody';
+export * from './component';
+export * from './createComponentBody';
 export * from './createCustomerBody';
+export * from './createProductBody';
 export * from './customer';
 export * from './dbCheckStatus';
 export * from './errorResponse';
 export * from './healthStatus';
+export * from './listComponentsParams';
+export * from './listProductsParams';
+export * from './product';
+export * from './productComponentRow';
+export * from './productWithComponents';
+export * from './updateComponentBody';
 export * from './updateCustomerBody';
+export * from './updateProductBody';
+export * from './updateProductComponentBody';

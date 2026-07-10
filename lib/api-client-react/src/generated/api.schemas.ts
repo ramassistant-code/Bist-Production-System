@@ -75,3 +75,127 @@ export interface UpdateCustomerBody {
   pain_points?: string | null;
 }
 
+export interface Product {
+  id: string;
+  product_number: string;
+  name: string;
+  category?: string | null;
+  deliverable_type?: string | null;
+  consumer_price?: string | null;
+  production_cost?: string | null;
+  product_explanation?: string | null;
+  sales_notes?: string | null;
+  is_active?: boolean | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface ProductComponentRow {
+  id: string;
+  product_id: string;
+  component_id: string;
+  default_quantity?: string | null;
+  default_unit_price?: string | null;
+  total_cost?: string | null;
+  sort_order?: number | null;
+  component_name?: string | null;
+  component_number?: string | null;
+  component_deliverable?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductWithComponents {
+  id: string;
+  product_number: string;
+  name: string;
+  category?: string | null;
+  deliverable_type?: string | null;
+  consumer_price?: string | null;
+  production_cost?: string | null;
+  product_explanation?: string | null;
+  sales_notes?: string | null;
+  is_active?: boolean | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+  components: ProductComponentRow[];
+  calculated_cost?: string | null;
+}
+
+export interface CreateProductBody {
+  name: string;
+  category?: string | null;
+  deliverable_type?: string | null;
+  consumer_price?: string | null;
+  product_explanation?: string | null;
+  sales_notes?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface UpdateProductBody {
+  name?: string;
+  category?: string | null;
+  deliverable_type?: string | null;
+  consumer_price?: string | null;
+  product_explanation?: string | null;
+  sales_notes?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface AddProductComponentBody {
+  component_id: string;
+  default_quantity?: string | null;
+  default_unit_price?: string | null;
+}
+
+export interface UpdateProductComponentBody {
+  default_quantity?: string | null;
+  default_unit_price?: string | null;
+}
+
+export interface Component {
+  id: string;
+  component_number: string;
+  name: string;
+  category?: string | null;
+  deliverable?: string | null;
+  internal_notes?: string | null;
+  cost?: string | null;
+  is_active?: boolean | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+export interface CreateComponentBody {
+  name: string;
+  category?: string | null;
+  deliverable?: string | null;
+  internal_notes?: string | null;
+  cost?: string | null;
+  is_active?: boolean | null;
+}
+
+export interface UpdateComponentBody {
+  name?: string;
+  category?: string | null;
+  deliverable?: string | null;
+  internal_notes?: string | null;
+  cost?: string | null;
+  is_active?: boolean | null;
+}
+
+export type ListProductsParams = {
+search?: string;
+category?: string;
+is_active?: boolean;
+};
+
+export type ListComponentsParams = {
+search?: string;
+category?: string;
+is_active?: boolean;
+};
+

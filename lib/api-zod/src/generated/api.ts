@@ -206,3 +206,307 @@ export const UpdateCustomerResponse = zod.object({
 })
 
 
+/**
+ * @summary List all products
+ */
+export const ListProductsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "is_active": zod.coerce.boolean().optional()
+})
+
+export const ListProductsResponseItem = zod.object({
+  "id": zod.string(),
+  "product_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "production_cost": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+export const ListProductsResponse = zod.array(ListProductsResponseItem)
+
+
+/**
+ * @summary Create a new product
+ */
+export const CreateProductBody = zod.object({
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish()
+})
+
+export const CreateProductResponse = zod.object({
+  "id": zod.string(),
+  "product_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "production_cost": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get product by ID (with components)
+ */
+export const GetProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetProductResponse = zod.object({
+  "id": zod.string(),
+  "product_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "production_cost": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish(),
+  "components": zod.array(zod.object({
+  "id": zod.string(),
+  "product_id": zod.string(),
+  "component_id": zod.string(),
+  "default_quantity": zod.string().nullish(),
+  "default_unit_price": zod.string().nullish(),
+  "total_cost": zod.string().nullish(),
+  "sort_order": zod.number().nullish(),
+  "component_name": zod.string().nullish(),
+  "component_number": zod.string().nullish(),
+  "component_deliverable": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})),
+  "calculated_cost": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a product
+ */
+export const UpdateProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateProductBody = zod.object({
+  "name": zod.string().optional(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish()
+})
+
+export const UpdateProductResponse = zod.object({
+  "id": zod.string(),
+  "product_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "production_cost": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Add a component to a product
+ */
+export const AddProductComponentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AddProductComponentBody = zod.object({
+  "component_id": zod.string(),
+  "default_quantity": zod.string().nullish(),
+  "default_unit_price": zod.string().nullish()
+})
+
+export const AddProductComponentResponse = zod.object({
+  "id": zod.string(),
+  "product_id": zod.string(),
+  "component_id": zod.string(),
+  "default_quantity": zod.string().nullish(),
+  "default_unit_price": zod.string().nullish(),
+  "total_cost": zod.string().nullish(),
+  "sort_order": zod.number().nullish(),
+  "component_name": zod.string().nullish(),
+  "component_number": zod.string().nullish(),
+  "component_deliverable": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
+
+
+/**
+ * @summary Update a product component row
+ */
+export const UpdateProductComponentParams = zod.object({
+  "id": zod.coerce.string(),
+  "pc_id": zod.coerce.string()
+})
+
+export const UpdateProductComponentBody = zod.object({
+  "default_quantity": zod.string().nullish(),
+  "default_unit_price": zod.string().nullish()
+})
+
+export const UpdateProductComponentResponse = zod.object({
+  "id": zod.string(),
+  "product_id": zod.string(),
+  "component_id": zod.string(),
+  "default_quantity": zod.string().nullish(),
+  "default_unit_price": zod.string().nullish(),
+  "total_cost": zod.string().nullish(),
+  "sort_order": zod.number().nullish(),
+  "component_name": zod.string().nullish(),
+  "component_number": zod.string().nullish(),
+  "component_deliverable": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
+
+
+/**
+ * @summary Remove a component from a product
+ */
+export const RemoveProductComponentParams = zod.object({
+  "id": zod.coerce.string(),
+  "pc_id": zod.coerce.string()
+})
+
+export const RemoveProductComponentResponse = zod.void()
+
+
+/**
+ * @summary List all components
+ */
+export const ListComponentsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "is_active": zod.coerce.boolean().optional()
+})
+
+export const ListComponentsResponseItem = zod.object({
+  "id": zod.string(),
+  "component_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+export const ListComponentsResponse = zod.array(ListComponentsResponseItem)
+
+
+/**
+ * @summary Create a new component
+ */
+export const CreateComponentBody = zod.object({
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish()
+})
+
+export const CreateComponentResponse = zod.object({
+  "id": zod.string(),
+  "component_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get component by ID
+ */
+export const GetComponentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetComponentResponse = zod.object({
+  "id": zod.string(),
+  "component_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a component
+ */
+export const UpdateComponentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateComponentBody = zod.object({
+  "name": zod.string().optional(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish()
+})
+
+export const UpdateComponentResponse = zod.object({
+  "id": zod.string(),
+  "component_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable": zod.string().nullish(),
+  "internal_notes": zod.string().nullish(),
+  "cost": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+})
+
+

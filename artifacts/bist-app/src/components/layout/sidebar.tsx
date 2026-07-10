@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Box, FileSignature, Video, CheckSquare, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Box, Layers, FileSignature, Video, CheckSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { name: "דשבורד", href: "/", icon: LayoutDashboard },
   { name: "לקוחות", href: "/customers", icon: Users },
   { name: "מוצרים", href: "/products", icon: Box },
+  { name: "רכיבים", href: "/components", icon: Layers },
   { name: "הצעות מחיר", href: "/quotes", icon: FileSignature },
   { name: "הפקה", href: "/production", icon: Video },
   { name: "משימות", href: "/tasks", icon: CheckSquare },

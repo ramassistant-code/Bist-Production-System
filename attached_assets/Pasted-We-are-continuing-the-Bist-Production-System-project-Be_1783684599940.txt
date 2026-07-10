@@ -1,0 +1,300 @@
+We are continuing the Bist Production System project.
+
+Before writing code:
+1. Read the full `replit.md` file again.
+2. Follow all project rules from `replit.md`.
+3. Keep the entire UI in Hebrew RTL.
+4. Do not redesign the whole app.
+5. Do not implement the quote wizard yet.
+6. Do not implement deals yet.
+7. In this step, implement only the Products and Components management screens.
+
+Goal of this phase:
+Build the foundation for the pricing system:
+- Products / services catalog
+- Components catalog
+- Product components composition
+- Cost calculation
+- Price fields
+- Active/inactive status
+- Clean CRUD flows
+
+Important business logic:
+A product is something we can later add to a quote.
+A component is an internal cost/building block that can be attached to a product.
+For example:
+- Product: "צילום פודקאסט שעה"
+- Components: "מפעיל", "אולפן", "מצלמות", "עריכה", "אחסון", etc.
+
+Required screens:
+
+1. Products list screen
+Route: `/products`
+
+Display a table in Hebrew RTL with:
+- שם מוצר
+- קטגוריה
+- מחיר מכירה
+- עלות מחושבת
+- רווח גולמי
+- סטטוס
+- עודכן לאחרונה
+- פעולות
+
+Actions:
+- יצירת מוצר חדש
+- עריכת מוצר
+- צפייה בפרטי מוצר
+- הפעלה / השבתה
+- חיפוש לפי שם מוצר
+- סינון לפי קטגוריה
+- סינון לפי סטטוס
+
+2. Create / edit product screen
+Route examples:
+- `/products/new`
+- `/products/:id/edit`
+
+Fields:
+- שם מוצר - חובה
+- תיאור מוצר
+- קטגוריה
+- מחיר מכירה לפני מע״מ
+- האם המחיר כולל מע״מ - כן / לא
+- סטטוס - פעיל / לא פעיל
+- הערות פנימיות
+
+Validations:
+- Product name is required
+- Sale price must be a positive number or zero
+- Category is optional but recommended
+- Do not allow saving an empty product name
+- Show all validation errors in Hebrew
+
+3. Product details screen
+Route: `/products/:id`
+
+Show:
+- Product basic details
+- Sale price
+- Calculated cost from components
+- Gross profit amount
+- Gross profit percentage
+- Linked components
+- Internal notes
+
+Add a section/tab:
+"רכיבי המוצר"
+
+In this section, allow adding/removing components from the product.
+
+4. Components list screen
+Route: `/components`
+
+Display a table in Hebrew RTL with:
+- שם רכיב
+- קטגוריה
+- יחידת חישוב
+- עלות יחידה
+- סטטוס
+- עודכן לאחרונה
+- פעולות
+
+Actions:
+- יצירת רכיב חדש
+- עריכת רכיב
+- צפייה בפרטי רכיב
+- הפעלה / השבתה
+- חיפוש לפי שם רכיב
+- סינון לפי קטגוריה
+- סינון לפי סטטוס
+
+5. Create / edit component screen
+Route examples:
+- `/components/new`
+- `/components/:id/edit`
+
+Fields:
+- שם רכיב - חובה
+- תיאור רכיב
+- קטגוריה
+- יחידת חישוב:
+  - יחידה
+  - שעה
+  - דקה
+  - יום
+  - פרויקט
+  - אחוז
+- עלות יחידה לפני מע״מ
+- סטטוס - פעיל / לא פעיל
+- הערות פנימיות
+
+Validations:
+- Component name is required
+- Unit cost must be a positive number or zero
+- Unit type is required
+- Show all validation errors in Hebrew
+
+6. Product components composition
+
+Inside product details/edit screen, implement the ability to attach components to a product.
+
+For each attached component:
+- Select component from existing active components
+- Quantity
+- Unit cost snapshot
+- Total component cost = quantity × unit cost snapshot
+- Notes
+
+Important:
+- When attaching a component to a product, save the current component cost as a snapshot.
+- If the component cost changes later, it should not automatically change old product compositions unless the user updates it manually.
+- Add a button:
+  "עדכן עלות לפי מחיר רכיב נוכחי"
+- Add a button:
+  "הסר רכיב מהמוצר"
+
+Calculated fields:
+- Product calculated cost = sum of all attached components total cost
+- Gross profit = sale price - calculated cost
+- Gross profit % = gross profit / sale price × 100
+- If sale price is 0, do not divide by zero. Show "לא ניתן לחשב".
+
+7. Database / Supabase
+
+Check the existing database schema before changing anything.
+
+If the required tables do not exist, create/adjust them carefully:
+
+Recommended tables:
+
+products:
+- id
+- name
+- description
+- category
+- sale_price
+- price_includes_vat
+- status
+- internal_notes
+- created_at
+- updated_at
+
+components:
+- id
+- name
+- description
+- category
+- unit_type
+- unit_cost
+- status
+- internal_notes
+- created_at
+- updated_at
+
+product_components:
+- id
+- product_id
+- component_id
+- quantity
+- unit_cost_snapshot
+- total_cost
+- notes
+- created_at
+- updated_at
+
+Do not delete existing data.
+Do not make destructive migrations.
+If a table already exists, adapt the implementation to the existing schema when possible.
+
+8. UI rules
+
+All UI must be Hebrew RTL.
+Use clear Hebrew labels.
+Use simple and stable UI.
+Do not use English labels in the interface.
+Do not overcomplicate the design.
+Keep the layout clean and usable.
+
+Suggested Hebrew labels:
+- מוצרים
+- רכיבים
+- מוצר חדש
+- רכיב חדש
+- עריכה
+- צפייה
+- מחיקה / השבתה
+- פעיל
+- לא פעיל
+- מחיר מכירה
+- עלות מחושבת
+- רווח גולמי
+- רכיבי המוצר
+- הוסף רכיב
+- שמור
+- ביטול
+
+9. Save behavior
+
+When saving a product:
+- Validate fields
+- Save product
+- Show success message in Hebrew
+- Redirect back to product details or products list
+
+When saving a component:
+- Validate fields
+- Save component
+- Show success message in Hebrew
+- Redirect back to component details or components list
+
+When attaching a component to a product:
+- Validate product exists
+- Validate component exists
+- Validate quantity
+- Save unit cost snapshot
+- Calculate total cost
+- Save relation
+- Recalculate product cost display
+
+10. Do not implement yet
+
+Do not implement:
+- Quote wizard
+- Deals
+- Customers/leads flow
+- Quote PDF
+- Sending quotes
+- Payments
+- Invoices
+- Advanced permissions
+
+Only implement products and components first.
+
+11. Definition of Done
+
+This phase is complete only when:
+- `/products` works
+- `/products/new` works
+- Product edit works
+- Product details works
+- `/components` works
+- `/components/new` works
+- Component edit works
+- Component details works
+- A product can have multiple components
+- Product calculated cost works
+- Gross profit calculation works
+- All UI is Hebrew RTL
+- No English labels appear in the user interface
+- Existing app functionality is not broken
+- Code is committed to GitHub after implementation
+
+After finishing:
+1. Run the app.
+2. Check for TypeScript/build errors.
+3. Fix all errors.
+4. Commit the changes with the message:
+   "Implement products and components management"
+5. Push to the existing GitHub repository:
+   `Bist-Production-System`
