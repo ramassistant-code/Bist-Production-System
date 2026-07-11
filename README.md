@@ -1,5 +1,7 @@
 # BIST Production System
 
+[![CI](https://github.com/ramassistant-code/Bist-Production-System/actions/workflows/ci.yml/badge.svg)](https://github.com/ramassistant-code/Bist-Production-System/actions/workflows/ci.yml)
+
 Internal production management system for BIST Productions (מערכת הפקות BIST).
 The entire user-facing UI is in Hebrew with full RTL support.
 
