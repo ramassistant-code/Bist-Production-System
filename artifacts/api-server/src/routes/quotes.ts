@@ -23,6 +23,16 @@ function normalizePhone(raw: string): string {
   return digits;
 }
 
+/** Returns the last 9 digits (local number without country code/leading zero).
+ *  Used for phone search so it matches any storage format:
+ *  0585656061, 972585656061, +972-58-565-6061, etc. */
+function localPhoneDigits(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("972") && digits.length > 3) return digits.slice(3);
+  if (digits.startsWith("0") && digits.length > 1) return digits.slice(1);
+  return digits;
+}
+
 async function generateQuoteNumber(): Promise<string> {
   const result = await db.execute(sql`
     SELECT COALESCE(MAX(
@@ -44,13 +54,14 @@ router.get("/quotes/phone-lookup", async (req: Request, res: Response): Promise<
     return;
   }
   const normalized = normalizePhone(raw);
+  const localDigits = localPhoneDigits(raw);
   try {
     const [customers, leads] = await Promise.all([
       db.select().from(customersTable).where(
-        and(isNull(customersTable.deleted_at), ilike(customersTable.phone, `%${normalized}%`))
+        and(isNull(customersTable.deleted_at), ilike(customersTable.phone, `%${localDigits}%`))
       ).limit(1),
       db.select().from(leadsTable).where(
-        and(isNull(leadsTable.deleted_at), ilike(leadsTable.phone, `%${normalized}%`))
+        and(isNull(leadsTable.deleted_at), ilike(leadsTable.phone, `%${localDigits}%`))
       ).limit(1),
     ]);
     if (customers.length > 0) {
