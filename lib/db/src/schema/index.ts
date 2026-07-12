@@ -9,3 +9,4 @@ export * from "./quote-products";
 export * from "./quote-components";
 export * from "./users";
 export * from "./deals";
+export * from "./deal-coordination-tasks";

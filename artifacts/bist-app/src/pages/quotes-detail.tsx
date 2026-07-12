@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
+import { useAuth } from "@/lib/auth-context";
+import OpenDealModal from "@/components/deals/open-deal-modal";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -146,7 +148,9 @@ export default function QuotesDetail() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { appUser } = useAuth();
   const [tab, setTab] = useState("info");
+  const [showOpenDealModal, setShowOpenDealModal] = useState(false);
 
   const { data, isLoading, isError } = useQuery<QuoteDetailData>({
     queryKey: ["quote", id],
@@ -171,21 +175,6 @@ export default function QuotesDetail() {
     },
   });
 
-  const openDealMutation = useMutation({
-    mutationFn: () =>
-      customFetch<{ id: string; deal_number: string }>(`/api/deals`, {
-        method: "POST",
-        body: JSON.stringify({ source_quote_version_id: data?.currentVersion?.id }),
-      }),
-    onSuccess: (result) => {
-      toast({ title: `עסקה ${result.deal_number} נפתחה בהצלחה` });
-      queryClient.invalidateQueries({ queryKey: ["deal-check", data?.currentVersion?.id] });
-      navigate(`/deals/${result.id}`);
-    },
-    onError: (err: Error & { data?: { error?: string } }) => {
-      toast({ title: err?.data?.error ?? "שגיאה בפתיחת עסקה", variant: "destructive" });
-    },
-  });
 
   const ver = data?.currentVersion;
   const isApprovedAndLocked = !!ver?.id && ver?.status === "approved" && !!ver?.locked_at;
@@ -235,6 +224,7 @@ export default function QuotesDetail() {
   const dealAlreadyExists = isApprovedAndLocked && dealCheck?.exists;
 
   return (
+    <>
     <Shell title={`הצעה ${quote.quote_number}`}>
       <div className="h-full overflow-y-auto px-8 py-6" dir="rtl">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -283,11 +273,10 @@ export default function QuotesDetail() {
                   size="sm"
                   variant="default"
                   className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => openDealMutation.mutate()}
-                  disabled={openDealMutation.isPending}
+                  onClick={() => setShowOpenDealModal(true)}
                 >
                   <Handshake className="w-3.5 h-3.5 ml-1" />
-                  {openDealMutation.isPending ? "פותח עסקה..." : "פתח עסקה"}
+                  פתח עסקה
                 </Button>
               )}
               {dealAlreadyExists && dealCheck?.deal_id && (
@@ -505,5 +494,21 @@ export default function QuotesDetail() {
         </div>
       </div>
     </Shell>
+
+    {showOpenDealModal && verData && (
+      <OpenDealModal
+        quote={quote}
+        version={verData}
+        currentUser={appUser}
+        onClose={() => setShowOpenDealModal(false)}
+        onSuccess={(dealId, dealNumber) => {
+          toast({ title: `עסקה ${dealNumber} נפתחה בהצלחה` });
+          queryClient.invalidateQueries({ queryKey: ["deal-check", verData.id] });
+          setShowOpenDealModal(false);
+          navigate(`/deals/${dealId}`);
+        }}
+      />
+    )}
+    </>
   );
 }

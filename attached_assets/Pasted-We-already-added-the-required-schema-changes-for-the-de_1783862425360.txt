@@ -1,0 +1,272 @@
+We already added the required schema changes for the deal opening flow.
+
+Now implement the actual "פתיחת עסקה" screen logic.
+
+Important:
+Do not create a deal immediately when clicking "פתח עסקה".
+The button "פתח עסקה" must open a full deal opening screen or modal.
+Only after the user completes the form and clicks "אישור פתיחת עסקה", create the deal.
+
+Do not recreate the deals table.
+Do not run destructive migrations.
+Do not rebuild unrelated modules.
+All UI must be Hebrew RTL.
+
+Screen name:
+"פתיחת עסקה"
+
+Entry point:
+From an approved locked quote version only.
+
+When user clicks "פתח עסקה":
+1. Validate that the quote exists.
+2. Validate that there is an approved quote version.
+3. Validate that quote_versions.status = approved.
+4. Validate that quote_versions.locked_at is not null.
+5. Validate that no deal already exists for this source_quote_version_id.
+6. If valid, open the deal opening screen/modal.
+7. If invalid, show a Hebrew error message.
+
+Required screen sections:
+
+Section 1: פרטי לקוח / ליד
+
+Load customer/lead details according to the quote.
+
+If quote has customer_id:
+- Show customer details from the quote/customer.
+- Fields are read-only.
+- User cannot edit customer details here.
+- Show label: "לקוח קיים"
+
+If quote has lead_id and no customer_id:
+- Show lead details.
+- Fields are editable before creating the deal.
+- Show label: "ליד"
+- Editable fields:
+  - שם לקוח / שם ליד
+  - שם עסק
+  - טלפון
+  - מייל
+  - ח.פ / ת.ז אם קיים
+- On submit, convert/link lead to customer by normalized phone.
+- Do not create a deal linked only to lead_id.
+
+Section 2: איש מכירות
+
+Field:
+- איש מכירות
+
+Behavior:
+- Default value should be the currently logged-in user.
+- If current user cannot be resolved, show empty selection and require user to choose.
+- Store selected user in deals.salesperson_user_id.
+- If app_users exists, load users from app_users.
+- If roles exist, prefer users with sales role, but do not block if roles are not implemented.
+
+Validation:
+- Salesperson is required.
+
+Section 3: סיכום כספי
+
+Display:
+- סה"כ לתשלום כולל מע"מ
+
+Source:
+- Calculate/load this from the approved quote version totals_snapshot.
+- Do not calculate from live products.
+- Do not allow editing total amount in this screen.
+- Save the value into deals.total_amount_including_vat.
+
+Field:
+- סכום ששולם כולל מע"מ
+
+Validation:
+- Required
+- Must be a number
+- Must be >= 0
+- Must not be greater than total_amount_including_vat
+
+Section 4: אמצעי תשלום
+
+Field:
+- סוג תשלום
+
+Options:
+- מזומן = cash
+- אשראי = credit_card
+- העברה בנקאית = bank_transfer
+
+Behavior:
+If payment_type = credit_card:
+- Show field: כמות תשלומים
+- installments_count is required
+- installments_count must be integer >= 1
+- Hide invoice fields unless user chooses to fill them voluntarily
+
+If payment_type = cash or bank_transfer:
+- Hide installments_count
+- installments_count should be null
+- Show required invoice fields:
+  - שם על החשבונית
+  - מספר ת.ז / ח.פ
+  - מייל לשליחת החשבונית
+
+Validation:
+- payment_type is required
+- If credit_card: installments_count is required
+- If cash or bank_transfer:
+  - invoice_name is required
+  - invoice_id_number is required
+  - invoice_email is required and must look like a valid email
+
+Section 5: משימות מיוחדות לתיאום
+
+Checkbox:
+- פתיחת משימות מיוחדות לתיאום
+
+Behavior:
+If checkbox is unchecked:
+- Do not show task fields.
+- Save coordination_tasks_requested = false.
+- Do not create rows in deal_coordination_tasks.
+
+If checkbox is checked:
+- Show task builder.
+- Save coordination_tasks_requested = true.
+- At least one task is required.
+
+Each task row includes:
+1. טקסט משימה
+2. אחראי
+
+Assignee options:
+- מנהל מכירות = sales_manager
+- מנהלת משרד = office_manager
+
+Buttons:
+- הוסף משימה
+- הסר משימה
+
+Validation:
+If checkbox is checked:
+- At least one task is required.
+- Each task must have task_text.
+- Each task must have assignee_role.
+
+Section 6: הערות פנימיות
+
+Field:
+- הערות לאופרציה
+
+Behavior:
+- Optional.
+- Save into deals.operation_notes.
+- This is for internal team only.
+
+Footer buttons:
+- ביטול
+- אישור פתיחת עסקה
+
+Submit behavior:
+
+When user clicks "אישור פתיחת עסקה":
+
+Client-side validations:
+1. Salesperson is required.
+2. Total amount exists.
+3. Amount paid is required.
+4. Amount paid is valid and not greater than total.
+5. Payment type is required.
+6. Credit card requires installments_count.
+7. Cash/bank transfer require invoice fields.
+8. If coordination tasks checked, validate at least one valid task.
+9. If lead fields are editable, validate required lead/customer fields.
+
+Server-side validations:
+Repeat all critical validations on the server/API.
+Do not rely only on frontend validation.
+
+Creation flow must be transactional:
+1. Reload quote and approved quote version from DB.
+2. Validate quote version is approved and locked.
+3. Validate no deal exists for this source_quote_version_id.
+4. Resolve customer:
+   - If quote.customer_id exists, use it.
+   - If quote.lead_id exists, search customer by normalized phone.
+   - If customer exists, link to it.
+   - If no customer exists, create customer from edited lead details.
+5. Create deal:
+   - customer_id
+   - source_quote_id
+   - source_quote_version_id
+   - salesperson_user_id
+   - total_amount_including_vat
+   - amount_paid_including_vat
+   - payment_type
+   - installments_count
+   - invoice_name
+   - invoice_id_number
+   - invoice_email
+   - coordination_tasks_requested
+   - operation_notes
+   - copy party_snapshot from quote_versions
+   - copy items_snapshot from quote_versions
+   - copy totals_snapshot from quote_versions
+   - copy terms_snapshot from quote_versions
+   - copy notes_snapshot from quote_versions
+   - set snapshot_locked_at
+   - status = open
+6. If coordination_tasks_requested = true:
+   - Create one row in deal_coordination_tasks for each task.
+7. Redirect to deal details page.
+8. Show success message:
+   "העסקה נפתחה בהצלחה"
+
+Important snapshot rule:
+The deal details screen must show the deal snapshots from deals:
+- deals.party_snapshot
+- deals.items_snapshot
+- deals.totals_snapshot
+- deals.terms_snapshot
+- deals.notes_snapshot
+
+Do not show live quote/product/customer data as the source of truth for the deal.
+
+Error messages in Hebrew:
+- לא ניתן לפתוח עסקה מהצעה שלא אושרה
+- גרסת ההצעה אינה נעולה
+- כבר קיימת עסקה עבור גרסת הצעה זו
+- יש לבחור איש מכירות
+- יש להזין סכום ששולם
+- סכום ששולם לא יכול להיות גבוה מסך העסקה
+- יש לבחור סוג תשלום
+- באשראי יש להזין כמות תשלומים
+- במזומן או העברה בנקאית יש להזין פרטי חשבונית
+- יש להזין לפחות משימת תיאום אחת
+- יש למלא טקסט ואחראי לכל משימה
+
+UI requirements:
+- Full Hebrew RTL.
+- No English labels in the UI.
+- Keep the design simple and stable.
+- Do not change unrelated screens.
+- Do not break existing quote/deal logic.
+
+Definition of Done:
+- "פתח עסקה" opens the deal opening screen/modal.
+- Deal is not created until the form is submitted.
+- Customer details are read-only when existing customer.
+- Lead details are editable when quote is linked to lead.
+- Salesperson defaults to current user.
+- Total including VAT is displayed from quote snapshot.
+- Amount paid is saved.
+- Payment type logic works.
+- Invoice fields appear only when required.
+- Coordination tasks checkbox works.
+- Multiple coordination tasks can be added.
+- Deal is created from approved locked quote version only.
+- Deal snapshots are copied into deals.
+- Coordination tasks are saved in deal_coordination_tasks.
+- User is redirected to deal details after success.
+- All UI is Hebrew RTL.

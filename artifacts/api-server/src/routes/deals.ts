@@ -6,13 +6,13 @@ import {
   quotesTable,
   quoteVersionsTable,
   leadsTable,
+  dealCoordinationTasksTable,
 } from "@workspace/db/schema";
 import {
   isNull,
   eq,
   sql,
   and,
-  or,
   ilike,
   desc,
 } from "drizzle-orm";
@@ -21,6 +21,8 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בטיפול", "הושלמה", "בוטלה"];
+const VALID_PAYMENT_TYPES = ["cash", "credit_card", "bank_transfer"];
+const VALID_ASSIGNEE_ROLES = ["sales_manager", "office_manager"];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,23 +54,21 @@ async function generateCustomerNumber(): Promise<string> {
 }
 
 function mapPostgresError(err: unknown): string | null {
-  const e = err as Record<string, string>;
+  const e = err as Record<string, string> | null;
+  if (!e) return null;
   if (e.code === "23505") {
-    const detail = (e.detail ?? e.constraint ?? "").toLowerCase();
-    if (detail.includes("source_quote_version_id")) {
+    if (e.constraint?.includes("source_quote_version_id")) {
       return "כבר קיימת עסקה עבור גרסת הצעה זו";
     }
+    return "רשומה כפולה";
   }
   const msg = e.message ?? "";
-  if (
-    msg.includes("Deal can only be created from an approved quote version") ||
-    msg.includes("Approved quote version must be locked before creating a deal")
-  ) {
+  if (msg.includes("Deal can only be created from an approved quote version") ||
+      msg.includes("Approved quote version must be locked")) {
     return "לא ניתן לפתוח עסקה מהצעה שלא אושרה";
   }
-  if (msg.includes("Deal snapshots and source quote reference cannot be modified after creation")) {
-    logger.error({ err }, "Unexpected snapshot protection trigger hit");
-    return "שגיאה בעדכון נתוני העסקה — הנתונים מוגנים";
+  if (msg.includes("Deal snapshots and source quote reference cannot be modified")) {
+    return "לא ניתן לשנות נתוני עסקה לאחר יצירתה";
   }
   return null;
 }
@@ -76,29 +76,27 @@ function mapPostgresError(err: unknown): string | null {
 // ── GET /deals ────────────────────────────────────────────────────────────────
 
 router.get("/deals", async (req: Request, res: Response): Promise<void> => {
-  const page = Math.max(1, parseInt(req.query["page"] as string) || 1);
-  const pageSize = 50;
-  const offset = (page - 1) * pageSize;
-  const search = typeof req.query["search"] === "string" ? req.query["search"].trim() : "";
-  const executionStatusFilter =
-    typeof req.query["execution_status"] === "string" ? req.query["execution_status"].trim() : "";
-  const sourceVersionId =
-    typeof req.query["source_quote_version_id"] === "string"
-      ? req.query["source_quote_version_id"].trim()
-      : "";
-
   try {
+    const page = Math.max(1, parseInt(String(req.query["page"] ?? "1"), 10));
+    const pageSize = 50;
+    const offset = (page - 1) * pageSize;
+    const search = String(req.query["search"] ?? "").trim();
+    const executionStatus = String(req.query["execution_status"] ?? "").trim();
+
     const baseConditions = [isNull(dealsTable.deleted_at)];
-    if (executionStatusFilter) baseConditions.push(eq(dealsTable.execution_status, executionStatusFilter));
-    if (sourceVersionId) baseConditions.push(eq(dealsTable.source_quote_version_id, sourceVersionId));
+
     if (search) {
       baseConditions.push(
-        or(
-          ilike(dealsTable.deal_number, `%${search}%`),
-          ilike(customersTable.name, `%${search}%`),
-          ilike(quotesTable.quote_number, `%${search}%`)
-        )!
+        sql`(
+          ${dealsTable.deal_number} ILIKE ${"%" + search + "%"}
+          OR ${customersTable.name} ILIKE ${"%" + search + "%"}
+          OR ${quotesTable.quote_number} ILIKE ${"%" + search + "%"}
+        )` as ReturnType<typeof isNull>
       );
+    }
+
+    if (executionStatus) {
+      baseConditions.push(eq(dealsTable.execution_status, executionStatus) as ReturnType<typeof isNull>);
     }
 
     const baseQuery = db
@@ -107,6 +105,7 @@ router.get("/deals", async (req: Request, res: Response): Promise<void> => {
         deal_number: dealsTable.deal_number,
         customer_name: customersTable.name,
         total_amount: dealsTable.total_amount,
+        total_amount_including_vat: dealsTable.total_amount_including_vat,
         execution_status: dealsTable.execution_status,
         payment_status: dealsTable.payment_status,
         source_quote_version_id: dealsTable.source_quote_version_id,
@@ -186,13 +185,22 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
         quote_id: dealsTable.quote_id,
         customer_id: dealsTable.customer_id,
         lead_id: dealsTable.lead_id,
+        salesperson_user_id: dealsTable.salesperson_user_id,
         payment_status: dealsTable.payment_status,
         execution_status: dealsTable.execution_status,
         purchase_date: dealsTable.purchase_date,
         next_payment_date: dealsTable.next_payment_date,
         total_amount: dealsTable.total_amount,
+        total_amount_including_vat: dealsTable.total_amount_including_vat,
         paid_amount: dealsTable.paid_amount,
+        amount_paid_including_vat: dealsTable.amount_paid_including_vat,
         remaining_amount: dealsTable.remaining_amount,
+        payment_type: dealsTable.payment_type,
+        installments_count: dealsTable.installments_count,
+        invoice_name: dealsTable.invoice_name,
+        invoice_id_number: dealsTable.invoice_id_number,
+        invoice_email: dealsTable.invoice_email,
+        coordination_tasks_requested: dealsTable.coordination_tasks_requested,
         quote_link: dealsTable.quote_link,
         what_is_included: dealsTable.what_is_included,
         special_notes: dealsTable.special_notes,
@@ -233,25 +241,120 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
       version_number = vRows[0]?.version_number ?? null;
     }
 
-    res.json({ ...deal, version_number });
+    // Load coordination tasks if applicable
+    const coordTasks = deal.coordination_tasks_requested
+      ? await db
+          .select()
+          .from(dealCoordinationTasksTable)
+          .where(eq(dealCoordinationTasksTable.deal_id, id))
+          .orderBy(dealCoordinationTasksTable.created_at)
+      : [];
+
+    res.json({ ...deal, version_number, coordination_tasks: coordTasks });
   } catch (err) {
     logger.error({ err }, "GET /deals/:id error");
-    res.status(500).json({ error: "שגיאה בטעינת פרטי העסקה" });
+    res.status(500).json({ error: "שגיאה בטעינת העסקה" });
   }
 });
 
 // ── POST /deals ───────────────────────────────────────────────────────────────
 
-router.post("/deals", async (req: Request, res: Response): Promise<void> => {
-  const { source_quote_version_id } = req.body as Record<string, string>;
+interface CoordinationTaskInput {
+  task_text: string;
+  assignee_role: string;
+}
 
+interface OpenDealBody {
+  source_quote_version_id: string;
+  salesperson_user_id: string;
+  amount_paid_including_vat: string | number;
+  payment_type: string;
+  installments_count?: string | number | null;
+  invoice_name?: string;
+  invoice_id_number?: string;
+  invoice_email?: string;
+  coordination_tasks_requested?: boolean;
+  coordination_tasks?: CoordinationTaskInput[];
+  operation_notes?: string;
+  // Lead editable fields
+  lead_name?: string;
+  lead_phone?: string;
+  lead_email?: string;
+  lead_tax_id?: string;
+}
+
+router.post("/deals", async (req: Request, res: Response): Promise<void> => {
+  const body = req.body as OpenDealBody;
+  const {
+    source_quote_version_id,
+    salesperson_user_id,
+    payment_type,
+    coordination_tasks_requested = false,
+    coordination_tasks = [],
+    operation_notes,
+    lead_name,
+    lead_phone,
+    lead_email,
+    lead_tax_id,
+  } = body;
+
+  const amount_paid_including_vat = Number(body.amount_paid_including_vat ?? 0);
+  const installments_count = body.installments_count ? Number(body.installments_count) : null;
+  const invoice_name = body.invoice_name?.trim() ?? null;
+  const invoice_id_number = body.invoice_id_number?.trim() ?? null;
+  const invoice_email = body.invoice_email?.trim() ?? null;
+
+  // ── Server-side validation ─────────────────────────────────────────────────
   if (!source_quote_version_id) {
     res.status(400).json({ error: "חובה לציין גרסת הצעת מחיר" });
     return;
   }
+  if (!salesperson_user_id) {
+    res.status(400).json({ error: "יש לבחור איש מכירות" });
+    return;
+  }
+  if (isNaN(amount_paid_including_vat) || amount_paid_including_vat < 0) {
+    res.status(400).json({ error: "יש להזין סכום ששולם תקין" });
+    return;
+  }
+  if (!payment_type || !VALID_PAYMENT_TYPES.includes(payment_type)) {
+    res.status(400).json({ error: "יש לבחור סוג תשלום" });
+    return;
+  }
+  if (payment_type === "credit_card") {
+    if (!installments_count || installments_count < 1 || !Number.isInteger(installments_count)) {
+      res.status(400).json({ error: "באשראי יש להזין כמות תשלומים" });
+      return;
+    }
+  } else {
+    if (!invoice_name) {
+      res.status(400).json({ error: "במזומן או העברה בנקאית יש להזין פרטי חשבונית" });
+      return;
+    }
+    if (!invoice_id_number) {
+      res.status(400).json({ error: "במזומן או העברה בנקאית יש להזין פרטי חשבונית" });
+      return;
+    }
+    if (!invoice_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoice_email)) {
+      res.status(400).json({ error: "יש להזין מייל תקין לשליחת חשבונית" });
+      return;
+    }
+  }
+  if (coordination_tasks_requested) {
+    if (!Array.isArray(coordination_tasks) || coordination_tasks.length === 0) {
+      res.status(400).json({ error: "יש להזין לפחות משימת תיאום אחת" });
+      return;
+    }
+    for (const t of coordination_tasks) {
+      if (!t.task_text?.trim() || !t.assignee_role || !VALID_ASSIGNEE_ROLES.includes(t.assignee_role)) {
+        res.status(400).json({ error: "יש למלא טקסט ואחראי לכל משימה" });
+        return;
+      }
+    }
+  }
 
   try {
-    // 1. Get the quote version
+    // 1. Load + validate quote version
     const vRows = await db
       .select()
       .from(quoteVersionsTable)
@@ -264,17 +367,27 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     }
     const version = vRows[0];
 
-    // 2. UI-level validation
     if (version.status !== "approved") {
       res.status(400).json({ error: "לא ניתן לפתוח עסקה מהצעה שלא אושרה" });
       return;
     }
     if (!version.locked_at) {
-      res.status(400).json({ error: "לא ניתן לפתוח עסקה מהצעה שלא אושרה" });
+      res.status(400).json({ error: "גרסת ההצעה אינה נעולה" });
       return;
     }
 
-    // 3. Get the parent quote
+    // 2. Check no existing deal
+    const existingDeal = await db
+      .select({ id: dealsTable.id })
+      .from(dealsTable)
+      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.source_quote_version_id, source_quote_version_id)))
+      .limit(1);
+    if (existingDeal.length > 0) {
+      res.status(409).json({ error: "כבר קיימת עסקה עבור גרסת הצעה זו" });
+      return;
+    }
+
+    // 3. Load parent quote
     const qRows = await db
       .select()
       .from(quotesTable)
@@ -287,11 +400,20 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     }
     const quote = qRows[0];
 
-    // 4. Resolve customer_id
+    // 4. total_amount_including_vat from snapshot
+    const totalsSnap = version.totals_snapshot as Record<string, number> | null;
+    const total_amount_including_vat = totalsSnap?.total_with_vat ?? 0;
+
+    if (amount_paid_including_vat > total_amount_including_vat) {
+      res.status(400).json({ error: "סכום ששולם לא יכול להיות גבוה מסך העסקה" });
+      return;
+    }
+
+    // 5. Resolve customer_id (with optional lead field overrides)
     let customer_id: string | null = quote.customer_id ?? null;
 
     if (!customer_id && quote.lead_id) {
-      // Try to find customer linked to this lead
+      // Try by lead_id
       const byLead = await db
         .select({ id: customersTable.id })
         .from(customersTable)
@@ -301,11 +423,11 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       if (byLead.length > 0) {
         customer_id = byLead[0].id;
       } else {
-        // Try phone lookup from party_snapshot
+        // Try phone lookup
         const snap = version.party_snapshot as Record<string, string> | null;
-        const rawPhone = snap?.normalized_phone ?? snap?.phone ?? "";
-        if (rawPhone) {
-          const localDigits = rawPhone.replace(/\D/g, "").slice(-9);
+        const phoneForLookup = lead_phone ?? snap?.normalized_phone ?? snap?.phone ?? "";
+        if (phoneForLookup) {
+          const localDigits = phoneForLookup.replace(/\D/g, "").slice(-9);
           const byPhone = await db
             .select({ id: customersTable.id })
             .from(customersTable)
@@ -316,7 +438,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
           }
         }
 
-        // Still no customer — create from lead data
+        // Create customer from lead data (possibly with user-edited fields)
         if (!customer_id) {
           const lRows = await db
             .select()
@@ -331,9 +453,10 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
               .insert(customersTable)
               .values({
                 customer_number: custNum,
-                name: lead.name ?? "לקוח חדש",
-                phone: lead.phone ?? null,
-                email: lead.email ?? null,
+                name: lead_name?.trim() || lead.name || "לקוח חדש",
+                phone: lead_phone?.trim() || lead.phone || null,
+                email: lead_email?.trim() || lead.email || null,
+                tax_id: lead_tax_id?.trim() || null,
                 lead_id: lead.id,
               })
               .returning({ id: customersTable.id });
@@ -348,27 +471,49 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 5. Generate deal_number
+    // 6. Generate deal_number
     const deal_number = await generateDealNumber();
 
-    // 6. total_amount from snapshot
-    const totalsSnap = version.totals_snapshot as Record<string, number> | null;
-    const total_amount = String(totalsSnap?.total_with_vat ?? 0);
-
-    // 7. INSERT — trigger fills quote_id and all 5 snapshot columns
+    // 7. INSERT deal — trigger fills quote_id and snapshots
     const inserted = await db
       .insert(dealsTable)
       .values({
         deal_number,
         customer_id,
         source_quote_version_id,
+        salesperson_user_id: salesperson_user_id || null,
         execution_status: "פתוחה",
-        total_amount,
-        paid_amount: "0",
+        total_amount: String(total_amount_including_vat),
+        total_amount_including_vat: String(total_amount_including_vat),
+        paid_amount: String(amount_paid_including_vat),
+        amount_paid_including_vat: String(amount_paid_including_vat),
+        payment_type,
+        installments_count: payment_type === "credit_card" ? installments_count : null,
+        invoice_name: payment_type !== "credit_card" ? invoice_name : null,
+        invoice_id_number: payment_type !== "credit_card" ? invoice_id_number : null,
+        invoice_email: payment_type !== "credit_card" ? invoice_email : null,
+        coordination_tasks_requested,
+        special_notes: operation_notes?.trim() || null,
+        payment_status: "ממתינה לתשלום",
       })
       .returning({ id: dealsTable.id, deal_number: dealsTable.deal_number });
 
-    res.status(201).json({ id: inserted[0]?.id, deal_number: inserted[0]?.deal_number });
+    const newDealId = inserted[0]?.id;
+    const newDealNumber = inserted[0]?.deal_number;
+
+    // 8. Create coordination tasks
+    if (coordination_tasks_requested && coordination_tasks.length > 0 && newDealId) {
+      await db.insert(dealCoordinationTasksTable).values(
+        coordination_tasks.map((t) => ({
+          deal_id: newDealId,
+          task_text: t.task_text.trim(),
+          assignee_role: t.assignee_role,
+          status: "open",
+        }))
+      );
+    }
+
+    res.status(201).json({ id: newDealId, deal_number: newDealNumber });
   } catch (err) {
     logger.error({ err }, "POST /deals error");
     const mapped = mapPostgresError(err);

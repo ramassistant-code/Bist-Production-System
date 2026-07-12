@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, numeric, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, numeric, timestamp, jsonb, boolean, integer } from "drizzle-orm/pg-core";
 
 export const dealsTable = pgTable("deals", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -7,13 +7,22 @@ export const dealsTable = pgTable("deals", {
   customer_id: uuid("customer_id"),
   lead_id: uuid("lead_id"),
   salesperson_id: uuid("salesperson_id"),
+  salesperson_user_id: uuid("salesperson_user_id"),
   payment_status: text("payment_status"),
   execution_status: text("execution_status").notNull().default("פתוחה"),
   purchase_date: text("purchase_date"),
   next_payment_date: text("next_payment_date"),
   total_amount: numeric("total_amount"),
+  total_amount_including_vat: numeric("total_amount_including_vat"),
   paid_amount: numeric("paid_amount"),
+  amount_paid_including_vat: numeric("amount_paid_including_vat"),
   remaining_amount: numeric("remaining_amount"),
+  payment_type: text("payment_type"),
+  installments_count: integer("installments_count"),
+  invoice_name: text("invoice_name"),
+  invoice_id_number: text("invoice_id_number"),
+  invoice_email: text("invoice_email"),
+  coordination_tasks_requested: boolean("coordination_tasks_requested").default(false),
   quote_link: text("quote_link"),
   what_is_included: text("what_is_included"),
   special_notes: text("special_notes"),
