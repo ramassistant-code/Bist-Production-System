@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Copy, Plus, AlertCircle, CheckCircle, XCircle, Send } from "lucide-react";
+import { ChevronRight, Copy, Plus, AlertCircle, CheckCircle, XCircle, Send, Handshake } from "lucide-react";
 import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,6 +171,22 @@ export default function QuotesDetail() {
     },
   });
 
+  const openDealMutation = useMutation({
+    mutationFn: () =>
+      customFetch<{ id: string; deal_number: string }>(`/api/deals`, {
+        method: "POST",
+        body: JSON.stringify({ source_quote_version_id: data?.currentVersion?.id }),
+      }),
+    onSuccess: (result) => {
+      toast({ title: `עסקה ${result.deal_number} נפתחה בהצלחה` });
+      queryClient.invalidateQueries({ queryKey: ["deal-check", data?.currentVersion?.id] });
+      navigate(`/deals/${result.id}`);
+    },
+    onError: (err: Error & { data?: { error?: string } }) => {
+      toast({ title: err?.data?.error ?? "שגיאה בפתיחת עסקה", variant: "destructive" });
+    },
+  });
+
   if (isLoading) {
     return (
       <Shell title="הצעת מחיר">
@@ -204,6 +220,19 @@ export default function QuotesDetail() {
   const isLocked = !!ver?.locked_at;
   const isDraft = vStatus === "draft" && !isLocked;
   const partyName = party?.business_name || party?.contact_name || quote.customer_name || quote.lead_name || "—";
+
+  const isApprovedAndLocked = vStatus === "approved" && isLocked && !!ver?.id;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { data: dealCheck } = useQuery<{ exists: boolean; deal_id?: string }>({
+    queryKey: ["deal-check", ver?.id],
+    queryFn: () => customFetch<{ exists: boolean; deal_id?: string }>(`/api/deals/check-version/${ver!.id}`),
+    enabled: isApprovedAndLocked,
+    staleTime: 0,
+  });
+
+  const canOpenDeal = isApprovedAndLocked && !dealCheck?.exists;
+  const dealAlreadyExists = isApprovedAndLocked && dealCheck?.exists;
 
   return (
     <Shell title={`הצעה ${quote.quote_number}`}>
@@ -249,6 +278,29 @@ export default function QuotesDetail() {
               <Button size="sm" variant="outline" onClick={() => navigate(`/quotes/${id}/duplicate`)}>
                 <Copy className="w-3.5 h-3.5 ml-1" />הצעה חדשה מזו
               </Button>
+              {canOpenDeal && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => openDealMutation.mutate()}
+                  disabled={openDealMutation.isPending}
+                >
+                  <Handshake className="w-3.5 h-3.5 ml-1" />
+                  {openDealMutation.isPending ? "פותח עסקה..." : "פתח עסקה"}
+                </Button>
+              )}
+              {dealAlreadyExists && dealCheck?.deal_id && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-green-700 border-green-200 hover:bg-green-50"
+                  onClick={() => navigate(`/deals/${dealCheck.deal_id}`)}
+                >
+                  <Handshake className="w-3.5 h-3.5 ml-1" />
+                  צפה בעסקה
+                </Button>
+              )}
             </div>
           </div>
 

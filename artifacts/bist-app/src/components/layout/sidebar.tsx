@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Box, Layers, FileSignature, Video, CheckSquare, Settings, Target } from "lucide-react";
+import { LayoutDashboard, Users, Box, Layers, FileSignature, Video, CheckSquare, Settings, Target, Handshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { name: "מוצרים", href: "/products", icon: Box },
   { name: "רכיבים", href: "/components", icon: Layers },
   { name: "הצעות מחיר", href: "/quotes", icon: FileSignature },
+  { name: "עסקאות", href: "/deals", icon: Handshake },
   { name: "הפקה", href: "/production", icon: Video },
   { name: "משימות", href: "/tasks", icon: CheckSquare },
   { name: "הגדרות", href: "/settings", icon: Settings },
@@ -25,7 +26,10 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 py-6 px-3 space-y-1">
         {NAV_ITEMS.map((item) => {
-          const isActive = location === item.href;
+          const isActive =
+            item.href === "/"
+              ? location === "/"
+              : location === item.href || location.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}

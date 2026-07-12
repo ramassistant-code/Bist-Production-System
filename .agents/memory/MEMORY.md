@@ -12,3 +12,5 @@
 - [Quotes module architecture](quotes-module.md) — snapshot-based versioning; schema is Supabase-locked (no DDL); key type and runtime gotchas for quotes routes.
 - [Auth architecture](auth-architecture.md) — Supabase Auth email/password; VITE_ vars via vite.config.ts define; /api/auth/me verifies JWT + app_users active check; seed script for first login.
 - [lib/db build requirement](lib-db-build.md) — after adding a new schema file, must run `pnpm tsc --build --force` in lib/db before api-server typecheck sees the new exports.
+- [Deals module architecture](deals-module.md) — DB triggers, Hebrew enum values, snapshot pattern, lead→customer resolution, error mapping for deal creation.
+- [pino logger pattern](pino-logger.md) — always use `logger.error({ err }, "message")` not `logger.error("message", err)`; object-first is pino's format, string-second fails typecheck.

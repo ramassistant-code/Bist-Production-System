@@ -1,0 +1,38 @@
+import { pgTable, text, uuid, numeric, timestamp, jsonb } from "drizzle-orm/pg-core";
+
+export const dealsTable = pgTable("deals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deal_number: text("deal_number").notNull(),
+  quote_id: uuid("quote_id"),
+  customer_id: uuid("customer_id"),
+  lead_id: uuid("lead_id"),
+  salesperson_id: uuid("salesperson_id"),
+  payment_status: text("payment_status"),
+  execution_status: text("execution_status").notNull().default("פתוחה"),
+  purchase_date: text("purchase_date"),
+  next_payment_date: text("next_payment_date"),
+  total_amount: numeric("total_amount"),
+  paid_amount: numeric("paid_amount"),
+  remaining_amount: numeric("remaining_amount"),
+  quote_link: text("quote_link"),
+  what_is_included: text("what_is_included"),
+  special_notes: text("special_notes"),
+  studio_hours_remaining: numeric("studio_hours_remaining"),
+  editing_tasks_remaining: numeric("editing_tasks_remaining"),
+  monday_board_id: text("monday_board_id"),
+  monday_item_id: text("monday_item_id"),
+  monday_group_id: text("monday_group_id"),
+  monday_raw_data: jsonb("monday_raw_data"),
+  source_quote_version_id: uuid("source_quote_version_id"),
+  party_snapshot: jsonb("party_snapshot"),
+  items_snapshot: jsonb("items_snapshot"),
+  totals_snapshot: jsonb("totals_snapshot"),
+  terms_snapshot: jsonb("terms_snapshot"),
+  notes_snapshot: jsonb("notes_snapshot"),
+  snapshot_locked_at: timestamp("snapshot_locked_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deleted_at: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export type Deal = typeof dealsTable.$inferSelect;

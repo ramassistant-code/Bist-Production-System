@@ -13,6 +13,8 @@ import Components from "@/pages/components";
 import Quotes from "@/pages/quotes";
 import QuotesNew from "@/pages/quotes-new";
 import QuotesDetail from "@/pages/quotes-detail";
+import Deals from "@/pages/deals";
+import DealsDetail from "@/pages/deals-detail";
 import Production from "@/pages/production";
 import Tasks from "@/pages/tasks";
 import Settings from "@/pages/settings";
@@ -62,6 +64,8 @@ function Router() {
       </Route>
       <Route path="/quotes/:id" component={QuotesDetail} />
       <Route path="/quotes" component={Quotes} />
+      <Route path="/deals/:id" component={DealsDetail} />
+      <Route path="/deals" component={Deals} />
       <Route path="/production" component={Production} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/settings" component={Settings} />

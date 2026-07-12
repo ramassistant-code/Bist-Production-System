@@ -1,0 +1,78 @@
+Continue the BIST Production System project.
+
+Before writing code:
+1. Read replit.md and docs/quotes-module.md in full.
+2. Follow all project rules from replit.md.
+3. Keep the entire UI Hebrew RTL.
+4. Do not redesign the whole app.
+5. Do not rebuild customers, leads, products, components, or quote screens.
+6. Do not recreate quote_versions or deals — both already exist.
+7. In this phase, implement only the Deals module / מסך עסקאות.
+
+The database schema for this module is ALREADY in place — do not run any migration or ALTER on deals. Verify (do not recreate) the following before writing code:
+- deals already has 1,546 rows (Monday.com import), all with source_quote_version_id = NULL today.
+- deals columns include: id, deal_number, quote_id, customer_id, lead_id, salesperson_id, payment_status (enum deal_payment_status), execution_status (enum deal_execution_status, now 5 values: פתוחה / ממתינה לתיאום / בטיפול / הושלמה / בוטלה), purchase_date, next_payment_date, total_amount, paid_amount, remaining_amount, quote_link, what_is_included, special_notes, studio_hours_remaining, editing_tasks_remaining, monday_* fields, created_at, updated_at, deleted_at — PLUS these already-added columns: source_quote_version_id (uuid, unique, FK to quote_versions.id), party_snapshot, items_snapshot, totals_snapshot, terms_snapshot, notes_snapshot (all jsonb, nullable), snapshot_locked_at (timestamptz, nullable).
+- Two triggers already exist on deals and do the heavy lifting — build your code around them, do not duplicate their logic in application code:
+  - trg_populate_deal_snapshots_from_quote_version (BEFORE INSERT): if you insert a deals row with source_quote_version_id set, it automatically validates that quote_versions.status = 'approved' and locked_at is not null (raising a Postgres exception otherwise), then copies quote_id, party_snapshot, items_snapshot, totals_snapshot, terms_snapshot, notes_snapshot from that quote_versions row, and sets snapshot_locked_at. If you leave source_quote_version_id NULL, the row passes through untouched (this is how legacy/import-style deals keep working).
+  - trg_protect_deal_snapshots (BEFORE UPDATE): once a deal has a non-null source_quote_version_id, it blocks any UPDATE that changes quote_id, source_quote_version_id, or any of the 5 snapshot columns, raising a Postgres exception. Your edit UI must never attempt to change those fields on a quote-based deal.
+- There is a unique index on source_quote_version_id (partial, excludes NULLs) — inserting a second deal with the same source_quote_version_id raises a Postgres unique-violation.
+- deals does NOT have a source_quote_id column (reuse quote_id) and does NOT have an operation_notes column (reuse special_notes for internal/operations notes).
+
+Error handling — catch these specific Postgres errors from the trigger/constraint and map them to Hebrew messages, instead of showing a raw DB error:
+- unique_violation on the source_quote_version_id index → "כבר קיימת עסקה עבור גרסת הצעה זו"
+- exception text "Deal can only be created from an approved quote version" or "Approved quote version must be locked before creating a deal" → "לא ניתן לפתוח עסקה מהצעה שלא אושרה"
+- exception text "Deal snapshots and source quote reference cannot be modified after creation" → should never be reachable from the UI, but if it is, show a generic Hebrew error and log it
+
+Business rules:
+- A deal is created only from an approved (status = approved, locked) quote version — enforced by the DB trigger, but validate it in the UI too before attempting insert, for a good user experience.
+- If the approved quote is linked to a lead (not a customer): resolve/create a customers row by normalized phone (same logic as the quotes wizard) before creating the deal, and pass that customer_id explicitly when inserting the deal row — the trigger does not do this part, your app code must. Never create a deal with only lead_id and no customer_id — matches the existing data, where all 1,546 deals already have customer_id set.
+- If the quote already has customer_id, use it directly.
+
+1. Deals list screen — route /deals
+Show ALL deals — both the 1,546 legacy Monday-imported deals (source_quote_version_id is null) and new quote-based deals — in the same Hebrew RTL table:
+- מספר עסקה, שם לקוח, מקור (הצעת מחיר / ייבוא היסטורי — derive from whether source_quote_version_id is set), סכום עסקה (total_amount), סטטוס (execution_status — show its real Hebrew value directly), תאריך פתיחה (created_at), תאריך עדכון אחרון (updated_at), פעולות.
+Actions: צפייה, עריכת סטטוס, פתיחת עסקה מתוך הצעת מחיר מאושרת, חיפוש לפי שם לקוח/מספר עסקה/מספר הצעה, סינון לפי סטטוס (execution_status), סינון לפי תאריך.
+
+2. Deal details screen — route /deals/:id
+- If items_snapshot is not null (deal created from a quote): show party/items/totals/terms/notes from the snapshot columns, plus the source quote number and quote version number (via quote_id / source_quote_version_id).
+- If items_snapshot is null (legacy deal): show the existing flat fields instead — what_is_included, special_notes, total_amount/paid_amount/remaining_amount, studio_hours_remaining, editing_tasks_remaining. Do not show empty "סל מוצרים"/"רכיבים" sections for legacy deals — hide them or show "אין נתוני הצעת מקור" instead.
+- Always show payment_status and execution_status (their real Hebrew enum values), and dates.
+
+3. Create deal from approved quote — action "פתח עסקה" on the quote details screen
+Show the button only when the quote has an approved+locked current quote version, and no deal exists yet for it (query by source_quote_version_id).
+On submit: resolve customer_id (see business rules), generate deal_number, then INSERT into deals with customer_id, deal_number, source_quote_version_id, execution_status = 'פתוחה', total_amount = the snapshot's total-with-VAT figure, paid_amount = 0, remaining_amount = total_amount — leave quote_id and the 5 snapshot columns unset, the trigger fills them in. Catch and translate errors per the error handling section above. On success, redirect to the deal details screen and show: "העסקה נפתחה בהצלחה".
+
+4. Deal editing
+Allow editing only: execution_status, payment_status, special_notes (used as the internal/operations note field).
+Never attempt to edit quote_id, source_quote_version_id, or the 5 snapshot columns for any deal — the DB trigger blocks it anyway, but don't even expose those fields as editable in the UI.
+If the user needs different pricing/products for a quote-based deal: they must create a new quote version, approve it, and open a new deal from it.
+
+5. Deal status behavior (execution_status)
+When set to הושלמה: just update execution_status and updated_at (no separate completed_at column exists).
+When set to בוטלה: require the user to enter a note first, store it in special_notes, then update execution_status.
+Use the existing 5 execution_status values only — do not invent a separate status column.
+
+6. UI requirements
+All UI Hebrew RTL, matching existing conventions (/quotes, docs/quotes-module.md). Do not use English labels in the interface.
+
+7. Do not implement yet
+Invoices, receipts, advanced scheduling, production task automation, PDF generation, sending emails/WhatsApp, advanced permissions, and do not build new payment/credit screens (payments and credits tables already exist and already link to deals via deal_id — leave them alone in this phase).
+
+8. Definition of Done
+- /deals works and shows all 1,546 existing deals plus any new ones, without errors.
+- /deals/:id works for both legacy and quote-based deals.
+- A deal can be created from an approved quote version; cannot be created from an unapproved one (DB trigger enforces this — verify the Hebrew error shows correctly); cannot be duplicated for the same quote version (unique index — verify the Hebrew error shows correctly).
+- Lead-linked approved quotes get converted/linked to a customer before deal creation.
+- New deal snapshots are populated correctly (via the existing trigger — verify, don't reimplement).
+- execution_status/payment_status can be updated using the existing enums.
+- No existing deals/payments/credits data was altered or lost (deals count is still 1,546 + any new ones you create while testing).
+- No schema changes were made by you — only application code.
+- All UI is Hebrew RTL. No English UI text.
+- Existing customers/leads/products/components/quotes screens are not broken.
+- App runs without build/type errors.
+
+After finishing:
+1. Run the app and check for TypeScript/build errors, fix all of them.
+2. Report: what was built, files changed, how to test it, and confirm the deals row count is unchanged plus any test rows you added.
+3. Commit with message: "Implement deals module"
+4. Push to the existing GitHub repository: Bist-Production-System
