@@ -33,6 +33,17 @@ function localPhoneDigits(raw: string): string {
   return digits;
 }
 
+/** Maps English internal status → Hebrew quote_status enum value (for quotes table only).
+ *  quote_versions.status is plain text and keeps English values. */
+const QUOTE_STATUS_HE: Record<string, string> = {
+  "draft":     "טיוטה",
+  "sent":      "נשלחה ללקוח",
+  "approved":  "נחתמה",
+  "rejected":  "נדחתה",
+  "expired":   "פג תוקף",
+  "cancelled": "בוטלה",
+};
+
 async function generateQuoteNumber(): Promise<string> {
   const result = await db.execute(sql`
     SELECT COALESCE(MAX(
@@ -372,7 +383,7 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
       customer_notes: body.customer_notes ?? null,
       operation_notes: body.operation_notes ?? null,
       internal_notes: body.internal_notes ?? null,
-      status: body.send_immediately ? "sent" : "draft",
+      status: body.send_immediately ? QUOTE_STATUS_HE["sent"] : QUOTE_STATUS_HE["draft"],
     }).returning();
 
     const [insertedVersion] = await db.insert(quoteVersionsTable).values({
@@ -452,7 +463,7 @@ router.patch("/quotes/:id/status", async (req: Request, res: Response): Promise<
     const quoteId = String(req.params["id"]);
     const { status, version_id } = req.body as { status: string; version_id?: string };
 
-    const validStatuses = ["draft", "sent", "approved", "rejected", "expired", "cancelled"];
+    const validStatuses = Object.keys(QUOTE_STATUS_HE);
     if (!validStatuses.includes(status)) {
       res.status(400).json({ error: "סטטוס לא תקין" });
       return;
@@ -501,7 +512,7 @@ router.patch("/quotes/:id/status", async (req: Request, res: Response): Promise<
       .where(eq(quoteVersionsTable.id, targetVersionId));
 
     await db.update(quotesTable)
-      .set({ status, updated_at: now })
+      .set({ status: QUOTE_STATUS_HE[status] ?? status, updated_at: now })
       .where(eq(quotesTable.id, quoteId));
 
     res.json({ success: true, status });
@@ -549,7 +560,7 @@ router.post("/quotes/:id/new-version", async (req: Request, res: Response): Prom
     }).returning();
 
     await db.update(quotesTable)
-      .set({ current_version_id: newVersion.id, status: "draft", updated_at: new Date() })
+      .set({ current_version_id: newVersion.id, status: QUOTE_STATUS_HE["draft"], updated_at: new Date() })
       .where(eq(quotesTable.id, quoteId));
 
     res.status(201).json({ version: newVersion });
@@ -678,7 +689,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
       customer_id: newCustomerId,
       lead_id: newLeadId,
       discount_amount: sourceQuote.discount_amount,
-      status: "draft",
+      status: QUOTE_STATUS_HE["draft"],
     }).returning();
 
     // Note source in notes_snapshot

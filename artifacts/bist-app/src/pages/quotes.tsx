@@ -27,13 +27,28 @@ interface QuoteListItem {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  draft: "טיוטה", sent: "נשלחה", approved: "אושרה",
+  draft: "טיוטה", sent: "נשלחה ללקוח", approved: "נחתמה",
   rejected: "נדחתה", expired: "פג תוקף", cancelled: "בוטלה",
+  "טיוטה": "טיוטה", "נשלחה ללקוח": "נשלחה ללקוח", "נחתמה": "נחתמה",
+  "נדחתה": "נדחתה", "פג תוקף": "פג תוקף", "בוטלה": "בוטלה",
+  "מוכנה לשליחה": "מוכנה לשליחה", "נצפתה": "נצפתה", "ממתינה לחתימה": "ממתינה לחתימה",
 };
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   draft: "secondary", sent: "default", approved: "default",
   rejected: "destructive", expired: "outline", cancelled: "destructive",
+  "טיוטה": "secondary", "נשלחה ללקוח": "default", "נחתמה": "default",
+  "נדחתה": "destructive", "פג תוקף": "outline", "בוטלה": "destructive",
+  "מוכנה לשליחה": "secondary", "נצפתה": "secondary", "ממתינה לחתימה": "secondary",
 };
+
+const QUOTE_STATUS_FILTER = [
+  { value: "טיוטה", label: "טיוטה" },
+  { value: "נשלחה ללקוח", label: "נשלחה ללקוח" },
+  { value: "נחתמה", label: "נחתמה" },
+  { value: "נדחתה", label: "נדחתה" },
+  { value: "פג תוקף", label: "פג תוקף" },
+  { value: "בוטלה", label: "בוטלה" },
+];
 
 function formatDate(val: string | null | undefined) {
   if (!val) return "—";
@@ -91,7 +106,7 @@ export default function Quotes() {
               <select className="border rounded-md px-3 py-2 text-sm bg-background" value={apiStatus}
                 onChange={(e) => { setApiStatus(e.target.value); setPage(0); }} dir="rtl">
                 <option value="">כל הסטטוסים</option>
-                {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {QUOTE_STATUS_FILTER.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-3">

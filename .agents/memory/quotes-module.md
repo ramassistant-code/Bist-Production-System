@@ -12,6 +12,17 @@ description: Snapshot-based versioning system for quotes; Supabase-locked schema
 ## Status flow
 טיוטה → נשלחה → מאושרת / נדחתה / בוטלה
 
+## Critical: quote_status enum values are HEBREW
+The Supabase `quotes.status` column is a PostgreSQL enum `quote_status` with Hebrew values:
+- `"טיוטה"` (draft), `"נשלחה ללקוח"` (sent), `"נחתמה"` (approved/signed)
+- `"נדחתה"` (rejected), `"פג תוקף"` (expired), `"בוטלה"` (cancelled)
+- Also: `"מוכנה לשליחה"`, `"נצפתה"`, `"ממתינה לחתימה"`
+
+`quote_versions.status` is plain TEXT — English values (`"draft"`, `"sent"`, etc.) are fine.
+
+Use `QUOTE_STATUS_HE` mapping in the API to convert English → Hebrew before writing to `quotesTable`.
+Verified via Supabase OpenAPI introspection: `GET ${SUPABASE_URL}/rest/v1/` → `definitions.quotes.properties.status.enum`.
+
 ## Key runtime gotchas
 - `db.execute(sql\`...\`)` returns `{ rows: [...] }` — use `result.rows` for the array
 - Drizzle `.set({})` requires explicit typed object for conditional updates (not `Record<string,unknown>` cast)
