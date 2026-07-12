@@ -365,7 +365,6 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         execution_status: "פתוחה",
         total_amount,
         paid_amount: "0",
-        remaining_amount: total_amount,
       })
       .returning({ id: dealsTable.id, deal_number: dealsTable.deal_number });
 
