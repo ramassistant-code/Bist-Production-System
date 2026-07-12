@@ -9,6 +9,8 @@ import Customers from "@/pages/customers";
 import Products from "@/pages/products";
 import Components from "@/pages/components";
 import Quotes from "@/pages/quotes";
+import QuotesNew from "@/pages/quotes-new";
+import QuotesDetail from "@/pages/quotes-detail";
 import Production from "@/pages/production";
 import Tasks from "@/pages/tasks";
 import Settings from "@/pages/settings";
@@ -33,6 +35,11 @@ function Router() {
       <Route path="/customers" component={Customers} />
       <Route path="/products" component={Products} />
       <Route path="/components" component={Components} />
+      <Route path="/quotes/new">{() => <QuotesNew />}</Route>
+      <Route path="/quotes/:id/duplicate">
+        {(params: { id: string }) => <QuotesNew sourceQuoteId={params.id} />}
+      </Route>
+      <Route path="/quotes/:id" component={QuotesDetail} />
       <Route path="/quotes" component={Quotes} />
       <Route path="/production" component={Production} />
       <Route path="/tasks" component={Tasks} />

@@ -1,0 +1,41 @@
+I updated replit.md and added docs/quotes-module.md.
+
+Before continuing, read docs/quotes-module.md in full.
+
+Focus only on the quote module.
+
+Important new sections:
+1. "שלב 3 — בניית סל המוצרים להצעה"
+2. "פתיחת הצעת מחיר חדשה על סמך הצעה קיימת"
+
+Implement the quote product basket exactly as described:
+- Select products from existing products catalog
+- Show product quantity, editable price, editable description
+- Add a per-line customer_note (shown to client) and a separate internal_note (not shown to client) — these are two distinct fields, matching quote_products/quote_components columns
+- There is no per-line discount anywhere in the schema — only a single quote-level discount_amount on the whole quote
+- Show product components under each product, each with its own customer_note and internal_note
+- Allow editing component quantity
+- Calculate price by product price × product quantity
+- Show cart total and allow manual override only with a required note — the override must NEVER silently change individual product prices; store it only as a basket-level adjustment + note in totals_snapshot
+- Save all data into quote_versions snapshots
+- Add three separate quote-level note fields: customer_notes (shown to client), operation_notes (internal, for the operations team), and internal_notes (general internal) — matching the three note columns that already exist on the quotes table
+- Add checkbox for PDF generation
+- Add "שלח הצעה" button
+- The PDF checkbox and the "שלח הצעה" button belong ONLY to the final step (step 5 / summary before save) — do not duplicate them earlier in the wizard
+
+Also implement creating a new quote based on an existing quote:
+- This is not a new version
+- It must create a new quote_id
+- It must create a new quote_number, and it must be unique
+- It must create quote_versions version_number = 1
+- Copy snapshots from the selected source quote version
+- Let the user choose: keep the same customer/lead, choose a different one (using the same phone-lookup logic as the wizard), or refresh party details from current data
+- The new quote must default to status draft, regardless of the source quote's status, unless the user explicitly clicks "שלח הצעה"
+- Do not modify the original quote or original quote version
+- Use quote_versions + quotes.current_version_id as the only versioning mechanism — ignore the legacy quote_version_group_id/version_number/created_from_quote_id columns on quotes, do not use them for new logic
+
+Keep all UI Hebrew RTL.
+Do not rebuild customers, leads, products, or components screens.
+Do not recreate quote_versions, quote_products, or quote_components.
+Do not run destructive migrations or alter any table schema.
+After implementation, run build/typecheck and fix any errors before finishing.

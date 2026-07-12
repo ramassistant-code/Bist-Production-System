@@ -8,3 +8,5 @@
 - [Performance architecture](perf-arch.md) — dashboard uses /api/stats (SQL agg, not raw rows), leads uses server-side search/filter + pagination, gzip on all endpoints.
 - [Codegen duplicate exports](codegen-duplicates.md) — orval appends exports to index.ts; after every codegen run, check lib/api-client-react/src/index.ts for duplicate export lines and remove them.
 - [Drizzle static imports](drizzle-static-imports.md) — always import drizzle-orm operators (and, or, ilike, eq) statically; dynamic import() inside route handlers causes build/runtime issues.
+- [API path prefix](api-path-prefix.md) — all customFetch calls need `/api/` prefix; orval-generated hooks include it automatically, manual calls must add it explicitly.
+- [Quotes module architecture](quotes-module.md) — snapshot-based versioning; schema is Supabase-locked (no DDL); key type and runtime gotchas for quotes routes.
