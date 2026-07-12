@@ -7,6 +7,7 @@ import leadsRouter from "./leads";
 import productsRouter from "./products";
 import componentsRouter from "./components";
 import quotesRouter from "./quotes";
+import usersRouter from "./users";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(leadsRouter);
 router.use(productsRouter);
 router.use(componentsRouter);
 router.use(quotesRouter);
+router.use(usersRouter);
 
 export default router;

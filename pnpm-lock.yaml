@@ -230,6 +230,10 @@ importers:
         version: 3.1.0
 
   artifacts/bist-app:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.110.1
+        version: 2.110.1
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0

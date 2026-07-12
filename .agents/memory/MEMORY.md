@@ -10,3 +10,5 @@
 - [Drizzle static imports](drizzle-static-imports.md) — always import drizzle-orm operators (and, or, ilike, eq) statically; dynamic import() inside route handlers causes build/runtime issues.
 - [API path prefix](api-path-prefix.md) — all customFetch calls need `/api/` prefix; orval-generated hooks include it automatically, manual calls must add it explicitly.
 - [Quotes module architecture](quotes-module.md) — snapshot-based versioning; schema is Supabase-locked (no DDL); key type and runtime gotchas for quotes routes.
+- [Auth architecture](auth-architecture.md) — Supabase Auth email/password; VITE_ vars via vite.config.ts define; /api/auth/me verifies JWT + app_users active check; seed script for first login.
+- [lib/db build requirement](lib-db-build.md) — after adding a new schema file, must run `pnpm tsc --build --force` in lib/db before api-server typecheck sees the new exports.
