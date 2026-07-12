@@ -187,6 +187,16 @@ export default function QuotesDetail() {
     },
   });
 
+  const ver = data?.currentVersion;
+  const isApprovedAndLocked = !!ver?.id && ver?.status === "approved" && !!ver?.locked_at;
+
+  const { data: dealCheck } = useQuery<{ exists: boolean; deal_id?: string }>({
+    queryKey: ["deal-check", ver?.id],
+    queryFn: () => customFetch<{ exists: boolean; deal_id?: string }>(`/api/deals/check-version/${ver!.id}`),
+    enabled: isApprovedAndLocked,
+    staleTime: 0,
+  });
+
   if (isLoading) {
     return (
       <Shell title="הצעת מחיר">
@@ -210,26 +220,16 @@ export default function QuotesDetail() {
     );
   }
 
-  const { quote, currentVersion: ver, versions } = data;
-  const party = ver?.party_snapshot;
-  const totals = ver?.totals_snapshot;
-  const terms = ver?.terms_snapshot;
-  const notes = ver?.notes_snapshot;
-  const items = ver?.items_snapshot ?? [];
-  const vStatus = ver?.status ?? quote.status;
-  const isLocked = !!ver?.locked_at;
+  const { quote, currentVersion: verData, versions } = data;
+  const party = verData?.party_snapshot;
+  const totals = verData?.totals_snapshot;
+  const terms = verData?.terms_snapshot;
+  const notes = verData?.notes_snapshot;
+  const items = verData?.items_snapshot ?? [];
+  const vStatus = verData?.status ?? quote.status;
+  const isLocked = !!verData?.locked_at;
   const isDraft = vStatus === "draft" && !isLocked;
   const partyName = party?.business_name || party?.contact_name || quote.customer_name || quote.lead_name || "—";
-
-  const isApprovedAndLocked = vStatus === "approved" && isLocked && !!ver?.id;
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { data: dealCheck } = useQuery<{ exists: boolean; deal_id?: string }>({
-    queryKey: ["deal-check", ver?.id],
-    queryFn: () => customFetch<{ exists: boolean; deal_id?: string }>(`/api/deals/check-version/${ver!.id}`),
-    enabled: isApprovedAndLocked,
-    staleTime: 0,
-  });
 
   const canOpenDeal = isApprovedAndLocked && !dealCheck?.exists;
   const dealAlreadyExists = isApprovedAndLocked && dealCheck?.exists;
@@ -310,7 +310,7 @@ export default function QuotesDetail() {
               { label: "לקוח / ליד", value: partyName },
               { label: "סה״כ כולל מע״מ", value: formatILS(totals?.total_with_vat) },
               { label: "תוקף עד", value: formatDate(terms?.valid_until) },
-              { label: "גרסה", value: `v${ver?.version_number ?? 1}` },
+              { label: "גרסה", value: `v${verData?.version_number ?? 1}` },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-gray-200 p-3 bg-white">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -361,10 +361,10 @@ export default function QuotesDetail() {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">מספר הצעה</span><span className="font-mono font-medium">{quote.quote_number}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">סטטוס</span><Badge variant={STATUS_VARIANT[vStatus] ?? "secondary"} className="text-xs">{STATUS_LABELS[vStatus] ?? vStatus}</Badge></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">גרסה</span><span>v{ver?.version_number ?? 1}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">גרסה</span><span>v{verData?.version_number ?? 1}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">תאריך יצירה</span><span>{formatDate(quote.created_at)}</span></div>
-                    {ver?.sent_at && <div className="flex justify-between"><span className="text-muted-foreground">נשלחה</span><span>{formatDate(ver.sent_at)}</span></div>}
-                    {ver?.approved_at && <div className="flex justify-between"><span className="text-muted-foreground">אושרה</span><span>{formatDate(ver.approved_at)}</span></div>}
+                    {verData?.sent_at && <div className="flex justify-between"><span className="text-muted-foreground">נשלחה</span><span>{formatDate(verData.sent_at)}</span></div>}
+                    {verData?.approved_at && <div className="flex justify-between"><span className="text-muted-foreground">אושרה</span><span>{formatDate(verData.approved_at)}</span></div>}
                   </div>
                 </div>
               </div>
