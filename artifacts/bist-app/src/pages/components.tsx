@@ -249,6 +249,7 @@ export default function Components() {
 
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [filterCategory, setFilterCategory] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editComponent, setEditComponent] = useState<Component | null>(null);
@@ -263,12 +264,16 @@ export default function Components() {
   const createMutation = useCreateComponent();
   const updateMutation = useUpdateComponent();
 
-  const filtered = (components ?? []).filter(
+  const allComponents = components ?? [];
+  const uniqueCategories = Array.from(new Set(allComponents.map((c) => c.category).filter(Boolean))) as string[];
+
+  const filtered = allComponents.filter(
     (c) =>
-      !search ||
-      c.name.includes(search) ||
-      (c.category ?? "").includes(search) ||
-      (c.component_number ?? "").includes(search)
+      (!search ||
+        c.name.includes(search) ||
+        (c.category ?? "").includes(search) ||
+        (c.component_number ?? "").includes(search)) &&
+      (!filterCategory || c.category === filterCategory)
   );
 
   function handleCreate(values: ComponentFormValues) {
@@ -333,6 +338,17 @@ export default function Components() {
             <option value="all">כל הרכיבים</option>
             <option value="active">פעילים בלבד</option>
             <option value="inactive">לא פעילים</option>
+          </select>
+          <select
+            className="border rounded-md px-3 py-2 text-sm bg-background"
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            dir="rtl"
+          >
+            <option value="">כל הקטגוריות</option>
+            {uniqueCategories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
