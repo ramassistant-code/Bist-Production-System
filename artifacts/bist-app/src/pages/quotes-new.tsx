@@ -73,7 +73,7 @@ interface WizardState {
   basketManualTotal: string;
   basketOverrideNote: string;
   // Step 4
-  paymentTerms: string;
+  depositOnly: boolean;
   depositAmount: string;
   deliveryTerms: string;
   customerNotes: string;
@@ -154,7 +154,7 @@ const initialState: WizardState = {
   newLeadName: "", newLeadPhone: "", newLeadEmail: "",
   projectTitle: "", validUntil: endOfCurrentMonth(),
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
-  paymentTerms: "", depositAmount: "", deliveryTerms: "",
+  depositOnly: false, depositAmount: "", deliveryTerms: "",
   customerNotes: "", operationNotes: "", internalNotes: "",
   generatePdf: false,
 };
@@ -745,24 +745,44 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <Input type="date" value={state.validUntil} onChange={(e) => update({ validUntil: e.target.value })} />
         </div>
         <div className="space-y-1">
-          <Label>תנאי תשלום</Label>
-          <Input value={state.paymentTerms} onChange={(e) => update({ paymentTerms: e.target.value })} placeholder="לדוגמה: 50% מקדמה, 50% לפני אספקה" />
-        </div>
-        <div className="space-y-1">
           <Label>זמן אספקה / מועד ביצוע משוער</Label>
           <Input value={state.deliveryTerms} onChange={(e) => update({ deliveryTerms: e.target.value })} placeholder="לדוגמה: 3 שבועות מאישור" />
         </div>
-        <div className="space-y-1">
-          <Label>מקדמה (₪)</Label>
-          <Input type="number" min={0} step={0.01} value={state.depositAmount}
-            onChange={(e) => update({ depositAmount: e.target.value })} dir="ltr" />
+      </div>
+
+      {/* Payment section */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">סה״כ לתשלום כולל מע״מ</span>
+          <span className="font-bold text-base text-primary">{formatILS(calc.total)}</span>
         </div>
-        <div className="space-y-1">
-          <Label>יתרה לתשלום (מחושב אוטומטית)</Label>
-          <div className="h-9 flex items-center px-3 bg-muted rounded border text-sm font-medium">
-            {formatILS(remaining)}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="depositOnly"
+            checked={state.depositOnly}
+            onChange={(e) => update({ depositOnly: e.target.checked, depositAmount: e.target.checked ? state.depositAmount : "" })}
+            className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+          />
+          <label htmlFor="depositOnly" className="text-sm font-medium cursor-pointer select-none">
+            תשלום מקדמה בלבד
+          </label>
+        </div>
+        {state.depositOnly && (
+          <div className="space-y-2 pt-1">
+            <div className="space-y-1">
+              <Label className="text-sm">סכום מקדמה (₪)</Label>
+              <Input type="number" min={0} step={0.01} value={state.depositAmount}
+                onChange={(e) => update({ depositAmount: e.target.value })} dir="ltr" className="w-48" />
+            </div>
+            {deposit > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>יתרה לתשלום</span>
+                <span className="font-medium text-foreground">{formatILS(remaining)}</span>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       <Separator />
@@ -843,16 +863,15 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
         <div className="flex justify-between text-muted-foreground"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
         <Separator />
         <div className="flex justify-between font-bold text-base"><span>סה״כ כולל מע״מ</span><span className="text-primary">{formatILS(calc.total)}</span></div>
-        {deposit > 0 && <>
+        {state.depositOnly && deposit > 0 && <>
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">מקדמה</span><span>{formatILS(deposit)}</span></div>
           <div className="flex justify-between text-sm font-medium"><span>יתרה לתשלום</span><span>{formatILS(remaining)}</span></div>
         </>}
       </div>
 
       {/* Terms */}
-      {(state.paymentTerms || state.deliveryTerms) && (
+      {state.deliveryTerms && (
         <div className="rounded-lg border border-border p-4 space-y-1 text-sm">
-          {state.paymentTerms && <div><span className="text-muted-foreground">תנאי תשלום: </span>{state.paymentTerms}</div>}
           {state.deliveryTerms && <div><span className="text-muted-foreground">זמן אספקה: </span>{state.deliveryTerms}</div>}
         </div>
       )}
@@ -941,7 +960,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
         phone: String(party?.phone ?? ""),
         projectTitle: String(terms?.project_title ?? ""),
         validUntil: String(terms?.valid_until ?? ""),
-        paymentTerms: String(terms?.payment_terms ?? ""),
+        depositOnly: Number(terms?.deposit_amount ?? 0) > 0,
         depositAmount: String(terms?.deposit_amount ?? ""),
         deliveryTerms: String(terms?.delivery_terms ?? ""),
         customerNotes: String(notes?.customer_notes ?? ""),
@@ -999,8 +1018,11 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
     if (step === 2) {
       if (state.validUntil && new Date(state.validUntil) < new Date()) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
       const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
-      const deposit = parseFloat(state.depositAmount) || 0;
-      if (deposit > calc.total) errs.push("המקדמה לא יכולה להיות גבוהה מסה״כ ההצעה");
+      if (state.depositOnly) {
+        const deposit = parseFloat(state.depositAmount) || 0;
+        if (!state.depositAmount) errs.push("יש להזין סכום מקדמה");
+        else if (deposit > calc.total) errs.push("המקדמה לא יכולה להיות גבוהה מסה״כ ההצעה");
+      }
     }
     return errs;
   }
@@ -1049,8 +1071,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       basket_manually_overridden: state.basketManuallyOverridden,
       basket_manual_total: state.basketManuallyOverridden ? parseFloat(state.basketManualTotal) : undefined,
       basket_override_note: state.basketOverrideNote || undefined,
-      payment_terms: state.paymentTerms || undefined,
-      deposit_amount: parseFloat(state.depositAmount) || 0,
+      deposit_amount: state.depositOnly ? (parseFloat(state.depositAmount) || 0) : 0,
       delivery_terms: state.deliveryTerms || undefined,
       customer_notes: state.customerNotes || undefined,
       operation_notes: state.operationNotes || undefined,
