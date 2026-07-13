@@ -18,6 +18,7 @@ import DealsDetail from "@/pages/deals-detail";
 import Production from "@/pages/production";
 import Tasks from "@/pages/tasks";
 import Settings from "@/pages/settings";
+import QuotePdfTemplate from "@/pages/quote-pdf-template";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/deals" component={Deals} />
       <Route path="/production" component={Production} />
       <Route path="/tasks" component={Tasks} />
+      <Route path="/settings/quote-pdf-template" component={QuotePdfTemplate} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

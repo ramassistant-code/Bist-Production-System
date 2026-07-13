@@ -1,0 +1,219 @@
+אני רוצה להוסיף למערכת מסך הגדרות חדש לניהול טמפלט PDF של הצעות מחיר.
+
+חשוב:
+- כל הממשק בעברית.
+- RTL מלא.
+- להשתמש בעיצוב ובקומפוננטות הקיימים בפרויקט.
+- לא ליצור עדיין PDF אמיתי.
+- לא לאפשר עריכת HTML או CSS חופשי.
+- לעבוד מול טבלת Supabase הקיימת:
+  public.pdf_templates
+
+## מטרת המסך
+
+לאפשר למשתמש לערוך את התוכן והגדרות התצוגה של טמפלט הצעת המחיר, לראות תצוגה מקדימה חיה, ולפרסם גרסה חדשה של הטמפלט.
+
+## נתיב
+
+הוסף מסך חדש תחת הגדרות:
+
+/settings/quote-pdf-template
+
+שם בתפריט:
+
+טמפלט הצעת מחיר
+
+## טעינת הטמפלט
+
+בעת פתיחת המסך, טען את הרשומה הפעילה מתוך:
+
+public.pdf_templates
+
+לפי:
+
+document_type = 'quote'
+status = 'active'
+is_default = true
+
+הצג:
+- שם הטמפלט
+- מספר גרסה
+- סטטוס
+- תאריך הפעלה
+
+## שדות לעריכה
+
+טען מתוך configuration והצג טופס עבור:
+
+- document_title
+- summary_title
+- company_name
+- company_introduction
+
+מתגים:
+
+- show_logo
+- show_quote_number
+- show_issue_date
+- show_valid_until
+- show_client_email
+- show_client_phone
+- show_products
+- show_product_description
+- show_product_customer_notes
+- show_components
+- show_component_description
+- show_component_customer_notes
+- show_quote_general_notes
+- show_customer_notes
+- show_vat_breakdown
+- show_signature_section
+- show_signature_date
+
+## תוויות
+
+הוסף אזור נפתח בשם:
+
+תוויות במסמך
+
+עם שדות עבור:
+
+- labels.client_details
+- labels.for_client
+- labels.email
+- labels.phone
+- labels.quantity
+- labels.unit_price
+- labels.product_total
+- labels.notes
+- labels.general_notes
+- labels.customer_notes
+- labels.subtotal
+- labels.vat
+- labels.total_including_vat
+- labels.signature_title
+- labels.full_name
+- labels.id_or_company_number
+- labels.signature
+- labels.date
+
+## תצוגה מקדימה
+
+צור Preview חי ב-HTML בצד השני של המסך.
+
+ה-preview צריך:
+- להיות RTL
+- להיראות כמו מסמך A4
+- להתעדכן מיידית לפי השדות והמתגים
+- להשתמש בנתוני דוגמה בלבד
+- לא לשמור את נתוני הדוגמה ב-Supabase
+
+נתוני דוגמה:
+
+{
+  "quote_number": "Q-2026-00125",
+  "issue_date": "13.07.2026",
+  "valid_until": "27.07.2026",
+  "client": {
+    "name": "ישראל ישראלי",
+    "email": "israel@example.com",
+    "phone": "050-0000000"
+  },
+  "products": [
+    {
+      "name": "חבילת פודקאסט",
+      "quantity": 1,
+      "unit_price": 1950,
+      "total_price": 1950,
+      "description": "תיאור מוצר לדוגמה",
+      "customer_note": "הערה ללקוח לדוגמה",
+      "components": [
+        {
+          "order": 1,
+          "name": "שעת צילום באולפן",
+          "quantity": 1,
+          "description": "צילום מלא באולפן BIST",
+          "customer_note": "הערה לרכיב לדוגמה"
+        }
+      ]
+    }
+  ],
+  "subtotal": 1950,
+  "vat_rate": 18,
+  "vat_amount": 351,
+  "total_including_vat": 2301,
+  "general_notes": "ההצעה בתוקף ל-14 ימים",
+  "customer_notes": "הערות לקוח לדוגמה"
+}
+
+## שמירה
+
+כפתור:
+
+שמור ופרסם גרסה חדשה
+
+אין לעדכן את הרשומה הפעילה הקיימת.
+
+בעת שמירה:
+1. טען את הטמפלט הפעיל הנוכחי.
+2. העבר אותו ל:
+   status = 'archived'
+   is_default = false
+3. צור רשומה חדשה עם:
+   אותו template_key
+   version = הגרסה הגבוהה ביותר + 1
+   status = 'active'
+   is_default = true
+   אותו template_path
+   name לפי הטופס
+   configuration לפי הטופס
+   activated_at = now()
+   created_by = auth.uid()
+
+חשוב:
+- לבצע את השמירה בצורה בטוחה.
+- לא להשאיר מצב שבו אין טמפלט פעיל.
+- לא להשאיר שתי גרסאות פעילות.
+- למנוע לחיצה כפולה.
+- להציג הודעת הצלחה או שגיאה.
+- לאחר הצלחה לטעון מחדש את הגרסה החדשה.
+
+## היסטוריית גרסאות
+
+בתחתית המסך הוסף טבלה בשם:
+
+היסטוריית גרסאות
+
+עמודות:
+- גרסה
+- שם
+- סטטוס
+- תאריך יצירה
+- תאריך הפעלה
+- נוצר על ידי
+
+קריאה בלבד.
+
+## דרישות טכניות
+
+- TypeScript מלא.
+- אין להשתמש ב-any.
+- להשתמש ב-Supabase client הקיים בפרויקט.
+- ליצור type בשם PdfTemplateConfiguration.
+- לבצע merge עם ברירות מחדל במקרה שחסרים שדות ב-configuration.
+- לא לחשוף service role key.
+- לא לשנות סכימת DB כרגע.
+- לא ליצור PDF אמיתי בשלב הזה.
+- לא ליצור מערכת עריכת HTML/CSS.
+
+## Acceptance Criteria
+
+- קיים מסך חדש בהגדרות.
+- הכל בעברית RTL.
+- נטענת התבנית הפעילה.
+- ניתן לערוך שדות ומתגים.
+- ה-preview מתעדכן בזמן אמת.
+- שמירה יוצרת גרסה חדשה.
+- הגרסה הקודמת עוברת ל-archived.
+- קיימת רק גרסה אחת active/default.
+- היסטוריית גרסאות מוצגת.

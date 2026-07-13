@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
+import { FileText } from "lucide-react";
 
 interface AppUser {
   id: string;
@@ -161,6 +163,25 @@ export default function Settings() {
   return (
     <Shell title="הגדרות">
       <div className="p-6 space-y-6 overflow-auto h-full">
+
+        {/* Quick links */}
+        <section>
+          <h2 className="text-base font-semibold text-gray-800 mb-3">מסמכים ותבניות</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Link href="/settings/quote-pdf-template">
+              <a className="flex items-center gap-3 bg-white border border-gray-200 hover:border-blue-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">טמפלט הצעת מחיר</div>
+                  <div className="text-xs text-gray-500">עיצוב ותוכן PDF</div>
+                </div>
+              </a>
+            </Link>
+          </div>
+        </section>
+
         <section>
           <h2 className="text-base font-semibold text-gray-800 mb-3">
             ניהול משתמשים
