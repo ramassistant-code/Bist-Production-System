@@ -641,11 +641,8 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
       {state.items.length > 0 && (
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setShowSelector(true)}>
+          <Button size="sm" onClick={() => setShowSelector(true)}>
             <Plus className="w-4 h-4 ml-1" />הוסף מוצר מהקטלוג
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => update({ items: [...state.items, newManualItem()] })}>
-            <Plus className="w-4 h-4 ml-1" />שורה ידנית
           </Button>
         </div>
       )}
@@ -783,12 +780,6 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <Textarea value={state.operationNotes} rows={2}
             onChange={(e) => update({ operationNotes: e.target.value })}
             placeholder="הנחיות לצוות הביצוע" />
-        </div>
-        <div className="space-y-1">
-          <Label>הערכה למחלקת אופרציה</Label>
-          <Textarea value={state.internalNotes} rows={2}
-            onChange={(e) => update({ internalNotes: e.target.value })}
-            placeholder="הערה פנימית כלשהי" />
         </div>
       </div>
     </div>
