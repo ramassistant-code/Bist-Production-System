@@ -199,17 +199,17 @@ router.post(
       logger.error({ err }, "POST /quote-versions/:id/generate-pdf error");
 
       if (docId) {
-        await supabaseAdmin
+        const { error: failErr } = await supabaseAdmin
           .from("quote_documents")
           .update({
             generation_status: "failed",
             generation_error:
               err instanceof Error ? err.message : String(err),
           })
-          .eq("id", docId)
-          .catch((e: unknown) =>
-            logger.error({ err: e }, "Failed to mark document as failed"),
-          );
+          .eq("id", docId);
+        if (failErr) {
+          logger.error({ err: failErr }, "Failed to mark document as failed");
+        }
       }
 
       res.status(500).json({
