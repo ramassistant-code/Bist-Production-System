@@ -352,7 +352,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                 onChange={e => setSalespersonId(e.target.value)}
               >
                 <option value="">— בחר איש מכירות —</option>
-                {users.filter(u => u.id).map(u => (
+                {users.filter(u => u.id && u.role === "sales").map(u => (
                   <option key={u.id} value={u.id}>
                     {u.full_name || u.email}
                     {u.id === currentUser?.id ? " (אתה)" : ""}
