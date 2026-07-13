@@ -148,7 +148,7 @@ export default function QuotesDetail() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { appUser } = useAuth();
+  const { appUser, session } = useAuth();
   const [tab, setTab] = useState("info");
   const [showOpenDealModal, setShowOpenDealModal] = useState(false);
 
@@ -190,7 +190,11 @@ export default function QuotesDetail() {
     mutationFn: (versionId: string) =>
       customFetch<{ url: string; document_id: string; download_filename: string }>(
         `/api/quote-versions/${versionId}/generate-pdf`,
-        { method: "POST", body: JSON.stringify({ templateId: null }) },
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+          body: JSON.stringify({ templateId: null }),
+        },
       ),
     onSuccess: (result) => {
       window.open(result.url, "_blank", "noopener,noreferrer");
