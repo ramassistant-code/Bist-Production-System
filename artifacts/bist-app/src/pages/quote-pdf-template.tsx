@@ -51,6 +51,7 @@ interface PdfTemplateConfiguration {
   show_signature_section: boolean;
   show_signature_date: boolean;
   below_client_text: string;
+  bottom_notes: string;
   labels: PdfTemplateLabels;
   language: string;
   direction: string;
@@ -129,6 +130,7 @@ const DEFAULT_CONFIG: PdfTemplateConfiguration = {
   show_signature_section: true,
   show_signature_date: true,
   below_client_text: "",
+  bottom_notes: "",
   labels: DEFAULT_LABELS,
   language: "he",
   direction: "rtl",
@@ -659,6 +661,16 @@ export default function QuotePdfTemplate() {
                   <Toggle checked={cfg.show_vat_breakdown} onChange={(v) => setField("show_vat_breakdown", v)} label='פירוט מע"מ' />
                   <Toggle checked={cfg.show_quote_general_notes} onChange={(v) => setField("show_quote_general_notes", v)} label="הערות כלליות" />
                   <Toggle checked={cfg.show_customer_notes} onChange={(v) => setField("show_customer_notes", v)} label="הערות לקוח" />
+                  <div className="space-y-1 pt-1">
+                    <label className="block text-xs font-medium text-gray-600">הערות כלליות בתחתית ההצעה</label>
+                    <textarea
+                      value={cfg.bottom_notes}
+                      onChange={(e) => setField("bottom_notes", e.target.value)}
+                      rows={4}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      placeholder="טקסט חופשי שיופיע מתחת לסיכום הכספי (תנאי תשלום, תנאים כלליים וכו׳)"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">

@@ -64,6 +64,7 @@ export interface PdfConfig {
   show_signature_section?: boolean;
   show_signature_date?: boolean;
   below_client_text?: string;
+  bottom_notes?: string;
   labels?: PdfLabels;
 }
 
@@ -191,6 +192,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
     show_signature_section: config.show_signature_section !== false,
     show_signature_date: config.show_signature_date !== false,
     below_client_text: config.below_client_text ?? "",
+    bottom_notes: config.bottom_notes ?? "",
   };
 
   const clientName = party?.business_name || party?.contact_name || "—";
@@ -384,6 +386,11 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
   ${
     cfg.show_customer_notes && notes?.customer_notes
       ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">${L.customer_notes}</div><div style="font-size:13px;color:#374151;background:#fef9f0;border-radius:6px;padding:10px 12px;border:1px solid #fde68a;">${notes.customer_notes}</div></div>`
+      : ""
+  }
+  ${
+    cfg.bottom_notes
+      ? `<div style="margin-bottom:16px;margin-top:8px;"><div style="font-size:13px;color:#374151;line-height:1.7;white-space:pre-wrap;padding:12px 14px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;">${cfg.bottom_notes}</div></div>`
       : ""
   }
 
