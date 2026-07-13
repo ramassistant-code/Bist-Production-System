@@ -107,17 +107,17 @@ router.post(
         return;
       }
 
-      docId = (docRow as { id: string }).id;
+      const doc = docRow as { id: string; revision: number };
+      docId = doc.id;
+      const docRevision = doc.revision;
 
-      // ── 5. Mark in-progress + store template metadata ─────────────────────
+      // ── 5. Mark generating ────────────────────────────────────────────────
+      // Allowed status values: pending | generating | failed
       await supabaseAdmin
         .from("quote_documents")
         .update({
-          generation_status: "in_progress",
+          generation_status: "generating",
           generation_started_at: new Date().toISOString(),
-          template_id: template.id,
-          template_key: template.template_key,
-          template_version: template.version,
         })
         .eq("id", docId);
 
@@ -167,8 +167,8 @@ router.post(
       }
 
       // ── 8. Upload to Supabase Storage ─────────────────────────────────────
-      const storagePath = `${String(quote.id)}/${docId}.pdf`;
-      const downloadFilename = `${String(quote.quote_number)}_v${String(version.version_number)}.pdf`;
+      const storagePath = `quotes/${String(quote.id)}/versions/${quoteVersionId}/revisions/${docRevision}/quote.pdf`;
+      const downloadFilename = `${String(quote.quote_number)}_v${String(version.version_number)}_r${docRevision}.pdf`;
 
       const { error: uploadErr } = await supabaseAdmin.storage
         .from("quote-pdfs")
@@ -181,18 +181,21 @@ router.post(
         throw new Error(`שגיאה בהעלאת הקובץ: ${uploadErr.message}`);
       }
 
-      // ── 9. Mark completed ─────────────────────────────────────────────────
-      await supabaseAdmin
+      // ── 9. Mark done (status remains "generating" = in-progress/done)
+      // Note: constraint only allows pending | generating | failed; no "completed"
+      const { error: doneErr } = await supabaseAdmin
         .from("quote_documents")
         .update({
-          generation_status: "completed",
+          generation_status: "generating",
           storage_path: storagePath,
           download_filename: downloadFilename,
           file_size_bytes: pdfBuffer.length,
           generated_at: new Date().toISOString(),
-          generated_by: userId,
         })
         .eq("id", docId);
+      if (doneErr) {
+        logger.error({ err: doneErr }, "Failed to mark document done");
+      }
 
       // ── 10. Create signed URL (1 hour) ────────────────────────────────────
       const { data: signedData, error: signErr } =

@@ -151,6 +151,7 @@ export default function QuotesDetail() {
   const { appUser, session } = useAuth();
   const [tab, setTab] = useState("info");
   const [showOpenDealModal, setShowOpenDealModal] = useState(false);
+  const [lastPdfUrl, setLastPdfUrl] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<QuoteDetailData>({
     queryKey: ["quote", id],
@@ -197,7 +198,15 @@ export default function QuotesDetail() {
         },
       ),
     onSuccess: (result) => {
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      setLastPdfUrl(result.url);
+      // Use anchor click to bypass popup blockers
+      const a = document.createElement("a");
+      a.href = result.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       toast({ title: "ה-PDF נוצר בהצלחה", description: result.download_filename });
     },
     onError: (err: Error & { data?: { error?: string } }) => {
@@ -301,6 +310,18 @@ export default function QuotesDetail() {
                 >
                   <FileDown className="w-3.5 h-3.5 ml-1" />
                   {pdfMutation.isPending ? "מייצר PDF..." : "הפק PDF"}
+                </Button>
+              )}
+              {lastPdfUrl && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  asChild
+                  className="text-blue-600"
+                >
+                  <a href={lastPdfUrl} target="_blank" rel="noopener noreferrer">
+                    <FileDown className="w-3.5 h-3.5 ml-1" />פתח PDF
+                  </a>
                 </Button>
               )}
               {canOpenDeal && (
