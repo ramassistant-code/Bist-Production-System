@@ -586,7 +586,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
     setLoadingProductId(product.id);
     try {
       // Fetch product with its components
-      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string };
+      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string; component_internal_notes?: string | null };
       const productWithComponents = await customFetch<{ components?: ProdComp[] }>(`/api/products/${product.id}`);
       const comps = (productWithComponents.components ?? [] as ProdComp[]).map((c: ProdComp) => ({
         component_id: c.component_id,
@@ -594,6 +594,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         component_description_snapshot: c.component_deliverable ?? "",
         quantity: parseFloat(c.default_quantity ?? "1") || 1,
         unit_cost_snapshot: parseFloat(c.total_cost ?? "0") || 0,
+        internal_note: c.component_internal_notes ?? "",
       }));
       const item = newBasketItem(product, comps);
       update({ items: [...state.items, item] });

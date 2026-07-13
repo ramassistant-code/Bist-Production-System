@@ -72,6 +72,7 @@ export interface ComponentSnapshot {
   component_description_snapshot?: string;
   quantity?: number;
   customer_note?: string;
+  internal_note?: string;
 }
 
 export interface ItemSnapshot {
@@ -82,6 +83,7 @@ export interface ItemSnapshot {
   line_subtotal?: number;
   line_total_with_vat?: number;
   customer_note?: string;
+  internal_note?: string;
   components_snapshot?: ComponentSnapshot[];
 }
 
@@ -228,6 +230,11 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
                   ? `<tr style="background:#fef9f0;"><td colspan="4" style="padding:2px 12px 6px 32px;color:#92400e;font-size:11px;">💬 ${c.customer_note}</td></tr>`
                   : ""
               }
+              ${
+                c.internal_note
+                  ? `<tr style="background:#eff6ff;"><td colspan="4" style="padding:2px 12px 6px 32px;color:#1e40af;font-size:11px;">🔧 ${c.internal_note}</td></tr>`
+                  : ""
+              }
             `,
                 )
                 .join("")
@@ -248,6 +255,11 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
           ${
             cfg.show_product_customer_notes && item.customer_note
               ? `<tr><td colspan="4" style="padding:3px 12px 8px;color:#92400e;background:#fef3c7;font-size:12px;">💬 ${item.customer_note}</td></tr>`
+              : ""
+          }
+          ${
+            item.internal_note
+              ? `<tr><td colspan="4" style="padding:3px 12px 8px;color:#1e40af;background:#eff6ff;font-size:12px;">🔧 ${item.internal_note}</td></tr>`
               : ""
           }
           ${compRows}
