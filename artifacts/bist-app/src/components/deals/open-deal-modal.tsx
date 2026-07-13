@@ -193,7 +193,13 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
     setSubmitting(true);
     try {
-      const result = await customFetch<{ id: string; deal_number: string }>("/api/deals", {
+      const result = await customFetch<{
+        success: boolean;
+        alreadyExists: boolean;
+        dealId: string;
+        deal_number: string;
+        customerId: string | null;
+      }>("/api/deals", {
         method: "POST",
         body: JSON.stringify({
           source_quote_version_id: version.id,
@@ -205,7 +211,6 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           invoice_id_number: paymentType !== "credit_card" ? invoiceIdNumber : null,
           invoice_email: paymentType !== "credit_card" ? invoiceEmail : null,
           coordination_tasks_requested: coordRequested,
-          coordination_tasks: coordRequested ? tasks : [],
           operation_notes: operationNotes || null,
           ...(isLead ? {
             lead_name: leadName,
@@ -215,7 +220,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           } : {}),
         }),
       });
-      onSuccess(result.id, result.deal_number);
+      onSuccess(result.dealId, result.deal_number);
     } catch (err: unknown) {
       const e = err as { data?: { error?: string }; message?: string };
       setSubmitError(e?.data?.error ?? e?.message ?? "שגיאה פנימית");

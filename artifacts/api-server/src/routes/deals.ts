@@ -6,14 +6,12 @@ import {
   quotesTable,
   quoteVersionsTable,
   leadsTable,
-  dealCoordinationTasksTable,
 } from "@workspace/db/schema";
 import {
   isNull,
   eq,
   sql,
   and,
-  ilike,
   desc,
 } from "drizzle-orm";
 import { logger } from "../lib/logger";
@@ -22,14 +20,15 @@ const router: IRouter = Router();
 
 const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בטיפול", "הושלמה", "בוטלה"];
 const VALID_PAYMENT_TYPES = ["cash", "credit_card", "bank_transfer"];
-const VALID_ASSIGNEE_ROLES = ["sales_manager", "office_manager"];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-async function generateDealNumber(): Promise<string> {
+type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function generateDealNumber(tx: DbOrTx = db): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `D-${year}-%`;
-  const result = await db.execute(sql`
+  const result = await tx.execute(sql`
     SELECT COALESCE(MAX(
       CAST(SUBSTRING(deal_number FROM '[0-9]+$') AS BIGINT)
     ), 0) + 1 AS n
@@ -40,8 +39,8 @@ async function generateDealNumber(): Promise<string> {
   return `D-${year}-${String(n).padStart(6, "0")}`;
 }
 
-async function generateCustomerNumber(): Promise<string> {
-  const result = await db.execute(sql`
+async function generateCustomerNumber(tx: DbOrTx = db): Promise<string> {
+  const result = await tx.execute(sql`
     SELECT COALESCE(MAX(
       CAST(REGEXP_REPLACE(customer_number, '[^0-9]', '', 'g') AS BIGINT)
     ), 0) + 1 AS n
@@ -53,24 +52,34 @@ async function generateCustomerNumber(): Promise<string> {
   return `C-${String(n).padStart(6, "0")}`;
 }
 
-function mapPostgresError(err: unknown): string | null {
-  const e = err as Record<string, string> | null;
-  if (!e) return null;
-  if (e.code === "23505") {
-    if (e.constraint?.includes("source_quote_version_id")) {
-      return "כבר קיימת עסקה עבור גרסת הצעה זו";
-    }
-    return "רשומה כפולה";
+/**
+ * Normalize an Israeli phone number to local format (0XXXXXXXXX).
+ * Strips spaces, dashes, parentheses, and converts +972 / 972 prefix to 0.
+ */
+function normalizeIsraeliPhone(raw: string): string {
+  if (!raw) return "";
+  let digits = raw.replace(/[^\d]/g, "");
+  if (digits.startsWith("972")) digits = "0" + digits.slice(3);
+  return digits;
+}
+
+class DealError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly httpStatus: number = 400,
+  ) {
+    super(message);
+    this.name = "DealError";
   }
-  const msg = e.message ?? "";
-  if (msg.includes("Deal can only be created from an approved quote version") ||
-      msg.includes("Approved quote version must be locked")) {
-    return "לא ניתן לפתוח עסקה מהצעה שלא אושרה";
-  }
-  if (msg.includes("Deal snapshots and source quote reference cannot be modified")) {
-    return "לא ניתן לשנות נתוני עסקה לאחר יצירתה";
-  }
-  return null;
+}
+
+function pgErrCode(err: unknown): string | undefined {
+  return (err as Record<string, string> | null)?.code;
+}
+
+function isPgUniqueViolation(err: unknown): boolean {
+  return pgErrCode(err) === "23505";
 }
 
 // ── GET /deals ────────────────────────────────────────────────────────────────
@@ -241,16 +250,7 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
       version_number = vRows[0]?.version_number ?? null;
     }
 
-    // Load coordination tasks if applicable
-    const coordTasks = deal.coordination_tasks_requested
-      ? await db
-          .select()
-          .from(dealCoordinationTasksTable)
-          .where(eq(dealCoordinationTasksTable.deal_id, id))
-          .orderBy(dealCoordinationTasksTable.created_at)
-      : [];
-
-    res.json({ ...deal, version_number, coordination_tasks: coordTasks });
+    res.json({ ...deal, version_number });
   } catch (err) {
     logger.error({ err }, "GET /deals/:id error");
     res.status(500).json({ error: "שגיאה בטעינת העסקה" });
@@ -259,24 +259,17 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
 
 // ── POST /deals ───────────────────────────────────────────────────────────────
 
-interface CoordinationTaskInput {
-  task_text: string;
-  assignee_role: string;
-}
-
 interface OpenDealBody {
   source_quote_version_id: string;
-  salesperson_user_id: string;
-  amount_paid_including_vat: string | number;
+  salesperson_user_id?: string;
+  amount_paid_including_vat?: string | number;
   payment_type: string;
   installments_count?: string | number | null;
   invoice_name?: string;
   invoice_id_number?: string;
   invoice_email?: string;
   coordination_tasks_requested?: boolean;
-  coordination_tasks?: CoordinationTaskInput[];
   operation_notes?: string;
-  // Lead editable fields
   lead_name?: string;
   lead_phone?: string;
   lead_email?: string;
@@ -290,7 +283,6 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     salesperson_user_id,
     payment_type,
     coordination_tasks_requested = false,
-    coordination_tasks = [],
     operation_notes,
     lead_name,
     lead_phone,
@@ -304,225 +296,410 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
   const invoice_id_number = body.invoice_id_number?.trim() ?? null;
   const invoice_email = body.invoice_email?.trim() ?? null;
 
-  // ── Server-side validation ─────────────────────────────────────────────────
+  // ── Basic validation ──────────────────────────────────────────────────────
   if (!source_quote_version_id) {
-    res.status(400).json({ error: "חובה לציין גרסת הצעת מחיר" });
+    res.status(400).json({ success: false, code: "MISSING_QUOTE_VERSION", error: "חובה לציין גרסת הצעת מחיר" });
     return;
   }
   if (!salesperson_user_id) {
-    res.status(400).json({ error: "יש לבחור איש מכירות" });
+    res.status(400).json({ success: false, code: "MISSING_SALESPERSON", error: "יש לבחור איש מכירות" });
     return;
   }
   if (isNaN(amount_paid_including_vat) || amount_paid_including_vat < 0) {
-    res.status(400).json({ error: "יש להזין סכום ששולם תקין" });
+    res.status(400).json({ success: false, code: "INVALID_AMOUNT", error: "יש להזין סכום ששולם תקין" });
     return;
   }
   if (!payment_type || !VALID_PAYMENT_TYPES.includes(payment_type)) {
-    res.status(400).json({ error: "יש לבחור סוג תשלום" });
+    res.status(400).json({ success: false, code: "INVALID_PAYMENT_TYPE", error: "יש לבחור סוג תשלום" });
     return;
   }
   if (payment_type === "credit_card") {
     if (!installments_count || installments_count < 1 || !Number.isInteger(installments_count)) {
-      res.status(400).json({ error: "באשראי יש להזין כמות תשלומים" });
+      res.status(400).json({ success: false, code: "INVALID_INSTALLMENTS", error: "באשראי יש להזין כמות תשלומים תקינה" });
       return;
     }
   } else {
-    if (!invoice_name) {
-      res.status(400).json({ error: "במזומן או העברה בנקאית יש להזין פרטי חשבונית" });
-      return;
-    }
-    if (!invoice_id_number) {
-      res.status(400).json({ error: "במזומן או העברה בנקאית יש להזין פרטי חשבונית" });
+    if (!invoice_name || !invoice_id_number) {
+      res.status(400).json({ success: false, code: "MISSING_INVOICE_DETAILS", error: "במזומן או העברה בנקאית יש להזין פרטי חשבונית" });
       return;
     }
     if (!invoice_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoice_email)) {
-      res.status(400).json({ error: "יש להזין מייל תקין לשליחת חשבונית" });
+      res.status(400).json({ success: false, code: "INVALID_INVOICE_EMAIL", error: "יש להזין מייל תקין לשליחת חשבונית" });
       return;
-    }
-  }
-  if (coordination_tasks_requested) {
-    if (!Array.isArray(coordination_tasks) || coordination_tasks.length === 0) {
-      res.status(400).json({ error: "יש להזין לפחות משימת תיאום אחת" });
-      return;
-    }
-    for (const t of coordination_tasks) {
-      if (!t.task_text?.trim() || !t.assignee_role || !VALID_ASSIGNEE_ROLES.includes(t.assignee_role)) {
-        res.status(400).json({ error: "יש למלא טקסט ואחראי לכל משימה" });
-        return;
-      }
     }
   }
 
   try {
-    // 1. Load + validate quote version
-    const vRows = await db
-      .select()
-      .from(quoteVersionsTable)
-      .where(eq(quoteVersionsTable.id, source_quote_version_id))
-      .limit(1);
+    const result = await db.transaction(async (tx) => {
 
-    if (vRows.length === 0) {
-      res.status(404).json({ error: "גרסת ההצעה לא נמצאה" });
-      return;
-    }
-    const version = vRows[0];
-
-    if (version.status !== "approved") {
-      res.status(400).json({ error: "לא ניתן לפתוח עסקה מהצעה שלא אושרה" });
-      return;
-    }
-    if (!version.locked_at) {
-      res.status(400).json({ error: "גרסת ההצעה אינה נעולה" });
-      return;
-    }
-
-    // 2. Check no existing deal
-    const existingDeal = await db
-      .select({ id: dealsTable.id })
-      .from(dealsTable)
-      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.source_quote_version_id, source_quote_version_id)))
-      .limit(1);
-    if (existingDeal.length > 0) {
-      res.status(409).json({ error: "כבר קיימת עסקה עבור גרסת הצעה זו" });
-      return;
-    }
-
-    // 3. Load parent quote
-    const qRows = await db
-      .select()
-      .from(quotesTable)
-      .where(eq(quotesTable.id, version.quote_id))
-      .limit(1);
-
-    if (qRows.length === 0) {
-      res.status(404).json({ error: "הצעת המחיר לא נמצאה" });
-      return;
-    }
-    const quote = qRows[0];
-
-    // 4. total_amount_including_vat from snapshot
-    const totalsSnap = version.totals_snapshot as Record<string, number> | null;
-    const total_amount_including_vat = totalsSnap?.total_with_vat ?? 0;
-
-    if (amount_paid_including_vat > total_amount_including_vat) {
-      res.status(400).json({ error: "סכום ששולם לא יכול להיות גבוה מסך העסקה" });
-      return;
-    }
-
-    // 5. Resolve customer_id (with optional lead field overrides)
-    let customer_id: string | null = quote.customer_id ?? null;
-
-    if (!customer_id && quote.lead_id) {
-      // Try by lead_id
-      const byLead = await db
-        .select({ id: customersTable.id })
-        .from(customersTable)
-        .where(and(isNull(customersTable.deleted_at), eq(customersTable.lead_id, quote.lead_id)))
+      // ── Step 1: Load + validate quote version ──────────────────────────────
+      const vRows = await tx
+        .select()
+        .from(quoteVersionsTable)
+        .where(eq(quoteVersionsTable.id, source_quote_version_id))
         .limit(1);
 
-      if (byLead.length > 0) {
-        customer_id = byLead[0].id;
-      } else {
-        // Try phone lookup
-        const snap = version.party_snapshot as Record<string, string> | null;
-        const phoneForLookup = lead_phone ?? snap?.normalized_phone ?? snap?.phone ?? "";
-        if (phoneForLookup) {
-          const localDigits = phoneForLookup.replace(/\D/g, "").slice(-9);
-          const byPhone = await db
+      if (vRows.length === 0) {
+        throw new DealError("QUOTE_VERSION_NOT_FOUND", "גרסת ההצעה לא נמצאה", 404);
+      }
+
+      const version = vRows[0];
+      if (version.status !== "approved" || !version.approved_at || !version.locked_at) {
+        throw new DealError(
+          "QUOTE_VERSION_NOT_APPROVED",
+          "ניתן לפתוח עסקה רק מגרסת הצעת מחיר מאושרת ונעולה.",
+          400,
+        );
+      }
+
+      // ── Step 2: Idempotency – check for existing deal ──────────────────────
+      const existingRows = await tx
+        .select({
+          id: dealsTable.id,
+          deal_number: dealsTable.deal_number,
+          customer_id: dealsTable.customer_id,
+        })
+        .from(dealsTable)
+        .where(
+          and(
+            isNull(dealsTable.deleted_at),
+            eq(dealsTable.source_quote_version_id, source_quote_version_id),
+          )
+        )
+        .limit(1);
+
+      if (existingRows.length > 0) {
+        const existing = existingRows[0];
+        return {
+          success: true,
+          alreadyExists: true,
+          dealId: existing.id,
+          deal_number: existing.deal_number,
+          customerId: existing.customer_id,
+        };
+      }
+
+      // ── Step 3: Load parent quote ───────────────────────────────────────────
+      const qRows = await tx
+        .select()
+        .from(quotesTable)
+        .where(eq(quotesTable.id, version.quote_id))
+        .limit(1);
+
+      if (qRows.length === 0) {
+        throw new DealError("QUOTE_NOT_FOUND", "הצעת המחיר לא נמצאה", 404);
+      }
+      const quote = qRows[0];
+
+      // ── Step 4: Resolve customer ────────────────────────────────────────────
+      const snap = (version.party_snapshot ?? {}) as Record<string, unknown>;
+      const snapCustomerId = (snap["customer_id"] as string | null) ?? null;
+      const snapLeadId = (snap["lead_id"] as string | null) ?? quote.lead_id ?? null;
+
+      let resolvedCustomerId: string | null = null;
+      let resolvedLeadId: string | null = snapLeadId;
+
+      if (snapCustomerId) {
+        // Case A: snapshot has a direct customer_id
+        const custRows = await tx
+          .select({ id: customersTable.id })
+          .from(customersTable)
+          .where(and(isNull(customersTable.deleted_at), eq(customersTable.id, snapCustomerId)))
+          .limit(1);
+
+        if (custRows.length === 0) {
+          throw new DealError("CUSTOMER_NOT_FOUND", "הלקוח לא נמצא בבסיס הנתונים", 400);
+        }
+        resolvedCustomerId = custRows[0].id;
+        resolvedLeadId = null;
+
+      } else if (snapLeadId) {
+        // Case B: snapshot has a lead_id
+        const leadRows = await tx
+          .select()
+          .from(leadsTable)
+          .where(eq(leadsTable.id, snapLeadId))
+          .limit(1);
+
+        if (leadRows.length === 0) {
+          throw new DealError("LEAD_NOT_FOUND", "הליד לא נמצא", 404);
+        }
+        const lead = leadRows[0];
+
+        // B1: check leads.linked_customer_id
+        if (lead.linked_customer_id) {
+          const linkedRows = await tx
             .select({ id: customersTable.id })
             .from(customersTable)
-            .where(and(isNull(customersTable.deleted_at), ilike(customersTable.phone, `%${localDigits}%`)))
+            .where(and(isNull(customersTable.deleted_at), eq(customersTable.id, lead.linked_customer_id)))
             .limit(1);
-          if (byPhone.length > 0) {
-            customer_id = byPhone[0].id;
+          if (linkedRows.length > 0) {
+            resolvedCustomerId = linkedRows[0].id;
           }
         }
 
-        // Create customer from lead data (possibly with user-edited fields)
-        if (!customer_id) {
-          const lRows = await db
-            .select()
-            .from(leadsTable)
-            .where(eq(leadsTable.id, quote.lead_id))
+        // B2: check customers.lead_id = snapLeadId
+        if (!resolvedCustomerId) {
+          const byLeadRows = await tx
+            .select({ id: customersTable.id })
+            .from(customersTable)
+            .where(and(isNull(customersTable.deleted_at), eq(customersTable.lead_id, snapLeadId)))
             .limit(1);
 
-          if (lRows.length > 0) {
-            const lead = lRows[0];
-            const custNum = await generateCustomerNumber();
-            const inserted = await db
+          if (byLeadRows.length > 0) {
+            resolvedCustomerId = byLeadRows[0].id;
+            // Update leads.linked_customer_id
+            await tx
+              .update(leadsTable)
+              .set({ linked_customer_id: resolvedCustomerId, updated_at: new Date() })
+              .where(eq(leadsTable.id, snapLeadId));
+          }
+        }
+
+        // B3: create customer from lead data
+        if (!resolvedCustomerId) {
+          const customerName =
+            lead_name?.trim() ||
+            (snap["name"] as string) ||
+            (snap["contact_name"] as string) ||
+            (snap["business_name"] as string) ||
+            lead.name ||
+            "לקוח חדש";
+          const customerPhone =
+            lead_phone?.trim() ||
+            (snap["phone"] as string) ||
+            lead.phone ||
+            null;
+          const customerEmail =
+            lead_email?.trim() ||
+            (snap["email"] as string) ||
+            lead.email ||
+            null;
+          const customerTaxId = lead_tax_id?.trim() || null;
+
+          const custNum = await generateCustomerNumber(tx);
+          try {
+            const inserted = await tx
               .insert(customersTable)
               .values({
                 customer_number: custNum,
-                name: lead_name?.trim() || lead.name || "לקוח חדש",
-                phone: lead_phone?.trim() || lead.phone || null,
-                email: lead_email?.trim() || lead.email || null,
-                tax_id: lead_tax_id?.trim() || null,
-                lead_id: lead.id,
+                name: customerName,
+                phone: customerPhone,
+                email: customerEmail,
+                tax_id: customerTaxId,
+                lead_id: snapLeadId,
+                joined_at: new Date().toISOString().split("T")[0],
               })
               .returning({ id: customersTable.id });
-            customer_id = inserted[0]?.id ?? null;
+            resolvedCustomerId = inserted[0]!.id;
+          } catch (insertErr) {
+            // Concurrent insert on the same lead_id unique constraint
+            if (isPgUniqueViolation(insertErr)) {
+              const concurrent = await tx
+                .select({ id: customersTable.id })
+                .from(customersTable)
+                .where(and(isNull(customersTable.deleted_at), eq(customersTable.lead_id, snapLeadId)))
+                .limit(1);
+              if (concurrent.length > 0) {
+                resolvedCustomerId = concurrent[0].id;
+              } else {
+                throw insertErr;
+              }
+            } else {
+              throw insertErr;
+            }
           }
+
+          // Link lead → customer
+          await tx
+            .update(leadsTable)
+            .set({ linked_customer_id: resolvedCustomerId, updated_at: new Date() })
+            .where(eq(leadsTable.id, snapLeadId));
+        }
+
+      } else {
+        // Case C: no customer_id, no lead_id — normalize phone and search
+        const rawPhone =
+          (snap["phone"] as string) ||
+          (snap["normalized_phone"] as string) ||
+          "";
+        const normalizedPhone = normalizeIsraeliPhone(rawPhone);
+
+        if (normalizedPhone) {
+          const byPhone = await tx
+            .select({ id: customersTable.id })
+            .from(customersTable)
+            .where(
+              and(
+                isNull(customersTable.deleted_at),
+                sql`REGEXP_REPLACE(${customersTable.phone}, '[^0-9]', '', 'g') = ${normalizedPhone}`,
+              )
+            )
+            .limit(2);
+
+          if (byPhone.length === 1) {
+            resolvedCustomerId = byPhone[0].id;
+          } else if (byPhone.length === 0) {
+            // Create customer from snapshot data
+            const customerName =
+              (snap["business_name"] as string) ||
+              (snap["contact_name"] as string) ||
+              (snap["name"] as string) ||
+              "לקוח חדש";
+            const custNum = await generateCustomerNumber(tx);
+            const inserted = await tx
+              .insert(customersTable)
+              .values({
+                customer_number: custNum,
+                name: customerName,
+                phone: rawPhone || null,
+                email: (snap["email"] as string) || null,
+                joined_at: new Date().toISOString().split("T")[0],
+              })
+              .returning({ id: customersTable.id });
+            resolvedCustomerId = inserted[0]!.id;
+          }
+          // byPhone.length > 1: ambiguous — do not auto-merge
+        }
+
+        if (!resolvedCustomerId) {
+          throw new DealError(
+            "CUSTOMER_RESOLVE_FAILED",
+            "לא ניתן לזהות לקוח עבור עסקה זו. יש לבדוק את פרטי הלקוח בהצעה.",
+            400,
+          );
         }
       }
-    }
 
-    if (!customer_id) {
-      res.status(400).json({ error: "לא ניתן לזהות לקוח עבור עסקה זו" });
-      return;
-    }
+      // ── Step 5: Amount validation ───────────────────────────────────────────
+      const totalsSnap = (version.totals_snapshot ?? {}) as Record<string, number>;
+      const total_amount_including_vat = totalsSnap["total_with_vat"] ?? 0;
 
-    // 6. Generate deal_number
-    const deal_number = await generateDealNumber();
+      if (amount_paid_including_vat > total_amount_including_vat) {
+        throw new DealError(
+          "PAYMENT_EXCEEDS_TOTAL",
+          "סכום ששולם לא יכול להיות גבוה מסך העסקה",
+          400,
+        );
+      }
 
-    // 7. INSERT deal — trigger fills quote_id and snapshots
-    const inserted = await db
-      .insert(dealsTable)
-      .values({
-        deal_number,
-        customer_id,
-        source_quote_version_id,
-        salesperson_user_id: salesperson_user_id || null,
-        execution_status: "פתוחה",
-        total_amount: String(total_amount_including_vat),
-        total_amount_including_vat: String(total_amount_including_vat),
-        paid_amount: String(amount_paid_including_vat),
-        amount_paid_including_vat: String(amount_paid_including_vat),
-        payment_type,
-        installments_count: payment_type === "credit_card" ? installments_count : null,
-        invoice_name: payment_type !== "credit_card" ? invoice_name : null,
-        invoice_id_number: payment_type !== "credit_card" ? invoice_id_number : null,
-        invoice_email: payment_type !== "credit_card" ? invoice_email : null,
-        coordination_tasks_requested,
-        special_notes: operation_notes?.trim() || null,
-        payment_status: "ממתינה לתשלום",
-      })
-      .returning({ id: dealsTable.id, deal_number: dealsTable.deal_number });
+      // ── Step 6: Generate deal number ────────────────────────────────────────
+      const deal_number = await generateDealNumber(tx);
 
-    const newDealId = inserted[0]?.id;
-    const newDealNumber = inserted[0]?.deal_number;
+      // ── Step 7: INSERT deal — trigger fills snapshots ───────────────────────
+      let newDeal: { id: string; deal_number: string } | undefined;
+      try {
+        const inserted = await tx
+          .insert(dealsTable)
+          .values({
+            deal_number,
+            quote_id: version.quote_id,
+            customer_id: resolvedCustomerId,
+            lead_id: resolvedLeadId,
+            source_quote_version_id,
+            salesperson_user_id: salesperson_user_id || null,
+            execution_status: "פתוחה",
+            total_amount: String(total_amount_including_vat),
+            total_amount_including_vat: String(total_amount_including_vat),
+            paid_amount: String(amount_paid_including_vat),
+            amount_paid_including_vat: String(amount_paid_including_vat),
+            payment_type,
+            installments_count: payment_type === "credit_card" ? installments_count : null,
+            invoice_name: payment_type !== "credit_card" ? invoice_name : null,
+            invoice_id_number: payment_type !== "credit_card" ? invoice_id_number : null,
+            invoice_email: payment_type !== "credit_card" ? invoice_email : null,
+            coordination_tasks_requested,
+            special_notes: operation_notes?.trim() || null,
+            payment_status: "ממתינה לתשלום",
+            purchase_date: new Date().toISOString().split("T")[0],
+          })
+          .returning({ id: dealsTable.id, deal_number: dealsTable.deal_number });
+        newDeal = inserted[0];
+      } catch (insertErr) {
+        // Concurrent insert: return existing deal
+        if (isPgUniqueViolation(insertErr)) {
+          const concurrent = await tx
+            .select({ id: dealsTable.id, deal_number: dealsTable.deal_number, customer_id: dealsTable.customer_id })
+            .from(dealsTable)
+            .where(
+              and(
+                isNull(dealsTable.deleted_at),
+                eq(dealsTable.source_quote_version_id, source_quote_version_id),
+              )
+            )
+            .limit(1);
+          if (concurrent.length > 0) {
+            return {
+              success: true,
+              alreadyExists: true,
+              dealId: concurrent[0].id,
+              deal_number: concurrent[0].deal_number,
+              customerId: concurrent[0].customer_id,
+            };
+          }
+        }
+        throw insertErr;
+      }
 
-    // 8. Create coordination tasks
-    if (coordination_tasks_requested && coordination_tasks.length > 0 && newDealId) {
-      await db.insert(dealCoordinationTasksTable).values(
-        coordination_tasks.map((t) => ({
-          deal_id: newDealId,
-          task_text: t.task_text.trim(),
-          assignee_role: t.assignee_role,
-          status: "open",
-        }))
-      );
-    }
+      if (!newDeal) {
+        throw new DealError("INSERT_FAILED", "שגיאה ביצירת העסקה", 500);
+      }
 
-    res.status(201).json({ id: newDealId, deal_number: newDealNumber });
+      // ── Step 8: Verify snapshots were populated by DB trigger ───────────────
+      const verifyRows = await tx
+        .select({
+          source_quote_version_id: dealsTable.source_quote_version_id,
+          snapshot_locked_at: dealsTable.snapshot_locked_at,
+          items_snapshot: dealsTable.items_snapshot,
+          party_snapshot: dealsTable.party_snapshot,
+          totals_snapshot: dealsTable.totals_snapshot,
+        })
+        .from(dealsTable)
+        .where(eq(dealsTable.id, newDeal.id))
+        .limit(1);
+
+      const verified = verifyRows[0];
+      if (
+        !verified ||
+        !verified.source_quote_version_id ||
+        !verified.snapshot_locked_at ||
+        !verified.items_snapshot ||
+        !verified.party_snapshot ||
+        !verified.totals_snapshot
+      ) {
+        throw new DealError(
+          "DEAL_SNAPSHOT_CREATION_FAILED",
+          "העסקה לא נוצרה עם Snapshot תקין של הצעת המחיר.",
+          500,
+        );
+      }
+
+      return {
+        success: true,
+        alreadyExists: false,
+        dealId: newDeal.id,
+        deal_number: newDeal.deal_number,
+        customerId: resolvedCustomerId,
+      };
+    });
+
+    res.status(result.alreadyExists ? 200 : 201).json(result);
+
   } catch (err) {
     logger.error({ err }, "POST /deals error");
-    const mapped = mapPostgresError(err);
-    if (mapped) {
-      const status = (err as Record<string, string>).code === "23505" ? 409 : 400;
-      res.status(status).json({ error: mapped });
+
+    if (err instanceof DealError) {
+      res.status(err.httpStatus).json({ success: false, code: err.code, error: err.message });
       return;
     }
-    res.status(500).json({ error: "שגיאה פנימית ביצירת העסקה" });
+
+    const pgErr = err as Record<string, string> | null;
+    if (pgErr?.code === "23505" && pgErr?.constraint?.includes("source_quote_version_id")) {
+      res.status(409).json({ success: false, code: "DEAL_ALREADY_EXISTS", error: "כבר קיימת עסקה עבור גרסת הצעה זו" });
+      return;
+    }
+
+    res.status(500).json({ success: false, code: "INTERNAL_ERROR", error: "שגיאה פנימית ביצירת העסקה" });
   }
 });
 
@@ -564,11 +741,6 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, "PATCH /deals/:id error");
-    const mapped = mapPostgresError(err);
-    if (mapped) {
-      res.status(400).json({ error: mapped });
-      return;
-    }
     res.status(500).json({ error: "שגיאה פנימית בעדכון העסקה" });
   }
 });
