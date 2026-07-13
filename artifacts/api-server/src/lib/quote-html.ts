@@ -1,6 +1,25 @@
 // Renders a quote snapshot to a self-contained A4 HTML string for PDF generation.
 // All styles are inline — no external resources.
 
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+
+// Load logo once at module init; works from both dist/ and src/ locations.
+function _loadLogoDataUri(): string {
+  const candidates = [
+    join(__dirname, "assets", "bist-logo.png"),
+    join(__dirname, "..", "src", "assets", "bist-logo.png"),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      const b64 = readFileSync(p).toString("base64");
+      return `data:image/png;base64,${b64}`;
+    }
+  }
+  return "";
+}
+const LOGO_DATA_URI = _loadLogoDataUri();
+
 export interface PdfLabels {
   client_details?: string;
   for_client?: string;
@@ -266,24 +285,26 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; direction: rtl; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { width: 100%; padding: 48px 56px; min-height: 100vh; }
+  .page { width: 100%; padding: 32px 56px 48px; min-height: calc(100vh - 140px); }
   table { width: 100%; border-collapse: collapse; }
   th { background-color: #1e3a5f !important; color: white; padding: 10px 12px; font-size: 13px; font-weight: 600; }
   @page { size: A4; margin: 0; }
 </style>
 </head>
 <body>
+
+  ${
+    cfg.show_logo && LOGO_DATA_URI
+      ? `<img src="${LOGO_DATA_URI}" alt="BIST" style="width:100%;display:block;margin:0;padding:0;" />`
+      : `<div style="width:100%;background:#111;padding:18px 56px;"><span style="color:#fff;font-weight:700;font-size:20px;">BIST Productions</span></div>`
+  }
+
 <div class="page">
 
-  <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:3px solid #1e3a5f;padding-bottom:20px;">
+  <!-- Header: quote title + meta -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:3px solid #1e3a5f;padding-bottom:20px;margin-top:8px;">
     <div>
-      ${
-        cfg.show_logo
-          ? `<div style="width:72px;height:36px;background-color:#1e3a5f;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:15px;line-height:36px;text-align:center;padding:0 12px;">BIST</div>`
-          : ""
-      }
-      ${cfg.company_name ? `<div style="font-size:13px;color:#6b7280;margin-top:8px;">${cfg.company_name}</div>` : ""}
+      ${cfg.company_name ? `<div style="font-size:13px;color:#6b7280;">${cfg.company_name}</div>` : ""}
       ${cfg.company_introduction ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;max-width:240px;">${cfg.company_introduction}</div>` : ""}
     </div>
     <div style="text-align:left;">
