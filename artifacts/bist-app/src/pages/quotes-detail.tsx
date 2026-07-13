@@ -452,7 +452,7 @@ export default function QuotesDetail() {
                   {(item.customer_note || item.internal_note || (item.components_snapshot && item.components_snapshot.length > 0)) && (
                     <div className="px-4 py-3 space-y-2">
                       {item.customer_note && <div className="text-xs"><span className="text-muted-foreground">הערת לקוח: </span>{item.customer_note}</div>}
-                      {item.internal_note && <div className="text-xs"><span className="text-muted-foreground">הערה פנימית: </span>{item.internal_note}</div>}
+                      {item.internal_note && <div className="text-xs"><span className="text-muted-foreground">הערכה למחלקת אופרציה: </span>{item.internal_note}</div>}
                       {item.manual_price_override && item.price_override_reason && (
                         <div className="text-xs text-orange-700"><span className="font-medium">סיבת שינוי מחיר: </span>{item.price_override_reason}</div>
                       )}

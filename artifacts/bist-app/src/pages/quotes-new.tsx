@@ -407,7 +407,7 @@ function ComponentRow({
             onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
         </div>
         <div className="space-y-0.5">
-          <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
+          <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
           <Input value={comp.internal_note} className="h-7 text-xs"
             onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
         </div>
@@ -505,7 +505,7 @@ function BasketRow({
               onChange={(e) => setField("customer_note", e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
+            <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
             <Textarea value={item.internal_note} rows={2}
               onChange={(e) => setField("internal_note", e.target.value)} />
           </div>
@@ -745,7 +745,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
             placeholder="הנחיות לצוות הביצוע" />
         </div>
         <div className="space-y-1">
-          <Label>הערה פנימית כללית <span className="text-xs text-muted-foreground">(פנימית — לא מוצגת ללקוח)</span></Label>
+          <Label>הערכה למחלקת אופרציה</Label>
           <Textarea value={state.internalNotes} rows={2}
             onChange={(e) => update({ internalNotes: e.target.value })}
             placeholder="הערה פנימית כלשהי" />
