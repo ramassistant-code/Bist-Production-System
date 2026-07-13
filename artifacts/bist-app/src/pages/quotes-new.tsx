@@ -103,7 +103,7 @@ function formatILS(n: number) {
   return `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function newBasketItem(product: Product, components: Array<{ component_id: string; component_name_snapshot: string; component_description_snapshot: string; quantity: number; unit_cost_snapshot: number }>): BasketItem {
+function newBasketItem(product: Product, components: Array<{ component_id: string; component_name_snapshot: string; component_description_snapshot: string; quantity: number; unit_cost_snapshot: number; internal_note?: string }>): BasketItem {
   return {
     line_id: crypto.randomUUID(),
     source_type: "product",
@@ -118,8 +118,8 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     manual_price_override: false,
     price_override_reason: "",
     customer_note: "",
-    internal_note: "",
-    components: components.map(c => ({ ...c, customer_note: "", internal_note: "" })),
+    internal_note: product.sales_notes ?? "",
+    components: components.map(c => ({ ...c, customer_note: "", internal_note: c.internal_note ?? "" })),
     components_expanded: false,
   };
 }

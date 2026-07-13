@@ -461,10 +461,15 @@ export default function QuotesDetail() {
                           <p className="text-xs font-medium text-muted-foreground mb-1">{item.components_snapshot.length} רכיבים:</p>
                           <div className="space-y-1">
                             {item.components_snapshot.map((c, ci) => (
-                              <div key={ci} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-                                <span className="font-medium">{c.component_name_snapshot}</span>
-                                <span className="text-muted-foreground">× {c.quantity}</span>
-                                {c.customer_note && <span className="text-blue-600 mr-auto">{c.customer_note}</span>}
+                              <div key={ci} className="text-xs bg-muted/50 rounded px-2 py-1 space-y-0.5">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <span className="font-medium text-foreground">{c.component_name_snapshot}</span>
+                                  <span>× {c.quantity}</span>
+                                  {c.customer_note && <span className="text-amber-700 mr-auto">{c.customer_note}</span>}
+                                </div>
+                                {c.internal_note && (
+                                  <div className="text-blue-700"><span className="text-muted-foreground">הערה פנימית: </span>{c.internal_note}</div>
+                                )}
                               </div>
                             ))}
                           </div>
