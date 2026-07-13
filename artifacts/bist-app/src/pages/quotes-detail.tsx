@@ -199,7 +199,7 @@ export default function QuotesDetail() {
         headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
       }).catch(() => null) as Promise<{ url: string; document_id: string; download_filename: string; revision: number } | null>,
     enabled: !!ver?.id && !!session?.access_token,
-    staleTime: 5 * 60_000,
+    staleTime: 0,
     retry: false,
   });
 
@@ -215,6 +215,7 @@ export default function QuotesDetail() {
       ),
     onSuccess: (result) => {
       setLastPdfUrl(result.url);
+      queryClient.invalidateQueries({ queryKey: ["quote-latest-pdf", ver?.id] });
       // Use anchor click to bypass popup blockers
       const a = document.createElement("a");
       a.href = result.url;
