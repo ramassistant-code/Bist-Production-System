@@ -7,8 +7,8 @@ import { join } from "path";
 // Load logo once at module init; works from both dist/ and src/ locations.
 function _loadLogoDataUri(): string {
   const candidates = [
-    join(__dirname, "assets", "bist-logo.png"),
-    join(__dirname, "..", "src", "assets", "bist-logo.png"),
+    join(__dirname, "assets", "bist-banner.png"),
+    join(__dirname, "..", "src", "assets", "bist-banner.png"),
   ];
   for (const p of candidates) {
     if (existsSync(p)) {
