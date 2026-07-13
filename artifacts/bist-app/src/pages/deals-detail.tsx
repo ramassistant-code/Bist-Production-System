@@ -887,7 +887,7 @@ export default function DealsDetail() {
                           )}
                           {item.internal_note && (
                             <div className="text-xs">
-                              <span className="text-muted-foreground">הערכה למחלקת אופרציה: </span>
+                              <span className="text-muted-foreground">הערה למחלקת אופרציה: </span>
                               {item.internal_note}
                             </div>
                           )}

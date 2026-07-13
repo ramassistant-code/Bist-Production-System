@@ -441,7 +441,7 @@ function ComponentRow({
         )}
       </div>
       <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
+        <Label className="text-xs text-muted-foreground">הערה למחלקת אופרציה</Label>
         <Input value={comp.internal_note} className="h-7 text-xs"
           onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
       </div>
@@ -532,7 +532,7 @@ function BasketRow({
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
+          <Label className="text-xs text-muted-foreground">הערה למחלקת אופרציה</Label>
           <Textarea value={item.internal_note} rows={2}
             onChange={(e) => setField("internal_note", e.target.value)} />
         </div>
