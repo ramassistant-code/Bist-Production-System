@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Copy, Plus, AlertCircle, CheckCircle, XCircle, Send, Handshake } from "lucide-react";
+import { ChevronRight, Copy, Plus, AlertCircle, CheckCircle, XCircle, Send, Handshake, FileDown } from "lucide-react";
 import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -186,6 +186,25 @@ export default function QuotesDetail() {
     staleTime: 0,
   });
 
+  const pdfMutation = useMutation({
+    mutationFn: (versionId: string) =>
+      customFetch<{ url: string; document_id: string; download_filename: string }>(
+        `/api/quote-versions/${versionId}/generate-pdf`,
+        { method: "POST", body: JSON.stringify({ templateId: null }) },
+      ),
+    onSuccess: (result) => {
+      window.open(result.url, "_blank", "noopener,noreferrer");
+      toast({ title: "ה-PDF נוצר בהצלחה", description: result.download_filename });
+    },
+    onError: (err: Error & { data?: { error?: string } }) => {
+      toast({
+        title: "שגיאה ביצירת PDF",
+        description: err?.data?.error ?? err?.message ?? "שגיאה לא ידועה",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <Shell title="הצעת מחיר">
@@ -268,6 +287,18 @@ export default function QuotesDetail() {
               <Button size="sm" variant="outline" onClick={() => navigate(`/quotes/${id}/duplicate`)}>
                 <Copy className="w-3.5 h-3.5 ml-1" />הצעה חדשה מזו
               </Button>
+              {verData?.id && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pdfMutation.isPending}
+                  onClick={() => pdfMutation.mutate(verData.id)}
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                >
+                  <FileDown className="w-3.5 h-3.5 ml-1" />
+                  {pdfMutation.isPending ? "מייצר PDF..." : "הפק PDF"}
+                </Button>
+              )}
               {canOpenDeal && (
                 <Button
                   size="sm"

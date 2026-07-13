@@ -10,6 +10,7 @@ import quotesRouter from "./quotes";
 import usersRouter from "./users";
 import dealsRouter from "./deals";
 import pdfTemplatesRouter from "./pdf-templates";
+import quoteVersionsRouter from "./quote-versions";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(quotesRouter);
 router.use(usersRouter);
 router.use(dealsRouter);
 router.use(pdfTemplatesRouter);
+router.use(quoteVersionsRouter);
 
 export default router;
