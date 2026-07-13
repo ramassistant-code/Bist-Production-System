@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Eye, Phone, Mail, Building2, User } from "lucide-react";
+import { Plus, Pencil, Eye, Phone, Mail, Building2, User, Search, X } from "lucide-react";
 
 import { Shell } from "@/components/layout/shell";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -275,8 +275,21 @@ export default function Customers() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
   const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: customers, isLoading, isError } = useListCustomers();
+
+  const filteredCustomers = customers?.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      (c.customer_number ?? "").toLowerCase().includes(q) ||
+      (c.phone ?? "").toLowerCase().includes(q) ||
+      (c.email ?? "").toLowerCase().includes(q) ||
+      (c.customer_type ?? "").toLowerCase().includes(q)
+    );
+  }) ?? [];
 
   const createMutation = useCreateCustomer({
     mutation: {
@@ -319,11 +332,33 @@ export default function Customers() {
     <Shell title="לקוחות">
       <div className="flex flex-col h-full">
         {/* Top controls */}
-        <div className="shrink-0 flex items-center justify-between px-8 pt-6 pb-4">
-          <p className="text-sm text-muted-foreground">
-            {!isLoading && !isError && customers ? `${customers.length} לקוחות` : ""}
+        <div className="shrink-0 flex items-center gap-3 px-8 pt-6 pb-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="חיפוש לפי שם, טלפון, אימייל..."
+              className="w-full border border-border rounded-lg pr-9 pl-8 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground whitespace-nowrap">
+            {!isLoading && !isError && customers
+              ? search.trim()
+                ? `${filteredCustomers.length} מתוך ${customers.length}`
+                : `${customers.length} לקוחות`
+              : ""}
           </p>
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)} className="shrink-0">
             <Plus className="w-4 h-4 ml-1" />
             לקוח חדש
           </Button>
@@ -354,7 +389,13 @@ export default function Customers() {
             </div>
           )}
 
-          {!isLoading && !isError && customers && customers.length > 0 && (
+          {!isLoading && !isError && customers && customers.length > 0 && filteredCustomers.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <EmptyState title="לא נמצאו תוצאות" description={`לא נמצאו לקוחות התואמים את "${search}"`} />
+            </div>
+          )}
+
+          {!isLoading && !isError && customers && filteredCustomers.length > 0 && (
             <div className="h-full overflow-y-auto rounded-lg border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
@@ -369,7 +410,7 @@ export default function Customers() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-4 py-3">
                         <Badge variant="secondary" className="font-mono text-xs">
