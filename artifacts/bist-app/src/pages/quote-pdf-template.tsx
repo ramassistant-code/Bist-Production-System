@@ -360,6 +360,11 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
       ? `<div style="margin-bottom:16px;"><div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px;">${L.customer_notes}</div><div style="font-size:13px;color:#374151;background:#fef9f0;border-radius:6px;padding:10px 12px;border:1px solid #fde68a;">${SAMPLE.customer_notes}</div></div>`
       : ""
   }
+  ${
+    cfg.bottom_notes
+      ? `<div style="margin-bottom:16px;margin-top:8px;"><div style="font-size:13px;color:#374151;line-height:1.7;white-space:pre-wrap;padding:12px 14px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;">${cfg.bottom_notes}</div></div>`
+      : ""
+  }
 
   <!-- Signature -->
   ${sigHtml}
@@ -581,7 +586,7 @@ export default function QuotePdfTemplate() {
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="שם הטמפלט"
                 />
               </div>
@@ -602,7 +607,7 @@ export default function QuotePdfTemplate() {
                       type="text"
                       value={cfg[key] as string}
                       onChange={(e) => setField(key, e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 ))}
@@ -612,7 +617,7 @@ export default function QuotePdfTemplate() {
                     value={cfg.company_introduction}
                     onChange={(e) => setField("company_introduction", e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="משפט תיאור קצר (אופציונלי)"
                   />
                 </div>
@@ -640,7 +645,7 @@ export default function QuotePdfTemplate() {
                       value={cfg.below_client_text}
                       onChange={(e) => setField("below_client_text", e.target.value)}
                       rows={3}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       placeholder="טקסט חופשי שיופיע מתחת לפרטי הלקוח (אופציונלי)"
                     />
                   </div>
@@ -667,7 +672,7 @@ export default function QuotePdfTemplate() {
                       value={cfg.bottom_notes}
                       onChange={(e) => setField("bottom_notes", e.target.value)}
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       placeholder="טקסט חופשי שיופיע מתחת לסיכום הכספי (תנאי תשלום, תנאים כלליים וכו׳)"
                     />
                   </div>
@@ -720,7 +725,7 @@ export default function QuotePdfTemplate() {
                           type="text"
                           value={cfg.labels[key]}
                           onChange={(e) => setLabel(key, e.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     ))}
