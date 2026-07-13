@@ -187,6 +187,22 @@ export default function QuotesDetail() {
     staleTime: 0,
   });
 
+  const { data: existingPdf } = useQuery<{
+    url: string;
+    document_id: string;
+    download_filename: string;
+    revision: number;
+  } | null>({
+    queryKey: ["quote-latest-pdf", ver?.id],
+    queryFn: () =>
+      customFetch(`/api/quote-versions/${ver!.id}/latest-pdf`, {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      }).catch(() => null) as Promise<{ url: string; document_id: string; download_filename: string; revision: number } | null>,
+    enabled: !!ver?.id && !!session?.access_token,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const pdfMutation = useMutation({
     mutationFn: (versionId: string) =>
       customFetch<{ url: string; document_id: string; download_filename: string }>(
@@ -312,14 +328,14 @@ export default function QuotesDetail() {
                   {pdfMutation.isPending ? "מייצר PDF..." : "הפק PDF"}
                 </Button>
               )}
-              {lastPdfUrl && (
+              {(lastPdfUrl ?? existingPdf?.url) && (
                 <Button
                   size="sm"
                   variant="ghost"
                   asChild
                   className="text-blue-600"
                 >
-                  <a href={lastPdfUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={(lastPdfUrl ?? existingPdf?.url)!} target="_blank" rel="noopener noreferrer">
                     <FileDown className="w-3.5 h-3.5 ml-1" />פתח PDF
                   </a>
                 </Button>

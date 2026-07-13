@@ -236,4 +236,57 @@ router.post(
   },
 );
 
+// ── GET /quote-versions/:quoteVersionId/latest-pdf ────────────────────────────
+// Returns a fresh signed URL for the latest generated PDF of this version.
+// Response: { url, document_id, download_filename, revision } | 404
+
+router.get(
+  "/quote-versions/:quoteVersionId/latest-pdf",
+  async (req: Request, res: Response): Promise<void> => {
+    const quoteVersionId = String(req.params["quoteVersionId"]);
+
+    const authHeader = req.headers["authorization"] ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      res.status(401).json({ error: "לא מורשה" });
+      return;
+    }
+    const { data: userData, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !userData?.user) {
+      res.status(401).json({ error: "לא מורשה" });
+      return;
+    }
+
+    const { data: doc } = await supabaseAdmin
+      .from("quote_documents")
+      .select("id, storage_path, download_filename, revision")
+      .eq("quote_version_id", quoteVersionId)
+      .not("storage_path", "is", null)
+      .order("revision", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!doc?.storage_path) {
+      res.status(404).json({ error: "לא נמצא PDF עבור גרסה זו" });
+      return;
+    }
+
+    const { data: signedData, error: signErr } = await supabaseAdmin.storage
+      .from("quote-pdfs")
+      .createSignedUrl(String(doc.storage_path), 3600);
+
+    if (signErr || !signedData?.signedUrl) {
+      res.status(500).json({ error: "שגיאה ביצירת קישור" });
+      return;
+    }
+
+    res.json({
+      url: signedData.signedUrl,
+      document_id: doc.id,
+      download_filename: doc.download_filename ?? "quote.pdf",
+      revision: doc.revision,
+    });
+  },
+);
+
 export default router;
