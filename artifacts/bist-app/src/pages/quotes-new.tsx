@@ -85,6 +85,12 @@ interface WizardState {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function endOfCurrentMonth(): string {
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return last.toISOString().split("T")[0];
+}
+
 const VAT_RATE = 0.18;
 
 function calcBasket(items: BasketItem[], discountAmount: string, basketManuallyOverridden: boolean, basketManualTotal: string) {
@@ -146,7 +152,7 @@ function newManualItem(): BasketItem {
 const initialState: WizardState = {
   phone: "", partyType: null, partyId: null, partyName: "", partyEmail: "",
   newLeadName: "", newLeadPhone: "", newLeadEmail: "",
-  projectTitle: "", validUntil: "",
+  projectTitle: "", validUntil: endOfCurrentMonth(),
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
   paymentTerms: "", depositAmount: "", deliveryTerms: "",
   customerNotes: "", operationNotes: "", internalNotes: "",
@@ -155,7 +161,7 @@ const initialState: WizardState = {
 
 // ── Step indicators ────────────────────────────────────────────────────────
 
-const STEPS = ["זיהוי לקוח", "פרטי הצעה", "סל מוצרים", "תנאים והערות", "סיכום ושמירה"];
+const STEPS = ["זיהוי לקוח/ליד", "סל מוצרים", "תנאים והערות", "סיכום ושמירה"];
 
 function StepBar({ current }: { current: number }) {
   return (
@@ -228,8 +234,15 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         {lookupError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" />{lookupError}</p>}
       </div>
 
+      {lookupDone && lookupResult && state.partyType && (
+        <div className="space-y-2">
+          <Label>כותרת הצעה / שם פרויקט</Label>
+          <Input value={state.projectTitle} onChange={(e) => update({ projectTitle: e.target.value })} placeholder="לדוגמה: חתונת יעל ודוד — הפקה מלאה" />
+        </div>
+      )}
+
       {lookupDone && lookupResult && (
-        <div className="rounded-lg border p-4 bg-gray-50 space-y-3">
+        <div className="rounded-lg border p-4 bg-muted/40 space-y-3">
           {lookupResult.found === "customer" && (
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
@@ -687,9 +700,13 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 4 — תנאים, תשלומים והערות</h2>
+        <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים, תשלומים והערות</h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label>תוקף הצעה עד תאריך</Label>
+          <Input type="date" value={state.validUntil} onChange={(e) => update({ validUntil: e.target.value })} />
+        </div>
         <div className="space-y-1">
           <Label>תנאי תשלום</Label>
           <Input value={state.paymentTerms} onChange={(e) => update({ paymentTerms: e.target.value })} placeholder="לדוגמה: 50% מקדמה, 50% לפני אספקה" />
@@ -705,7 +722,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         </div>
         <div className="space-y-1">
           <Label>יתרה לתשלום (מחושב אוטומטית)</Label>
-          <div className="h-9 flex items-center px-3 bg-gray-50 rounded border text-sm font-medium text-gray-700">
+          <div className="h-9 flex items-center px-3 bg-muted rounded border text-sm font-medium">
             {formatILS(remaining)}
           </div>
         </div>
@@ -754,7 +771,7 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 5 — סיכום לפני שמירה</h2>
+        <h2 className="text-lg font-semibold mb-1">שלב 4 — סיכום לפני שמירה</h2>
         <p className="text-sm text-muted-foreground">אנא בדקו את הפרטים לפני שמירת ההצעה.</p>
       </div>
 
@@ -937,9 +954,6 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       if (state.partyType === "new" && !state.newLeadName.trim()) errs.push("חובה להזין שם ליד חדש");
     }
     if (step === 1) {
-      if (state.validUntil && new Date(state.validUntil) < new Date()) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
-    }
-    if (step === 2) {
       if (state.items.length === 0) errs.push("חובה להוסיף לפחות שורה אחת להצעה");
       for (const item of state.items) {
         if (item.quantity <= 0) errs.push("כמות מוצר חייבת להיות גדולה מ-0");
@@ -951,7 +965,8 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
       if (calc.discount > calc.effectiveSubtotal) errs.push("ההנחה הכוללת לא יכולה להיות גבוהה מסה״כ סל המוצרים");
     }
-    if (step === 3) {
+    if (step === 2) {
+      if (state.validUntil && new Date(state.validUntil) < new Date()) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
       const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
       const deposit = parseFloat(state.depositAmount) || 0;
       if (deposit > calc.total) errs.push("המקדמה לא יכולה להיות גבוהה מסה״כ ההצעה");
@@ -1052,10 +1067,9 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
           {/* Step content */}
           <div className="min-h-[400px]">
             {step === 0 && <Step1 state={state} update={update} />}
-            {step === 1 && <Step2 state={state} update={update} />}
-            {step === 2 && <Step3 state={state} update={update} />}
-            {step === 3 && <Step4 state={state} update={update} />}
-            {step === 4 && (
+            {step === 1 && <Step3 state={state} update={update} />}
+            {step === 2 && <Step4 state={state} update={update} />}
+            {step === 3 && (
               <Step5
                 state={state}
                 update={update}
@@ -1080,7 +1094,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
           )}
 
           {/* Navigation */}
-          {step < 4 && (
+          {step < 3 && (
             <div className="flex justify-between mt-8 pt-4 border-t">
               <Button variant="outline" onClick={step === 0 ? () => navigate("/quotes") : () => setStep(s => s - 1)}>
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -1092,9 +1106,9 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
               </Button>
             </div>
           )}
-          {step === 4 && (
+          {step === 3 && (
             <div className="flex justify-start mt-8 pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep(3)}>
+              <Button variant="outline" onClick={() => setStep(2)}>
                 <ChevronRight className="w-4 h-4 ml-1" />חזרה לעריכה
               </Button>
             </div>
