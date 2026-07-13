@@ -440,17 +440,10 @@ function ComponentRow({
           </span>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-0.5">
-          <Label className="text-xs text-muted-foreground">הערת לקוח (תוצג ללקוח)</Label>
-          <Input value={comp.customer_note} className="h-7 text-xs"
-            onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
-        </div>
-        <div className="space-y-0.5">
-          <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
-          <Input value={comp.internal_note} className="h-7 text-xs"
-            onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
-        </div>
+      <div className="space-y-0.5">
+        <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
+        <Input value={comp.internal_note} className="h-7 text-xs"
+          onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
       </div>
     </div>
   );
@@ -538,17 +531,10 @@ function BasketRow({
             onChange={(e) => setField("product_description_snapshot", e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">הערת לקוח (תוצג ללקוח)</Label>
-            <Textarea value={item.customer_note} rows={2}
-              onChange={(e) => setField("customer_note", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
-            <Textarea value={item.internal_note} rows={2}
-              onChange={(e) => setField("internal_note", e.target.value)} />
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">הערכה למחלקת אופרציה</Label>
+          <Textarea value={item.internal_note} rows={2}
+            onChange={(e) => setField("internal_note", e.target.value)} />
         </div>
 
         {/* Components */}
@@ -739,15 +725,9 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       <div>
         <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים, תשלומים והערות</h2>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label>תוקף הצעה עד תאריך</Label>
-          <Input type="date" value={state.validUntil} onChange={(e) => update({ validUntil: e.target.value })} />
-        </div>
-        <div className="space-y-1">
-          <Label>זמן אספקה / מועד ביצוע משוער</Label>
-          <Input value={state.deliveryTerms} onChange={(e) => update({ deliveryTerms: e.target.value })} placeholder="לדוגמה: 3 שבועות מאישור" />
-        </div>
+      <div className="space-y-1 max-w-xs">
+        <Label>תוקף הצעה עד תאריך</Label>
+        <Input type="date" value={state.validUntil} onChange={(e) => update({ validUntil: e.target.value })} />
       </div>
 
       {/* Payment section */}
@@ -869,12 +849,6 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
         </>}
       </div>
 
-      {/* Terms */}
-      {state.deliveryTerms && (
-        <div className="rounded-lg border border-border p-4 space-y-1 text-sm">
-          {state.deliveryTerms && <div><span className="text-muted-foreground">זמן אספקה: </span>{state.deliveryTerms}</div>}
-        </div>
-      )}
 
       {/* Customer notes */}
       {state.customerNotes && (
