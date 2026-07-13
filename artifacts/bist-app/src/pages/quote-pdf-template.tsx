@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import bistLogoUrl from "../assets/bist-logo.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
@@ -283,7 +284,7 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:3px solid #1e3a5f;padding-bottom:20px;">
     <div>
-      ${cfg.show_logo ? `<div style="width:80px;height:40px;background:#1e3a5f;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;">BIST</div>` : ""}
+      ${cfg.show_logo ? `<img src="${bistLogoUrl}" style="height:56px;width:auto;display:block;" alt="BIST logo"/>` : ""}
       ${cfg.company_name ? `<div style="font-size:13px;color:#6b7280;margin-top:8px;">${cfg.company_name}</div>` : ""}
       ${cfg.company_introduction ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;max-width:260px;">${cfg.company_introduction}</div>` : ""}
     </div>
