@@ -1009,4 +1009,74 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
   }
 });
 
+// ── POST /deals/:id/sync-credits ─────────────────────────────────────────────
+// Re-creates missing credits from items_snapshot (idempotent via source_key).
+
+router.post("/deals/:id/sync-credits", async (req: Request, res: Response): Promise<void> => {
+  const id = String(req.params["id"]);
+  try {
+    const dealRows = await db
+      .select({
+        id: dealsTable.id,
+        customer_id: dealsTable.customer_id,
+        items_snapshot: dealsTable.items_snapshot,
+      })
+      .from(dealsTable)
+      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.id, id)))
+      .limit(1);
+
+    if (dealRows.length === 0) {
+      res.status(404).json({ error: "עסקה לא נמצאה" });
+      return;
+    }
+
+    interface SyncComponent {
+      component_id: string;
+      quantity: number;
+      component_name_snapshot: string;
+      component_description_snapshot?: string;
+    }
+    interface SyncItem {
+      line_id: string;
+      quantity: number;
+      product_id?: string;
+      product_name_snapshot?: string;
+      components_snapshot?: SyncComponent[];
+    }
+
+    const deal = dealRows[0];
+    const items = (deal.items_snapshot ?? []) as SyncItem[];
+    let created = 0;
+
+    for (const item of items) {
+      for (const comp of item.components_snapshot ?? []) {
+        const totalQty = (item.quantity ?? 1) * (comp.quantity ?? 1);
+        const creditSourceKey = `deal:${id}:item:${item.line_id}:component:${comp.component_id}`;
+        const result = await db
+          .insert(creditsTable)
+          .values({
+            deal_id: id,
+            customer_id: deal.customer_id ?? undefined,
+            source_component_id: comp.component_id,
+            source_quote_item_id: item.line_id,
+            source_product_id: item.product_id ?? undefined,
+            parent_product_name: item.product_name_snapshot ?? null,
+            credit_name: comp.component_name_snapshot,
+            description: comp.component_description_snapshot ?? null,
+            status: "בתהליך",
+            quantity: String(totalQty),
+            source_key: creditSourceKey,
+          })
+          .onConflictDoNothing();
+        if (result.rowCount && result.rowCount > 0) created++;
+      }
+    }
+
+    res.json({ success: true, created });
+  } catch (err) {
+    logger.error({ err }, "POST /deals/:id/sync-credits error");
+    res.status(500).json({ error: "שגיאה בסנכרון קרדיטים" });
+  }
+});
+
 export default router;
