@@ -831,4 +831,182 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
   }
 });
 
+// ── GET /deals/:id/payments ───────────────────────────────────────────────────
+
+router.get("/deals/:id/payments", async (req: Request, res: Response): Promise<void> => {
+  const id = String(req.params["id"]);
+  try {
+    const rows = await db
+      .select({
+        id: paymentsTable.id,
+        payment_number: paymentsTable.payment_number,
+        payment_date: paymentsTable.payment_date,
+        payment_method: paymentsTable.payment_method,
+        payment_purpose: paymentsTable.payment_purpose,
+        amount_paid: paymentsTable.amount_paid,
+        status: paymentsTable.status,
+        installments_count: paymentsTable.installments_count,
+        invoice_name: paymentsTable.invoice_name,
+        invoice_email: paymentsTable.invoice_email,
+        source_type: paymentsTable.source_type,
+        created_at: paymentsTable.created_at,
+      })
+      .from(paymentsTable)
+      .where(and(isNull(paymentsTable.deleted_at), eq(paymentsTable.deal_id, id)))
+      .orderBy(paymentsTable.created_at);
+    res.json({ payments: rows });
+  } catch (err) {
+    logger.error({ err }, "GET /deals/:id/payments error");
+    res.status(500).json({ error: "שגיאה בטעינת תשלומים" });
+  }
+});
+
+// ── GET /deals/:id/credits ────────────────────────────────────────────────────
+
+router.get("/deals/:id/credits", async (req: Request, res: Response): Promise<void> => {
+  const id = String(req.params["id"]);
+  try {
+    const rows = await db
+      .select({
+        id: creditsTable.id,
+        credit_number: creditsTable.credit_number,
+        credit_name: creditsTable.credit_name,
+        parent_product_name: creditsTable.parent_product_name,
+        description: creditsTable.description,
+        status: creditsTable.status,
+        quantity: creditsTable.quantity,
+        completed_quantity: creditsTable.completed_quantity,
+        remaining_quantity: creditsTable.remaining_quantity,
+        credit_date: creditsTable.credit_date,
+        owner_role: creditsTable.owner_role,
+        salesperson_note: creditsTable.salesperson_note,
+        created_at: creditsTable.created_at,
+      })
+      .from(creditsTable)
+      .where(and(isNull(creditsTable.deleted_at), eq(creditsTable.deal_id, id)))
+      .orderBy(creditsTable.created_at);
+    res.json({ credits: rows });
+  } catch (err) {
+    logger.error({ err }, "GET /deals/:id/credits error");
+    res.status(500).json({ error: "שגיאה בטעינת קרדיטים" });
+  }
+});
+
+// ── POST /deals/:id/payments ──────────────────────────────────────────────────
+
+interface AddPaymentBody {
+  amount_paid?: number | string;
+  payment_type?: string;
+  payment_date?: string;
+  payment_purpose?: string;
+  installments_count?: number | string | null;
+  invoice_name?: string;
+  invoice_id_number?: string;
+  invoice_email?: string;
+}
+
+const VALID_PAYMENT_PURPOSES = ["גבייה", "לקוח חדש", "Upsell"];
+
+router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<void> => {
+  const id = String(req.params["id"]);
+  const body = req.body as AddPaymentBody;
+
+  const amount = Number(body.amount_paid ?? 0);
+  const payment_type = body.payment_type ?? "";
+  const payment_purpose = body.payment_purpose ?? "גבייה";
+  const payment_date = body.payment_date ?? new Date().toISOString().split("T")[0];
+  const installments_count = body.installments_count ? Number(body.installments_count) : null;
+  const invoice_name = body.invoice_name?.trim() ?? null;
+  const invoice_id_number = body.invoice_id_number?.trim() ?? null;
+  const invoice_email = body.invoice_email?.trim() ?? null;
+
+  if (isNaN(amount) || amount <= 0) {
+    res.status(400).json({ error: "יש להזין סכום תקין גדול מאפס" });
+    return;
+  }
+  if (!payment_type || !VALID_PAYMENT_TYPES.includes(payment_type)) {
+    res.status(400).json({ error: "יש לבחור אמצעי תשלום" });
+    return;
+  }
+  if (!VALID_PAYMENT_PURPOSES.includes(payment_purpose)) {
+    res.status(400).json({ error: "מטרת תשלום לא תקינה" });
+    return;
+  }
+  if (payment_type === "credit_card") {
+    if (!installments_count || installments_count < 1 || !Number.isInteger(installments_count)) {
+      res.status(400).json({ error: "באשראי יש להזין כמות תשלומים תקינה" });
+      return;
+    }
+  } else {
+    if (!invoice_name) {
+      res.status(400).json({ error: "יש להזין שם על החשבונית" });
+      return;
+    }
+  }
+
+  try {
+    const dealRows = await db
+      .select({
+        id: dealsTable.id,
+        execution_status: dealsTable.execution_status,
+        customer_id: dealsTable.customer_id,
+      })
+      .from(dealsTable)
+      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.id, id)))
+      .limit(1);
+
+    if (dealRows.length === 0) {
+      res.status(404).json({ error: "עסקה לא נמצאה" });
+      return;
+    }
+
+    const deal = dealRows[0];
+    if (deal.execution_status === "בוטלה") {
+      res.status(400).json({ error: "לא ניתן להוסיף תשלום לעסקה שבוטלה" });
+      return;
+    }
+
+    const PAYMENT_METHOD_MAP: Record<string, string> = {
+      cash: "מזומן",
+      credit_card: "אשראי",
+      bank_transfer: "העברה בנקאית",
+    };
+
+    const inserted = await db
+      .insert(paymentsTable)
+      .values({
+        deal_id: id,
+        customer_id: deal.customer_id ?? undefined,
+        status: "התקבל",
+        payment_date,
+        payment_method: PAYMENT_METHOD_MAP[payment_type],
+        payment_purpose,
+        amount_paid: String(amount),
+        installments_count: payment_type === "credit_card" ? installments_count : null,
+        invoice_name: payment_type !== "credit_card" ? invoice_name : null,
+        invoice_tax_id: payment_type !== "credit_card" ? invoice_id_number : null,
+        invoice_email: payment_type !== "credit_card" ? invoice_email : null,
+        source_type: "manual",
+      })
+      .returning({
+        id: paymentsTable.id,
+        payment_number: paymentsTable.payment_number,
+        amount_paid: paymentsTable.amount_paid,
+        payment_method: paymentsTable.payment_method,
+        status: paymentsTable.status,
+      });
+
+    res.status(201).json({ success: true, payment: inserted[0] });
+  } catch (err) {
+    const errMsg = String((err as Record<string, unknown>)?.message ?? "");
+    const causeMsg = String(((err as Record<string, unknown>)?.cause as Record<string, unknown>)?.message ?? "");
+    if (errMsg.includes("amount_paid_not_greater_than_total") || causeMsg.includes("amount_paid_not_greater_than_total")) {
+      res.status(400).json({ error: "סכום התשלום המצטבר יחרוג מסכום העסקה הכולל — לא ניתן להוסיף תשלום זה" });
+      return;
+    }
+    logger.error({ err }, "POST /deals/:id/payments error");
+    res.status(500).json({ error: "שגיאה בהוספת תשלום" });
+  }
+});
+
 export default router;

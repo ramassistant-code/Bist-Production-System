@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
-import { ChevronRight, Pencil, AlertCircle } from "lucide-react";
+import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +75,36 @@ interface NotesSnapshot {
   customer_notes?: string;
   operation_notes?: string;
   internal_notes?: string;
+}
+
+interface PaymentRow {
+  id: string;
+  payment_number: string;
+  payment_date: string | null;
+  payment_method: string | null;
+  payment_purpose: string | null;
+  amount_paid: string;
+  status: string;
+  installments_count: number | null;
+  invoice_name: string | null;
+  invoice_email: string | null;
+  source_type: string | null;
+  created_at: string;
+}
+
+interface CreditRow {
+  id: string;
+  credit_number: string;
+  credit_name: string;
+  parent_product_name: string | null;
+  description: string | null;
+  status: string;
+  quantity: string;
+  completed_quantity: string;
+  remaining_quantity: string | null;
+  credit_date: string | null;
+  owner_role: string | null;
+  salesperson_note: string | null;
 }
 
 interface DealDetail {
@@ -157,6 +187,256 @@ function formatILS(val: string | number | null | undefined) {
   const n = Number(val);
   if (isNaN(n)) return "—";
   return `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const CREDIT_STATUS_STYLE: Record<string, string> = {
+  "ממתין":         "bg-gray-100 text-gray-600",
+  "בתהליך":        "bg-blue-100 text-blue-700",
+  "ממתין ללקוח":   "bg-yellow-100 text-yellow-700",
+  "בבדיקת איכות": "bg-orange-100 text-orange-700",
+  "הושלם":         "bg-green-100 text-green-700",
+  "בוטל":          "bg-red-100 text-red-600",
+};
+
+const PAYMENT_STATUS_STYLE: Record<string, string> = {
+  "התקבל":          "bg-green-100 text-green-700",
+  "ממתין לתשלום":   "bg-gray-100 text-gray-500",
+  "חלקי":           "bg-yellow-100 text-yellow-700",
+  "נכשל":           "bg-red-100 text-red-600",
+  "הוחזר":          "bg-purple-100 text-purple-700",
+  "בוטל":           "bg-red-100 text-red-600",
+};
+
+const PAYMENT_METHOD_ICON: Record<string, React.ReactNode> = {
+  "אשראי":         <CreditCard className="w-3.5 h-3.5" />,
+  "מזומן":         <Banknote className="w-3.5 h-3.5" />,
+  "העברה בנקאית": <ArrowRightLeft className="w-3.5 h-3.5" />,
+};
+
+const PAYMENT_LABELS: Record<string, string> = {
+  cash: "מזומן",
+  credit_card: "אשראי",
+  bank_transfer: "העברה בנקאית",
+};
+
+// ── Add Payment Modal ─────────────────────────────────────────────────────────
+
+interface AddPaymentModalProps {
+  dealId: string;
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProps) {
+  const { toast } = useToast();
+  const [amount, setAmount] = useState("");
+  const [paymentType, setPaymentType] = useState("");
+  const [paymentPurpose, setPaymentPurpose] = useState("גבייה");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [installments, setInstallments] = useState("1");
+  const [invoiceName, setInvoiceName] = useState("");
+  const [invoiceIdNumber, setInvoiceIdNumber] = useState("");
+  const [invoiceEmail, setInvoiceEmail] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function validate(): boolean {
+    const e: Record<string, string> = {};
+    const n = Number(amount);
+    if (!amount || isNaN(n) || n <= 0) e.amount = "יש להזין סכום תקין גדול מאפס";
+    if (!paymentType) e.paymentType = "יש לבחור אמצעי תשלום";
+    if (paymentType === "credit_card") {
+      const inst = Number(installments);
+      if (!installments || isNaN(inst) || inst < 1 || !Number.isInteger(inst)) {
+        e.installments = "יש להזין מספר תשלומים תקין";
+      }
+    } else if (paymentType) {
+      if (!invoiceName.trim()) e.invoiceName = "שדה חובה";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/deals/${dealId}/payments`, {
+        method: "POST",
+        body: JSON.stringify({
+          amount_paid: Number(amount),
+          payment_type: paymentType,
+          payment_purpose: paymentPurpose,
+          payment_date: paymentDate,
+          installments_count: paymentType === "credit_card" ? Number(installments) : null,
+          invoice_name: paymentType !== "credit_card" ? invoiceName : null,
+          invoice_id_number: paymentType !== "credit_card" ? invoiceIdNumber : null,
+          invoice_email: paymentType !== "credit_card" ? invoiceEmail : null,
+        }),
+      }),
+    onSuccess: () => {
+      toast({ title: "תשלום נוסף בהצלחה" });
+      onSaved();
+      onClose();
+    },
+    onError: (err: Error & { data?: { error?: string } }) => {
+      toast({ title: err?.data?.error ?? "שגיאה בהוספת תשלום", variant: "destructive" });
+    },
+  });
+
+  function handleSubmit() {
+    if (!validate()) return;
+    mutation.mutate();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent dir="rtl" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>הוספת תשלום</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Amount + Date row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">
+                סכום <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                dir="ltr"
+                className={`w-full h-9 rounded-md border px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.amount ? "border-destructive" : "border-input"}`}
+              />
+              {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">תאריך תשלום</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                dir="ltr"
+                className="w-full h-9 rounded-md border border-input px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          </div>
+
+          {/* Payment type */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">
+              אמצעי תשלום <span className="text-destructive">*</span>
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {(["cash", "credit_card", "bank_transfer"] as const).map((pt) => (
+                <button
+                  key={pt}
+                  type="button"
+                  onClick={() => setPaymentType(pt)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                    paymentType === pt
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}
+                >
+                  {PAYMENT_LABELS[pt]}
+                </button>
+              ))}
+            </div>
+            {errors.paymentType && <p className="text-xs text-destructive">{errors.paymentType}</p>}
+          </div>
+
+          {/* Purpose */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">מטרת תשלום</label>
+            <select
+              value={paymentPurpose}
+              onChange={(e) => setPaymentPurpose(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+            >
+              <option value="גבייה">גבייה</option>
+              <option value="לקוח חדש">לקוח חדש</option>
+              <option value="Upsell">Upsell</option>
+            </select>
+          </div>
+
+          {/* Credit card — installments */}
+          {paymentType === "credit_card" && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">
+                כמות תשלומים <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={installments}
+                onChange={(e) => setInstallments(e.target.value)}
+                dir="ltr"
+                className={`w-24 h-9 rounded-md border px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.installments ? "border-destructive" : "border-input"}`}
+              />
+              {errors.installments && <p className="text-xs text-destructive">{errors.installments}</p>}
+            </div>
+          )}
+
+          {/* Cash / bank transfer — invoice details */}
+          {paymentType && paymentType !== "credit_card" && (
+            <div className="space-y-3 bg-blue-50 rounded-lg p-3">
+              <p className="text-xs text-blue-700 font-medium">פרטי חשבונית</p>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">
+                  שם על החשבונית <span className="text-destructive">*</span>
+                </label>
+                <input
+                  value={invoiceName}
+                  onChange={(e) => setInvoiceName(e.target.value)}
+                  placeholder="שם מלא / שם חברה"
+                  className={`w-full h-9 rounded-md border bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.invoiceName ? "border-destructive" : "border-input"}`}
+                />
+                {errors.invoiceName && <p className="text-xs text-destructive">{errors.invoiceName}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">ת.ז / ח.פ</label>
+                  <input
+                    value={invoiceIdNumber}
+                    onChange={(e) => setInvoiceIdNumber(e.target.value)}
+                    placeholder="000000000"
+                    dir="ltr"
+                    className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">מייל חשבונית</label>
+                  <input
+                    type="email"
+                    value={invoiceEmail}
+                    onChange={(e) => setInvoiceEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    dir="ltr"
+                    className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
+            ביטול
+          </Button>
+          <Button onClick={handleSubmit} disabled={mutation.isPending}>
+            {mutation.isPending ? "שומר..." : "הוסף תשלום"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // ── Edit Modal ────────────────────────────────────────────────────────────────
@@ -281,11 +561,30 @@ export default function DealsDetail() {
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
 
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+
   const { data: deal, isLoading, isError } = useQuery<DealDetail>({
     queryKey: ["deal", id],
     queryFn: () => customFetch<DealDetail>(`/api/deals/${id}`),
     staleTime: 30_000,
   });
+
+  const { data: paymentsData, refetch: refetchPayments } = useQuery<{ payments: PaymentRow[] }>({
+    queryKey: ["deal-payments", id],
+    queryFn: () => customFetch<{ payments: PaymentRow[] }>(`/api/deals/${id}/payments`),
+    enabled: !!id,
+    staleTime: 20_000,
+  });
+
+  const { data: creditsData } = useQuery<{ credits: CreditRow[] }>({
+    queryKey: ["deal-credits", id],
+    queryFn: () => customFetch<{ credits: CreditRow[] }>(`/api/deals/${id}/credits`),
+    enabled: !!id,
+    staleTime: 20_000,
+  });
+
+  const payments = paymentsData?.payments ?? [];
+  const credits = creditsData?.credits ?? [];
 
   if (isLoading) {
     return (
@@ -392,6 +691,117 @@ export default function DealsDetail() {
                 <p className="font-semibold text-gray-900 mt-0.5 truncate">{value}</p>
               </div>
             ))}
+          </div>
+
+          {/* ── Payments section ── */}
+          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">
+                תשלומים
+                {payments.length > 0 && (
+                  <span className="mr-1.5 text-xs font-normal text-muted-foreground">({payments.length})</span>
+                )}
+              </h3>
+              {deal.execution_status !== "בוטלה" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setAddPaymentOpen(true)}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  הוסף תשלום
+                </Button>
+              )}
+            </div>
+
+            {payments.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-4 py-4">אין תשלומים רשומים לעסקה זו.</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {payments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50/50">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xs text-muted-foreground font-mono shrink-0">{p.payment_number}</span>
+                      <div className="flex items-center gap-1.5 text-gray-600 shrink-0">
+                        {p.payment_method && PAYMENT_METHOD_ICON[p.payment_method]}
+                        <span className="text-xs">{p.payment_method ?? "—"}</span>
+                      </div>
+                      {p.payment_purpose && (
+                        <span className="text-xs text-muted-foreground hidden sm:inline">{p.payment_purpose}</span>
+                      )}
+                      {p.invoice_name && (
+                        <span className="text-xs text-gray-500 truncate hidden md:inline">/ {p.invoice_name}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 mr-4">
+                      <span className="text-xs text-muted-foreground">
+                        {p.payment_date ? formatDate(p.payment_date) : "—"}
+                      </span>
+                      <span className="font-semibold text-gray-900">{formatILS(p.amount_paid)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_STYLE[p.status] ?? "bg-gray-100 text-gray-600"}`}>
+                        {p.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Credits section ── */}
+          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">
+                קרדיטים
+                {credits.length > 0 && (
+                  <span className="mr-1.5 text-xs font-normal text-muted-foreground">({credits.length})</span>
+                )}
+              </h3>
+            </div>
+
+            {credits.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-4 py-4">אין קרדיטים לעסקה זו.</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {credits.map((c) => {
+                  const qty = Number(c.quantity);
+                  const done = Number(c.completed_quantity);
+                  const pct = qty > 0 ? Math.min(100, Math.round((done / qty) * 100)) : 0;
+                  return (
+                    <div key={c.id} className="px-4 py-2.5 hover:bg-gray-50/50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-mono shrink-0">{c.credit_number}</span>
+                            <span className="text-sm font-medium text-gray-800 truncate">{c.credit_name}</span>
+                          </div>
+                          {c.parent_product_name && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.parent_product_name}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            {done}/{qty}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CREDIT_STATUS_STYLE[c.status] ?? "bg-gray-100 text-gray-600"}`}>
+                            {c.status}
+                          </span>
+                        </div>
+                      </div>
+                      {qty > 0 && (
+                        <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Source badge */}
@@ -713,6 +1123,18 @@ export default function DealsDetail() {
           open={editOpen}
           onClose={() => setEditOpen(false)}
           onSaved={() => queryClient.invalidateQueries({ queryKey: ["deal", id] })}
+        />
+      )}
+
+      {addPaymentOpen && (
+        <AddPaymentModal
+          dealId={deal.id}
+          open={addPaymentOpen}
+          onClose={() => setAddPaymentOpen(false)}
+          onSaved={() => {
+            void refetchPayments();
+            queryClient.invalidateQueries({ queryKey: ["deal", id] });
+          }}
         />
       )}
     </Shell>
