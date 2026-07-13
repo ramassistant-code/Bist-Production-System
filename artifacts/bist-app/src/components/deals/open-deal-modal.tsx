@@ -51,6 +51,12 @@ interface CoordinationTask {
   assignee_role: string;
 }
 
+interface CustomerBilling {
+  invoice_name: string | null;
+  tax_id: string | null;
+  invoice_email: string | null;
+}
+
 interface OpenDealModalProps {
   quote: QuoteRow;
   version: QuoteVersion;
@@ -121,6 +127,22 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
     queryFn: () => customFetch<AppUser[]>("/api/users"),
     staleTime: 60_000,
   });
+
+  // ── Load customer billing defaults (existing customers only) ────────────
+  const { data: customerBilling } = useQuery<CustomerBilling>({
+    queryKey: ["customer-billing", quote.customer_id],
+    queryFn: () => customFetch<CustomerBilling>(`/api/customers/${quote.customer_id}`),
+    enabled: !!quote.customer_id,
+    staleTime: 30_000,
+  });
+
+  // Pre-populate invoice fields from customer billing data
+  useEffect(() => {
+    if (!customerBilling) return;
+    if (customerBilling.invoice_name) setInvoiceName(customerBilling.invoice_name);
+    if (customerBilling.tax_id) setInvoiceIdNumber(customerBilling.tax_id);
+    if (customerBilling.invoice_email) setInvoiceEmail(customerBilling.invoice_email);
+  }, [customerBilling]);
 
   // Set default salesperson to current user once users load
   useEffect(() => {
@@ -433,7 +455,12 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
               {paymentType && paymentType !== "credit_card" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-500/10 rounded-lg p-4">
-                  <p className="col-span-full text-xs text-blue-400 font-medium">פרטי חשבונית</p>
+                  <div className="col-span-full flex items-center justify-between">
+                    <p className="text-xs text-blue-400 font-medium">פרטי חשבונית</p>
+                    {customerBilling && (customerBilling.invoice_name || customerBilling.tax_id || customerBilling.invoice_email) && (
+                      <span className="text-xs text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full">מולא מנתוני הלקוח — ניתן לעדכן</span>
+                    )}
+                  </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">שם על החשבונית <span className="text-red-500">*</span></label>
                     <input

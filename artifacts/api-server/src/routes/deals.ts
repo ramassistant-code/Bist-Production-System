@@ -722,6 +722,23 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         .onConflictDoNothing();
     }
 
+    // ── Step 9b: Persist billing info back to customer ───────────────────────
+    if (
+      result.customerId &&
+      payment_type !== "credit_card" &&
+      (invoice_name || invoice_id_number || invoice_email)
+    ) {
+      await db
+        .update(customersTable)
+        .set({
+          ...(invoice_name ? { invoice_name } : {}),
+          ...(invoice_id_number ? { tax_id: invoice_id_number } : {}),
+          ...(invoice_email ? { invoice_email } : {}),
+          updated_at: new Date(),
+        })
+        .where(eq(customersTable.id, result.customerId));
+    }
+
     // ── Step 10: Credits creation (idempotent via source_key) ────────────────
     const dealRows = await db
       .select({ items_snapshot: dealsTable.items_snapshot })
