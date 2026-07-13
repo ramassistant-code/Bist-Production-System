@@ -546,6 +546,8 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
 export default function Products() {
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterDeliverable, setFilterDeliverable] = useState("");
 
   // Single modal state: null = closed, "" = create mode, "uuid" = edit mode
   const [modalProductId, setModalProductId] = useState<string | null>(null);
@@ -558,11 +560,15 @@ export default function Products() {
 
   const { data: products, isLoading } = useListProducts(queryParams);
 
-  const filtered = (products ?? []).filter(
+  const allProducts = products ?? [];
+  const uniqueCategories = Array.from(new Set(allProducts.map((p) => p.category).filter(Boolean))) as string[];
+  const uniqueDeliverables = Array.from(new Set(allProducts.map((p) => p.deliverable_type).filter(Boolean))) as string[];
+
+  const filtered = allProducts.filter(
     (p) =>
-      !search ||
-      p.name.includes(search) ||
-      (p.category ?? "").includes(search)
+      (!search || p.name.includes(search) || (p.category ?? "").includes(search)) &&
+      (!filterCategory || p.category === filterCategory) &&
+      (!filterDeliverable || p.deliverable_type === filterDeliverable)
   );
 
   function openCreate() {
@@ -600,6 +606,28 @@ export default function Products() {
                 <option value="all">כל המוצרים</option>
                 <option value="active">פעילים בלבד</option>
                 <option value="inactive">לא פעילים</option>
+              </select>
+              <select
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                dir="rtl"
+              >
+                <option value="">כל הקטגוריות</option>
+                {uniqueCategories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <select
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+                value={filterDeliverable}
+                onChange={(e) => setFilterDeliverable(e.target.value)}
+                dir="rtl"
+              >
+                <option value="">כל סוגי התוצר</option>
+                {uniqueDeliverables.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-3">

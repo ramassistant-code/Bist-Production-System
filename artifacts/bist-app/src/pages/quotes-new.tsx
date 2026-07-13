@@ -323,8 +323,21 @@ interface ProductSelectorProps {
 
 function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterDeliverable, setFilterDeliverable] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
-  const { data: products } = useListProducts({ search });
+  const { data: products } = useListProducts({});
+
+  const activeProducts = (products ?? []).filter((p) => p.is_active !== false);
+  const uniqueCategories = Array.from(new Set(activeProducts.map((p) => p.category).filter(Boolean))) as string[];
+  const uniqueDeliverables = Array.from(new Set(activeProducts.map((p) => p.deliverable_type).filter(Boolean))) as string[];
+
+  const displayed = activeProducts.filter(
+    (p) =>
+      (!search || p.name.includes(search) || (p.category ?? "").includes(search) || (p.deliverable_type ?? "").includes(search)) &&
+      (!filterCategory || p.category === filterCategory) &&
+      (!filterDeliverable || p.deliverable_type === filterDeliverable)
+  );
 
   async function handleAdd(p: Product) {
     setAdding(p.id);
@@ -339,18 +352,45 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
           <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
         </div>
-        <div className="px-5 py-3 border-b">
+        <div className="px-5 py-3 border-b space-y-2">
           <Input placeholder="חיפוש מוצר..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+          <div className="flex gap-2">
+            <select
+              className="flex-1 border rounded-md px-2 py-1.5 text-sm bg-background"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              dir="rtl"
+            >
+              <option value="">כל הקטגוריות</option>
+              {uniqueCategories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select
+              className="flex-1 border rounded-md px-2 py-1.5 text-sm bg-background"
+              value={filterDeliverable}
+              onChange={(e) => setFilterDeliverable(e.target.value)}
+              dir="rtl"
+            >
+              <option value="">כל סוגי התוצר</option>
+              {uniqueDeliverables.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
-          {(!products || products.length === 0) && (
+        <div className="flex-1 overflow-y-auto divide-y divide-border/30">
+          {displayed.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">לא נמצאו מוצרים</p>
           )}
-          {products?.filter((p) => p.is_active !== false).map((p) => (
+          {displayed.map((p) => (
             <div key={p.id} className="flex items-start justify-between px-5 py-3 hover:bg-muted/50">
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm text-foreground">{p.name}</p>
-                {p.category && <p className="text-xs text-muted-foreground">{p.category}</p>}
+                <div className="flex gap-2 flex-wrap mt-0.5">
+                  {p.category && <span className="text-xs text-muted-foreground">{p.category}</span>}
+                  {p.deliverable_type && <span className="text-xs text-muted-foreground/60">· {p.deliverable_type}</span>}
+                </div>
                 {p.consumer_price && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     ₪{parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
