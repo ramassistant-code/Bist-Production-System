@@ -73,14 +73,10 @@ interface WizardState {
   basketManualTotal: string;
   basketOverrideNote: string;
   // Step 4
-  depositOnly: boolean;
-  depositAmount: string;
   deliveryTerms: string;
   customerNotes: string;
   operationNotes: string;
   internalNotes: string;
-  // Step 5
-  generatePdf: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -154,9 +150,8 @@ const initialState: WizardState = {
   newLeadName: "", newLeadPhone: "", newLeadEmail: "",
   projectTitle: "", validUntil: endOfCurrentMonth(),
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
-  depositOnly: false, depositAmount: "", deliveryTerms: "",
+  deliveryTerms: "",
   customerNotes: "", operationNotes: "", internalNotes: "",
-  generatePdf: false,
 };
 
 // ── Step indicators ────────────────────────────────────────────────────────
@@ -730,13 +725,11 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
 function Step4({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
   const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
-  const deposit = parseFloat(state.depositAmount) || 0;
-  const remaining = Math.max(0, calc.total - deposit);
 
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים, תשלומים והערות</h2>
+        <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים והערות</h2>
       </div>
       <div className="space-y-1 max-w-xs">
         <Label>תוקף הצעה עד תאריך</Label>
@@ -749,33 +742,6 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <span className="text-muted-foreground">סה״כ לתשלום כולל מע״מ</span>
           <span className="font-bold text-base text-primary">{formatILS(calc.total)}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="depositOnly"
-            checked={state.depositOnly}
-            onChange={(e) => update({ depositOnly: e.target.checked, depositAmount: e.target.checked ? state.depositAmount : "" })}
-            className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-          />
-          <label htmlFor="depositOnly" className="text-sm font-medium cursor-pointer select-none">
-            תשלום מקדמה בלבד
-          </label>
-        </div>
-        {state.depositOnly && (
-          <div className="space-y-2 pt-1">
-            <div className="space-y-1">
-              <Label className="text-sm">סכום מקדמה (₪)</Label>
-              <Input type="number" min={0} step={0.01} value={state.depositAmount}
-                onChange={(e) => update({ depositAmount: e.target.value })} dir="ltr" className="w-48" />
-            </div>
-            {deposit > 0 && (
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>יתרה לתשלום</span>
-                <span className="font-medium text-foreground">{formatILS(remaining)}</span>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <Separator />
@@ -809,8 +775,6 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
   isSaving: boolean;
 }) {
   const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
-  const deposit = parseFloat(state.depositAmount) || 0;
-  const remaining = Math.max(0, calc.total - deposit);
 
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
@@ -856,10 +820,6 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
         <div className="flex justify-between text-muted-foreground"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
         <Separator />
         <div className="flex justify-between font-bold text-base"><span>סה״כ כולל מע״מ</span><span className="text-primary">{formatILS(calc.total)}</span></div>
-        {state.depositOnly && deposit > 0 && <>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">מקדמה</span><span>{formatILS(deposit)}</span></div>
-          <div className="flex justify-between text-sm font-medium"><span>יתרה לתשלום</span><span>{formatILS(remaining)}</span></div>
-        </>}
       </div>
 
 
@@ -871,22 +831,14 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
         </div>
       )}
 
-      {/* PDF + Buttons */}
-      <div className="space-y-4 pt-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={state.generatePdf}
-            onChange={(e) => update({ generatePdf: e.target.checked })} />
-          <span className="text-sm">לייצר PDF להצעת המחיר</span>
-        </label>
-
-        <div className="flex gap-3 flex-wrap">
-          <Button onClick={onSave} disabled={isSaving} variant="outline">
-            {isSaving ? "שומר..." : "שמור כטיוטה"}
-          </Button>
-          <Button onClick={onSend} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
-            {isSaving ? "שולח..." : "שלח הצעה"}
-          </Button>
-        </div>
+      {/* Buttons */}
+      <div className="flex gap-3 flex-wrap pt-2">
+        <Button onClick={onSave} disabled={isSaving} variant="outline">
+          {isSaving ? "שומר..." : "שמור כטיוטה"}
+        </Button>
+        <Button onClick={onSend} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
+          {isSaving ? "שולח..." : "שלח הצעה"}
+        </Button>
       </div>
     </div>
   );
@@ -947,8 +899,6 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
         phone: String(party?.phone ?? ""),
         projectTitle: String(terms?.project_title ?? ""),
         validUntil: String(terms?.valid_until ?? ""),
-        depositOnly: Number(terms?.deposit_amount ?? 0) > 0,
-        depositAmount: String(terms?.deposit_amount ?? ""),
         deliveryTerms: String(terms?.delivery_terms ?? ""),
         customerNotes: String(notes?.customer_notes ?? ""),
         operationNotes: String(notes?.operation_notes ?? ""),
@@ -1004,12 +954,6 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
     }
     if (step === 2) {
       if (state.validUntil && new Date(state.validUntil) < new Date()) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
-      const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
-      if (state.depositOnly) {
-        const deposit = parseFloat(state.depositAmount) || 0;
-        if (!state.depositAmount) errs.push("יש להזין סכום מקדמה");
-        else if (deposit > calc.total) errs.push("המקדמה לא יכולה להיות גבוהה מסה״כ ההצעה");
-      }
     }
     return errs;
   }
@@ -1058,12 +1002,11 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       basket_manually_overridden: state.basketManuallyOverridden,
       basket_manual_total: state.basketManuallyOverridden ? parseFloat(state.basketManualTotal) : undefined,
       basket_override_note: state.basketOverrideNote || undefined,
-      deposit_amount: state.depositOnly ? (parseFloat(state.depositAmount) || 0) : 0,
       delivery_terms: state.deliveryTerms || undefined,
       customer_notes: state.customerNotes || undefined,
       operation_notes: state.operationNotes || undefined,
       internal_notes: state.internalNotes || undefined,
-      generate_pdf: state.generatePdf,
+      generate_pdf: sendImmediately,
       send_immediately: sendImmediately,
     };
   }
