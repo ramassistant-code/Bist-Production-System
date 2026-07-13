@@ -1,0 +1,751 @@
+# השלמת שמירת עסקה – יצירת תשלום וקרדיטים
+
+יש להשלים את תהליך שמירת העסקה הקיים כך שלאחר יצירת העסקה בהצלחה ייווצרו:
+
+1. תשלום ראשוני, רק כאשר התקבל בפועל סכום גדול מ־0.
+2. קרדיטים לביצוע לפי הרכיבים שנשמרו ב־Snapshot של הצעת המחיר המאושרת.
+
+המערכת עובדת בשלב זה מול Supabase בלבד.
+
+אין לבצע שום פעולה מול Monday.
+
+אין לשנות את תהליך יצירת הלקוח והעסקה שכבר מומש, אלא להוסיף אחריו את השלבים המפורטים במסמך זה.
+
+---
+
+# חלק א׳ – מקור האמת
+
+מקור האמת היחיד למוצרים ולרכיבים הוא:
+
+```text
+deals.items_snapshot
+```
+
+ה־Snapshot בנוי כך:
+
+```text
+items_snapshot[]
+    line_id
+    product_id
+    product_name_snapshot
+    quantity
+    customer_note
+    internal_note
+    components_snapshot[]
+        component_id
+        component_name_snapshot
+        component_description_snapshot
+        quantity
+        customer_note
+        internal_note
+```
+
+אין לקרוא כמות רכיב מתוך:
+
+```text
+components
+product_components
+quote_components
+```
+
+אין להשתמש בכמות ברירת המחדל של הרכיב.
+
+אין להכפיל את כמות הרכיב בכמות המוצר.
+
+כמות הקרדיט היא בדיוק:
+
+```text
+components_snapshot[].quantity
+```
+
+לדוגמה:
+
+```text
+כמות המוצר = 2
+כמות הרכיב ב-Snapshot = 5
+כמות הקרדיט = 5
+```
+
+לא ליצור קרדיט בכמות 10.
+
+---
+
+# חלק ב׳ – יצירת תשלום ראשוני
+
+## 1. מתי ליצור תשלום
+
+יש לקרוא מהעסקה את:
+
+```text
+amount_paid_including_vat
+```
+
+אם הסכום גדול מ־0:
+
+```text
+amount_paid_including_vat > 0
+```
+
+יש ליצור רשומה אחת בטבלת:
+
+```text
+payments
+```
+
+אם הסכום הוא 0 או `NULL`:
+
+* אין ליצור רשומת תשלום.
+* העסקה תישאר בסטטוס `ממתינה לתשלום`.
+* אין ליצור תשלום בסכום 0.
+
+---
+
+## 2. מיפוי אמצעי תשלום
+
+השדה בעסקה הוא:
+
+```text
+deals.payment_type
+```
+
+יש לבצע את המיפוי הבא:
+
+```text
+credit_card  → אשראי
+cash         → מזומן
+bank_transfer → העברה בנקאית
+```
+
+הערך שנשמר ב־`payments.payment_method` חייב להיות אחד מערכי ה־Enum בעברית:
+
+```text
+אשראי
+מזומן
+העברה בנקאית
+```
+
+אם `payment_type` אינו נתמך, יש לעצור ולהחזיר שגיאת Validation.
+
+---
+
+## 3. שדות התשלום
+
+בעת יצירת התשלום יש לשמור:
+
+```text
+payments.deal_id = deal.id
+payments.customer_id = deal.customer_id
+payments.salesperson_id = deal.salesperson_id
+payments.payment_date = deal.purchase_date או current_date
+payments.payment_method = אמצעי התשלום לאחר המיפוי
+payments.payment_purpose = 'לקוח חדש'
+payments.status = 'התקבל'
+payments.amount_paid = deal.amount_paid_including_vat
+payments.source_type = 'deal_creation'
+payments.source_key = 'deal_creation:' + deal.id
+```
+
+שדות חשבונית:
+
+```text
+payments.invoice_name = deal.invoice_name
+payments.invoice_tax_id = deal.invoice_id_number
+payments.invoice_email = deal.invoice_email
+```
+
+כאשר אמצעי התשלום הוא אשראי:
+
+```text
+payments.installments_count = deal.installments_count
+```
+
+כאשר אמצעי התשלום אינו אשראי:
+
+```text
+payments.installments_count = 1
+```
+
+אם הסכום ששולם גדול מ־0 אך חסר אמצעי תשלום, יש לעצור עם שגיאה:
+
+```json
+{
+  "success": false,
+  "code": "PAYMENT_METHOD_REQUIRED",
+  "message": "יש לבחור אמצעי תשלום עבור הסכום שהתקבל."
+}
+```
+
+---
+
+## 4. מניעת תשלום כפול
+
+לפני יצירת התשלום יש לבדוק אם כבר קיים תשלום פעיל שבו:
+
+```text
+payments.source_key = 'deal_creation:' + deal.id
+payments.deleted_at IS NULL
+```
+
+אם קיים תשלום כזה:
+
+* אין ליצור תשלום נוסף.
+* יש להשתמש בתשלום הקיים.
+* אין להחזיר שגיאה למשתמש.
+
+קיימת גם הגנת Unique על `payments.source_key`.
+
+יש לטפל בשגיאת Unique כתוצאה משתי בקשות מקבילות על ידי טעינת הרשומה הקיימת.
+
+---
+
+## 5. עדכון סכומי העסקה
+
+לאחר יצירת התשלום יש לוודא שמנגנון התשלומים מעדכן את העסקה באופן הבא:
+
+```text
+deals.paid_amount
+deals.amount_paid_including_vat
+deals.payment_status
+```
+
+הסכום הכולל לצורך בדיקת מצב התשלום הוא:
+
+```text
+COALESCE(deals.total_amount_including_vat, deals.total_amount)
+```
+
+הסטטוס צריך להיות:
+
+```text
+סכום ששולם = 0
+→ ממתינה לתשלום
+
+סכום ששולם גדול מ־0 אך קטן מסכום העסקה
+→ תשלום חלקי
+
+סכום ששולם גדול או שווה לסכום העסקה
+→ שולמה במלואה
+```
+
+בדוק את הפונקציה הקיימת:
+
+```text
+refresh_deal_payment_totals
+```
+
+אם היא מעדכנת רק את `paid_amount`, יש לעדכן אותה באמצעות Migration כך שתעדכן גם:
+
+```text
+amount_paid_including_vat
+```
+
+אם היא משווה מול `total_amount` בלבד, יש לעדכן אותה כך שתשתמש ב:
+
+```text
+COALESCE(total_amount_including_vat, total_amount)
+```
+
+אין ליצור פונקציה כפולה. יש לעדכן את הפונקציה הקיימת בלבד.
+
+---
+
+# חלק ג׳ – יצירת קרדיטים
+
+## 1. מעבר על הרכיבים
+
+לאחר יצירת העסקה יש לעבור על:
+
+```text
+deals.items_snapshot[]
+```
+
+ולכל מוצר לעבור על:
+
+```text
+components_snapshot[]
+```
+
+יש ליצור קרדיט עבור כל רכיב שבו:
+
+```text
+quantity > 0
+```
+
+אם הכמות היא 0:
+
+* אין ליצור קרדיט.
+
+אם הכמות חסרה, אינה מספר או שלילית:
+
+* יש לעצור את הפעולה.
+* אין להשתמש בכמות ברירת מחדל.
+* אין לנחש את הכמות.
+
+שגיאה:
+
+```json
+{
+  "success": false,
+  "code": "INVALID_COMPONENT_QUANTITY",
+  "message": "נמצאה כמות לא תקינה לרכיב בגרסת הצעת המחיר המאושרת."
+}
+```
+
+---
+
+## 2. שדות הקרדיט
+
+עבור כל רכיב יש ליצור רשומה בטבלת:
+
+```text
+credits
+```
+
+עם השדות הבאים:
+
+```text
+credits.deal_id = deal.id
+credits.customer_id = deal.customer_id
+
+credits.source_quote_item_id =
+    product.line_id
+
+credits.source_quote_component_id =
+    component.component_id
+
+credits.source_product_id =
+    product.product_id
+
+credits.source_component_id =
+    component.component_id
+
+credits.parent_product_name =
+    product.product_name_snapshot
+
+credits.credit_name =
+    component.component_name_snapshot
+
+credits.description =
+    component.component_description_snapshot
+
+credits.quantity =
+    component.quantity
+
+credits.previous_quantity =
+    component.quantity
+
+credits.completed_quantity =
+    0
+
+credits.status =
+    'בתהליך'
+
+credits.salesperson_note =
+    component.internal_note
+
+credits.package_notes =
+    component.customer_note
+
+credits.credit_date =
+    deal.purchase_date או current_date
+```
+
+הכמות חייבת להיות בדיוק:
+
+```text
+component.quantity
+```
+
+אין להכפיל אותה בכמות המוצר.
+
+---
+
+## 3. נתונים שמותר לקרוא מטבלת components
+
+מותר לטעון את רשומת הקטלוג מתוך:
+
+```text
+components
+```
+
+לפי:
+
+```text
+components.id = component.component_id
+```
+
+אך ורק לצורך נתונים תפעוליים שאינם קיימים ב־Snapshot, לדוגמה:
+
+```text
+owner_role
+editing_task_link
+what_is_included
+```
+
+אסור לקחת מהקטלוג:
+
+```text
+quantity
+name
+description
+```
+
+עבור שדות אלה ה־Snapshot הוא מקור האמת.
+
+אם רכיב הקטלוג נמחק או לא נמצא:
+
+* עדיין יש ליצור את הקרדיט לפי ה־Snapshot.
+* `source_component_id` יכול להישמר אם המזהה תקין.
+* שדות תפעוליים שאינם זמינים יישארו `NULL`.
+* אין לאבד את הקרדיט בגלל שינוי עתידי בקטלוג.
+
+---
+
+## 4. מפתח מניעת כפילות לקרדיט
+
+יש ליצור לכל קרדיט `source_key` יציב:
+
+```text
+deal:{dealId}:item:{lineId}:component:{componentId}
+```
+
+לדוגמה:
+
+```text
+deal:123:item:abc:component:def
+```
+
+יש לשמור אותו ב:
+
+```text
+credits.source_key
+```
+
+לפני יצירת הקרדיט יש לבדוק אם כבר קיים קרדיט פעיל עם אותו `source_key`.
+
+אם קיים:
+
+* אין ליצור קרדיט נוסף.
+* יש לדלג על הרשומה.
+* אין לשנות את הכמות של הקרדיט הקיים אוטומטית.
+
+קיימת גם הגנת Unique על `credits.source_key`.
+
+יש לטפל בשגיאת Unique על ידי טעינת הקרדיט הקיים והמשך הפעולה.
+
+---
+
+## 5. אותו רכיב בכמה מוצרים
+
+אותו `component_id` יכול להופיע ביותר ממוצר אחד באותה עסקה.
+
+במקרה כזה יש ליצור קרדיט נפרד עבור כל שורת מוצר, משום שה־`line_id` שונה.
+
+לדוגמה:
+
+```text
+מוצר א׳
+line_id = line-1
+component_id = edit-short
+quantity = 5
+
+מוצר ב׳
+line_id = line-2
+component_id = edit-short
+quantity = 3
+```
+
+יש ליצור:
+
+```text
+קרדיט ראשון בכמות 5
+קרדיט שני בכמות 3
+```
+
+אין לאחד אותם אוטומטית לקרדיט אחד בכמות 8.
+
+---
+
+## 6. הערות
+
+יש לשמור בנפרד:
+
+```text
+component.internal_note
+→ credits.salesperson_note
+
+component.customer_note
+→ credits.package_notes
+```
+
+אין לחבר את שתי ההערות לשדה אחד.
+
+אין לקחת הערה מהקטלוג במקום ההערה שנשמרה בהצעה.
+
+---
+
+# חלק ד׳ – סדר הפעולות
+
+תהליך השמירה יהיה:
+
+```text
+1. אימות גרסת ההצעה.
+2. איתור או יצירת לקוח.
+3. יצירת העסקה.
+4. אימות שה-Snapshot נשמר בעסקה.
+5. יצירת תשלום, אם הסכום ששולם גדול מ-0.
+6. יצירת הקרדיטים מתוך deals.items_snapshot.
+7. טעינה מחדש של העסקה.
+8. החזרת תוצאה לממשק.
+```
+
+אין ליצור תשלום או קרדיטים לפני שהעסקה נוצרה עם Snapshot תקין.
+
+מקור הקרדיטים חייב להיות:
+
+```text
+deals.items_snapshot
+```
+
+ולא ה־Snapshot שהגיע מהדפדפן.
+
+---
+
+# חלק ה׳ – טיפול בכשל
+
+אם יצירת התשלום או אחד הקרדיטים נכשלו:
+
+* אין להציג הודעת הצלחה מלאה.
+* יש להחזיר שגיאה ברורה.
+* יש לדווח איזה שלב נכשל.
+* אין לבצע פעולה מול Monday.
+
+מבנה שגיאה:
+
+```json
+{
+  "success": false,
+  "code": "DEAL_FULFILLMENT_CREATION_FAILED",
+  "message": "העסקה נוצרה, אך יצירת התשלום או הקרדיטים לא הושלמה.",
+  "dealId": "deal-id",
+  "failedStage": "payment או credits"
+}
+```
+
+מכיוון שהעסקה עשויה כבר להיות קיימת, הרצת הפעולה מחדש חייבת להיות בטוחה וליצור רק את הרשומות החסרות באמצעות `source_key`.
+
+---
+
+# חלק ו׳ – תוצאת הפעולה
+
+במקרה הצלחה:
+
+```json
+{
+  "success": true,
+  "dealId": "deal-id",
+  "customerId": "customer-id",
+  "paymentCreated": true,
+  "paymentId": "payment-id",
+  "creditsCreated": 8,
+  "creditsAlreadyExisted": 0
+}
+```
+
+כאשר לא התקבל תשלום:
+
+```json
+{
+  "success": true,
+  "dealId": "deal-id",
+  "customerId": "customer-id",
+  "paymentCreated": false,
+  "paymentId": null,
+  "creditsCreated": 8,
+  "creditsAlreadyExisted": 0
+}
+```
+
+---
+
+# חלק ז׳ – ממשק משתמש
+
+בזמן השמירה:
+
+* יש לנטרל את כפתור השמירה.
+* יש להציג מצב טעינה.
+* אין לאפשר לחיצה כפולה.
+
+לאחר הצלחה:
+
+```text
+העסקה נשמרה בהצלחה ונוצרו הקרדיטים לביצוע.
+```
+
+אם התקבל תשלום:
+
+```text
+העסקה נשמרה בהצלחה, התשלום נרשם ונוצרו הקרדיטים לביצוע.
+```
+
+אם קיימת עסקה והפעולה השלימה רק רשומות חסרות:
+
+```text
+העסקה כבר הייתה קיימת. התשלומים והקרדיטים החסרים הושלמו.
+```
+
+כל ההודעות בעברית וב־RTL מלא.
+
+---
+
+# חלק ח׳ – איסורים
+
+אין לבצע:
+
+* יצירת פריט ב־Monday.
+* עדכון לוח Monday.
+* קריאת API של Monday.
+* Webhook ל־Monday.
+* שינוי הכמות לפי קטלוג הרכיבים.
+* הכפלת כמות רכיב בכמות מוצר.
+* שינוי Snapshot של העסקה.
+* שינוי גרסת הצעת המחיר המאושרת.
+* יצירת טבלאות חדשות.
+* מחיקת קרדיטים קיימים.
+* איחוד אוטומטי של קרדיטים.
+* יצירת תשלום בסכום 0.
+
+---
+
+# חלק ט׳ – בדיקות חובה
+
+## בדיקה 1 – כמות רכיב ששונתה בהצעה
+
+בקטלוג כמות הרכיב היא 1.
+
+ב־Snapshot הכמות היא 5.
+
+תוצאה:
+
+```text
+credits.quantity = 5
+```
+
+---
+
+## בדיקה 2 – מוצר בכמות 2
+
+```text
+product.quantity = 2
+component.quantity = 5
+```
+
+תוצאה:
+
+```text
+credits.quantity = 5
+```
+
+לא 10.
+
+---
+
+## בדיקה 3 – אותו רכיב בשני מוצרים
+
+אותו רכיב מופיע בשתי שורות מוצר שונות.
+
+תוצאה:
+
+* נוצרים שני קרדיטים.
+* לכל קרדיט כמות משלו.
+* לכל קרדיט `source_key` שונה.
+
+---
+
+## בדיקה 4 – ללא תשלום
+
+```text
+amount_paid_including_vat = 0
+```
+
+תוצאה:
+
+* לא נוצרת רשומת payment.
+* סטטוס העסקה `ממתינה לתשלום`.
+
+---
+
+## בדיקה 5 – תשלום חלקי
+
+```text
+total_amount_including_vat = 10,000
+amount_paid_including_vat = 3,000
+```
+
+תוצאה:
+
+* נוצר תשלום בסכום 3,000.
+* סטטוס העסקה `תשלום חלקי`.
+
+---
+
+## בדיקה 6 – תשלום מלא
+
+```text
+total_amount_including_vat = 10,000
+amount_paid_including_vat = 10,000
+```
+
+תוצאה:
+
+* נוצר תשלום בסכום 10,000.
+* סטטוס העסקה `שולמה במלואה`.
+
+---
+
+## בדיקה 7 – שמירה כפולה
+
+הרצת התהליך פעמיים עבור אותה עסקה.
+
+תוצאה:
+
+* עסקה אחת.
+* תשלום אחד.
+* קרדיט אחד לכל רכיב ושורת מוצר.
+* אין כפילויות.
+
+---
+
+## בדיקה 8 – רכיב בכמות 0
+
+תוצאה:
+
+* לא נוצר קרדיט עבור הרכיב.
+
+---
+
+## בדיקה 9 – הערות
+
+תוצאה:
+
+```text
+internal_note → salesperson_note
+customer_note → package_notes
+```
+
+---
+
+# דיווח בסיום
+
+בסיום העבודה יש להחזיר:
+
+1. אילו קבצים שונו.
+2. האם עודכנה `refresh_deal_payment_totals`.
+3. את ה־SQL המלא של כל Migration שנוצר.
+4. כיצד חושבה כמות הקרדיט.
+5. כיצד נבנה `source_key` לתשלום.
+6. כיצד נבנה `source_key` לקרדיט.
+7. כיצד טופלה שמירה כפולה.
+8. כמה בדיקות הורצו.
+9. אילו בדיקות עברו או נכשלו.
+10. אישור מפורש שלא בוצעה שום פעולה מול Monday.

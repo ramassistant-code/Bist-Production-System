@@ -1,16 +1,3 @@
-# Memory Index
-
-- [Supabase connection quirks](supabase-connection.md) — direct DB host is IPv6-only/unreachable from Replit; use aws-1-ap-south-1 pooler with postgres.<ref> user; schema is locked, no DDL without milestone.
-- [Drizzle eq() params cast](drizzle-params-cast.md) — Express req.params typed as string|string[]; must use String(req.params.x) in drizzle eq() calls or typecheck fails.
-- [orval queryKey required](orval-querykey.md) — orval-generated useGetX hooks require explicit queryKey in query options object.
-- [sanitize cast pattern](sanitize-cast.md) — sanitize() returns Record<string,unknown>; cast to generated API body type via "as unknown as TargetType" to satisfy TS2352.
-- [Products/Components schema mapping](products-schema-mapping.md) — Actual Supabase column names differ from user spec; key mappings documented.
-- [Performance architecture](perf-arch.md) — dashboard uses /api/stats (SQL agg, not raw rows), leads uses server-side search/filter + pagination, gzip on all endpoints.
-- [Codegen duplicate exports](codegen-duplicates.md) — orval appends exports to index.ts; after every codegen run, check lib/api-client-react/src/index.ts for duplicate export lines and remove them.
-- [Drizzle static imports](drizzle-static-imports.md) — always import drizzle-orm operators (and, or, ilike, eq) statically; dynamic import() inside route handlers causes build/runtime issues.
-- [API path prefix](api-path-prefix.md) — all customFetch calls need `/api/` prefix; orval-generated hooks include it automatically, manual calls must add it explicitly.
-- [Quotes module architecture](quotes-module.md) — snapshot-based versioning; schema is Supabase-locked (no DDL); key type and runtime gotchas for quotes routes.
-- [Auth architecture](auth-architecture.md) — Supabase Auth email/password; VITE_ vars via vite.config.ts define; /api/auth/me verifies JWT + app_users active check; seed script for first login.
-- [lib/db build requirement](lib-db-build.md) — after adding a new schema file, must run `pnpm tsc --build --force` in lib/db before api-server typecheck sees the new exports.
-- [Deals module architecture](deals-module.md) — DB triggers, Hebrew enum values, snapshot pattern, lead→customer resolution, error mapping for deal creation.
-- [pino logger pattern](pino-logger.md) — always use `logger.error({ err }, "message")` not `logger.error("message", err)`; object-first is pino's format, string-second fails typecheck.
+- [Phase 2 payment+credits pattern](phase2-payment-credits.md) — deal creation creates payment + credits after the DB transaction; both idempotent via source_key unique partial index + onConflictDoNothing()
+- [party_snapshot customer resolution](party-snapshot-customer-resolve.md) — party_snapshot uses source_id (not customer_id) when party_type==="customer"; fallback to quote.customer_id
+- [refresh_deal_payment_totals migration](refresh-deal-payment-totals.md) — migrated to update amount_paid_including_vat + use COALESCE(total_amount_including_vat, total_amount)

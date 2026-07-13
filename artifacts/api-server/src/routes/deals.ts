@@ -6,6 +6,8 @@ import {
   quotesTable,
   quoteVersionsTable,
   leadsTable,
+  paymentsTable,
+  creditsTable,
 } from "@workspace/db/schema";
 import {
   isNull,
@@ -393,7 +395,13 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
 
       // ── Step 4: Resolve customer ────────────────────────────────────────────
       const snap = (version.party_snapshot ?? {}) as Record<string, unknown>;
-      const snapCustomerId = (snap["customer_id"] as string | null) ?? null;
+      // party_snapshot may store the customer id in "customer_id", in "source_id"
+      // when party_type === "customer", or fall back to the quote's own customer_id
+      const snapCustomerId: string | null =
+        (snap["customer_id"] as string | null) ??
+        (snap["party_type"] === "customer" ? ((snap["source_id"] as string | null) ?? null) : null) ??
+        quote.customer_id ??
+        null;
       const snapLeadId = (snap["lead_id"] as string | null) ?? quote.lead_id ?? null;
 
       let resolvedCustomerId: string | null = null;
@@ -682,6 +690,84 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         customerId: resolvedCustomerId,
       };
     });
+
+    // ── Step 9: Payment creation (idempotent via source_key) ─────────────────
+    if (amount_paid_including_vat > 0) {
+      const PAYMENT_METHOD_MAP: Record<string, string> = {
+        cash: "מזומן",
+        credit_card: "אשראי",
+        bank_transfer: "העברה בנקאית",
+      };
+      const paymentMethod = PAYMENT_METHOD_MAP[payment_type] ?? null;
+      const paymentSourceKey = `deal_creation:${result.dealId}`;
+
+      await db
+        .insert(paymentsTable)
+        .values({
+          deal_id: result.dealId,
+          customer_id: result.customerId ?? undefined,
+          salesperson_id: salesperson_user_id ?? undefined,
+          status: "התקבל",
+          payment_date: new Date().toISOString().split("T")[0],
+          payment_method: paymentMethod,
+          payment_purpose: "לקוח חדש",
+          amount_paid: String(amount_paid_including_vat),
+          installments_count: payment_type === "credit_card" ? installments_count : null,
+          invoice_name: payment_type !== "credit_card" ? invoice_name : null,
+          invoice_tax_id: payment_type !== "credit_card" ? invoice_id_number : null,
+          invoice_email: payment_type !== "credit_card" ? invoice_email : null,
+          source_type: "deal_creation",
+          source_key: paymentSourceKey,
+        })
+        .onConflictDoNothing();
+    }
+
+    // ── Step 10: Credits creation (idempotent via source_key) ────────────────
+    const dealRows = await db
+      .select({ items_snapshot: dealsTable.items_snapshot })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, result.dealId))
+      .limit(1);
+
+    interface SnapshotComponent {
+      component_id: string;
+      quantity: number;
+      component_name_snapshot: string;
+      component_description_snapshot?: string;
+    }
+    interface SnapshotItem {
+      line_id: string;
+      quantity: number;
+      product_id?: string;
+      product_name_snapshot?: string;
+      components_snapshot?: SnapshotComponent[];
+    }
+
+    const items = (dealRows[0]?.items_snapshot ?? []) as SnapshotItem[];
+
+    for (const item of items) {
+      for (const comp of item.components_snapshot ?? []) {
+        const totalQty = (item.quantity ?? 1) * (comp.quantity ?? 1);
+        const creditSourceKey = `deal:${result.dealId}:item:${item.line_id}:component:${comp.component_id}`;
+
+        await db
+          .insert(creditsTable)
+          .values({
+            deal_id: result.dealId,
+            customer_id: result.customerId ?? undefined,
+            source_component_id: comp.component_id,
+            source_quote_item_id: item.line_id,
+            source_product_id: item.product_id ?? undefined,
+            parent_product_name: item.product_name_snapshot ?? null,
+            credit_name: comp.component_name_snapshot,
+            description: comp.component_description_snapshot ?? null,
+            status: "בתהליך",
+            quantity: String(totalQty),
+            source_key: creditSourceKey,
+          })
+          .onConflictDoNothing();
+      }
+    }
 
     res.status(result.alreadyExists ? 200 : 201).json(result);
 

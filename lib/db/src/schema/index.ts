@@ -10,3 +10,5 @@ export * from "./quote-components";
 export * from "./users";
 export * from "./deals";
 export * from "./deal-coordination-tasks";
+export * from "./payments";
+export * from "./credits";
