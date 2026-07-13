@@ -415,10 +415,11 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 // ── Component Row ──────────────────────────────────────────────────────────
 
 function ComponentRow({
-  comp, onChange,
+  comp, onChange, onRemove,
 }: {
   comp: BasketComponent;
   onChange: (updated: BasketComponent) => void;
+  onRemove: () => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-3 border border-border/50">
@@ -439,6 +440,14 @@ function ComponentRow({
             עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="shrink-0 text-muted-foreground hover:text-red-500 transition-colors"
+          title="הסר רכיב"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="space-y-0.5">
         <Label className="text-xs text-muted-foreground">הערה למחלקת אופרציה</Label>
@@ -553,6 +562,9 @@ function BasketRow({
                       const comps = [...item.components];
                       comps[ci] = updated;
                       setField("components", comps);
+                    }}
+                    onRemove={() => {
+                      setField("components", item.components.filter((_, i) => i !== ci));
                     }} />
                 ))}
               </div>
