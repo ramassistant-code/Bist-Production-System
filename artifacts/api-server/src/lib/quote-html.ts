@@ -63,6 +63,7 @@ export interface PdfConfig {
   show_vat_breakdown?: boolean;
   show_signature_section?: boolean;
   show_signature_date?: boolean;
+  below_client_text?: string;
   labels?: PdfLabels;
 }
 
@@ -187,6 +188,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
     show_vat_breakdown: config.show_vat_breakdown !== false,
     show_signature_section: config.show_signature_section !== false,
     show_signature_date: config.show_signature_date !== false,
+    below_client_text: config.below_client_text ?? "",
   };
 
   const clientName = party?.business_name || party?.contact_name || "—";
@@ -316,7 +318,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
   </div>
 
   <!-- Client details -->
-  <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:${cfg.below_client_text ? "12px" : "24px"};">
     <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">${L.client_details}</div>
     <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px;">${L.for_client}: ${clientName}</div>
     <div style="display:flex;gap:28px;flex-wrap:wrap;">
@@ -324,6 +326,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
       ${cfg.show_client_phone && clientPhone ? `<div style="font-size:13px;color:#374151;"><span style="color:#6b7280;">${L.phone}:</span> ${clientPhone}</div>` : ""}
     </div>
   </div>
+  ${cfg.below_client_text ? `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;padding:0 2px;">${cfg.below_client_text}</div>` : ""}
 
   <!-- Products table -->
   ${

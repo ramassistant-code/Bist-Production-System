@@ -50,6 +50,7 @@ interface PdfTemplateConfiguration {
   show_vat_breakdown: boolean;
   show_signature_section: boolean;
   show_signature_date: boolean;
+  below_client_text: string;
   labels: PdfTemplateLabels;
   language: string;
   direction: string;
@@ -127,6 +128,7 @@ const DEFAULT_CONFIG: PdfTemplateConfiguration = {
   show_vat_breakdown: true,
   show_signature_section: true,
   show_signature_date: true,
+  below_client_text: "",
   labels: DEFAULT_LABELS,
   language: "he",
   direction: "rtl",
@@ -298,7 +300,7 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
   </div>
 
   <!-- Client details -->
-  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:${cfg.below_client_text ? "12px" : "24px"};">
     <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">${L.client_details}</div>
     <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:6px;">${L.for_client}: ${SAMPLE.client.name}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap;">
@@ -306,6 +308,7 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
       ${cfg.show_client_phone ? `<div style="font-size:13px;color:#374151;"><span style="color:#6b7280;">${L.phone}:</span> ${SAMPLE.client.phone}</div>` : ""}
     </div>
   </div>
+  ${cfg.below_client_text ? `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;padding:0 2px;">${cfg.below_client_text}</div>` : ""}
 
   <!-- Products table -->
   ${
@@ -629,6 +632,16 @@ export default function QuotePdfTemplate() {
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">פרטי לקוח</p>
                   <Toggle checked={cfg.show_client_email} onChange={(v) => setField("show_client_email", v)} label='דוא"ל לקוח' />
                   <Toggle checked={cfg.show_client_phone} onChange={(v) => setField("show_client_phone", v)} label="טלפון לקוח" />
+                  <div className="space-y-1 pt-1">
+                    <label className="block text-xs font-medium text-gray-600">טקסט מתחת לפרטי לקוח</label>
+                    <textarea
+                      value={cfg.below_client_text}
+                      onChange={(e) => setField("below_client_text", e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      placeholder="טקסט חופשי שיופיע מתחת לפרטי הלקוח (אופציונלי)"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
