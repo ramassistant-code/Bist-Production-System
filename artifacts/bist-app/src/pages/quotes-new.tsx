@@ -173,7 +173,7 @@ function StepBar({ current }: { current: number }) {
           <div key={i} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1 shrink-0">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2
-                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
+                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-gray-100 text-gray-400 border-border"}`}>
                 {done ? "✓" : i + 1}
               </div>
               <span className={`text-xs hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-gray-400"}`}>{label}</span>
@@ -248,8 +248,8 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
               <div>
                 <p className="font-medium text-green-700">נמצא לקוח קיים</p>
-                <p className="text-sm text-gray-700">{lookupResult.name}</p>
-                {lookupResult.email && <p className="text-xs text-gray-500">{lookupResult.email}</p>}
+                <p className="text-sm text-foreground/70">{lookupResult.name}</p>
+                {lookupResult.email && <p className="text-xs text-muted-foreground">{lookupResult.email}</p>}
               </div>
             </div>
           )}
@@ -258,8 +258,8 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
               <div>
                 <p className="font-medium text-blue-700">נמצא ליד קיים</p>
-                <p className="text-sm text-gray-700">{lookupResult.name}</p>
-                {lookupResult.email && <p className="text-xs text-gray-500">{lookupResult.email}</p>}
+                <p className="text-sm text-foreground/70">{lookupResult.name}</p>
+                {lookupResult.email && <p className="text-xs text-muted-foreground">{lookupResult.email}</p>}
               </div>
             </div>
           )}
@@ -334,7 +334,7 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" dir="rtl">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col mx-4">
+      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
@@ -347,12 +347,12 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
             <p className="text-sm text-muted-foreground text-center py-8">לא נמצאו מוצרים</p>
           )}
           {products?.filter((p) => p.is_active !== false).map((p) => (
-            <div key={p.id} className="flex items-start justify-between px-5 py-3 hover:bg-gray-50">
+            <div key={p.id} className="flex items-start justify-between px-5 py-3 hover:bg-muted/50">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm text-gray-900">{p.name}</p>
+                <p className="font-medium text-sm text-foreground">{p.name}</p>
                 {p.category && <p className="text-xs text-muted-foreground">{p.category}</p>}
                 {p.consumer_price && (
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     ₪{parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
                   </p>
                 )}
@@ -381,10 +381,10 @@ function ComponentRow({
   onChange: (updated: BasketComponent) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-2 bg-gray-50 rounded-lg p-3 border border-gray-100">
+    <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-3 border border-border/50">
       <div className="flex items-start gap-2 flex-wrap">
         <div className="flex-1 min-w-[160px]">
-          <p className="text-xs font-medium text-gray-700">{comp.component_name_snapshot}</p>
+          <p className="text-xs font-medium text-foreground/70">{comp.component_name_snapshot}</p>
           {comp.component_description_snapshot && (
             <p className="text-xs text-muted-foreground mt-0.5">{comp.component_description_snapshot}</p>
           )}
@@ -402,12 +402,12 @@ function ComponentRow({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-0.5">
-          <Label className="text-xs text-gray-500">הערת לקוח (תוצג ללקוח)</Label>
+          <Label className="text-xs text-muted-foreground">הערת לקוח (תוצג ללקוח)</Label>
           <Input value={comp.customer_note} className="h-7 text-xs"
             onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
         </div>
         <div className="space-y-0.5">
-          <Label className="text-xs text-gray-500">הערה פנימית (לא תוצג ללקוח)</Label>
+          <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
           <Input value={comp.internal_note} className="h-7 text-xs"
             onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
         </div>
@@ -440,16 +440,16 @@ function BasketRow({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="flex items-start gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100">
+      <div className="flex items-start gap-3 px-4 py-3 bg-muted/50 border-b border-border/50">
         <span className="text-xs text-muted-foreground font-mono pt-0.5 shrink-0">#{index + 1}</span>
         <div className="flex-1 min-w-0">
           {item.source_type === "manual" ? (
             <Input value={item.product_name_snapshot} placeholder="שם המוצר / שירות *"
               className="font-medium" onChange={(e) => setField("product_name_snapshot", e.target.value)} />
           ) : (
-            <p className="font-medium text-gray-900">{item.product_name_snapshot}</p>
+            <p className="font-medium text-foreground">{item.product_name_snapshot}</p>
           )}
           {item.category_snapshot && <p className="text-xs text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
         </div>
@@ -479,7 +479,7 @@ function BasketRow({
           </div>
           <div className="space-y-1 col-span-2 sm:col-span-1">
             <Label className="text-xs">סה״כ</Label>
-            <div className="h-9 flex items-center px-3 bg-gray-50 rounded border text-sm font-medium">{formatILS(lineTotal)}</div>
+            <div className="h-9 flex items-center px-3 bg-muted/50 rounded border text-sm font-medium">{formatILS(lineTotal)}</div>
           </div>
         </div>
 
@@ -500,12 +500,12 @@ function BasketRow({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs text-gray-500">הערת לקוח (תוצג ללקוח)</Label>
+            <Label className="text-xs text-muted-foreground">הערת לקוח (תוצג ללקוח)</Label>
             <Textarea value={item.customer_note} rows={2}
               onChange={(e) => setField("customer_note", e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-gray-500">הערה פנימית (לא תוצג ללקוח)</Label>
+            <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
             <Textarea value={item.internal_note} rows={2}
               onChange={(e) => setField("internal_note", e.target.value)} />
           </div>
@@ -514,7 +514,7 @@ function BasketRow({
         {/* Components */}
         {item.components.length > 0 && (
           <div>
-            <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-gray-700 transition-colors"
+            <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground/70 transition-colors"
               onClick={() => setField("components_expanded", !item.components_expanded)}>
               {item.components_expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               {item.components.length} רכיבים
@@ -585,7 +585,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       </div>
 
       {state.items.length === 0 && (
-        <div className="rounded-lg border-2 border-dashed border-gray-200 py-10 text-center">
+        <div className="rounded-lg border-2 border-dashed border-border py-10 text-center">
           <p className="text-sm text-muted-foreground mb-3">הסל ריק — יש להוסיף לפחות מוצר אחד</p>
           <Button variant="outline" onClick={() => setShowSelector(true)}>
             <Plus className="w-4 h-4 ml-1" />הוסף מוצר מהקטלוג
@@ -612,17 +612,17 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
       {/* Totals */}
       {state.items.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
           <h3 className="font-medium text-sm">סיכום סל</h3>
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">סה״כ מחושב</span>
+              <span className="text-muted-foreground">סה״כ מחושב</span>
               <span className="font-medium">{formatILS(calc.productsTotal)}</span>
             </div>
 
             {/* Discount */}
             <div className="flex items-center justify-between gap-2">
-              <span className="text-gray-600">הנחה כוללת (₪)</span>
+              <span className="text-muted-foreground">הנחה כוללת (₪)</span>
               <Input type="number" min={0} step={0.01} value={state.discountAmount}
                 placeholder="0"
                 onChange={(e) => update({ discountAmount: e.target.value })}
@@ -634,7 +634,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               <div className="flex items-center gap-2 mt-1">
                 <input type="checkbox" id="basket_override" checked={state.basketManuallyOverridden}
                   onChange={(e) => update({ basketManuallyOverridden: e.target.checked, basketManualTotal: e.target.checked ? state.basketManualTotal : "" })} />
-                <label htmlFor="basket_override" className="text-sm text-gray-600 cursor-pointer">שינוי ידני של סה״כ הסל</label>
+                <label htmlFor="basket_override" className="text-sm text-muted-foreground cursor-pointer">שינוי ידני של סה״כ הסל</label>
               </div>
               {state.basketManuallyOverridden && (
                 <div className="mt-2 space-y-2">
@@ -654,7 +654,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
             <Separator />
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">סה״כ לפני הנחה</span>
+              <span className="text-muted-foreground">סה״כ לפני הנחה</span>
               <span>{formatILS(calc.effectiveSubtotal)}</span>
             </div>
             {calc.discount > 0 && (
@@ -664,10 +664,10 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">סה״כ אחרי הנחה</span>
+              <span className="text-muted-foreground">סה״כ אחרי הנחה</span>
               <span>{formatILS(calc.afterDiscount)}</span>
             </div>
-            <div className="flex justify-between text-sm text-gray-500">
+            <div className="flex justify-between text-sm text-muted-foreground">
               <span>מע״מ 18%</span>
               <span>{formatILS(calc.vat)}</span>
             </div>
@@ -683,7 +683,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       {showSelector && <ProductSelector onAdd={handleAddProduct} onClose={() => setShowSelector(false)} />}
       {loadingProductId && (
         <div className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 text-sm text-muted-foreground">טוען רכיבי מוצר...</div>
+          <div className="bg-card rounded-lg p-6 text-sm text-muted-foreground">טוען רכיבי מוצר...</div>
         </div>
       )}
     </div>
@@ -776,61 +776,61 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
       </div>
 
       {/* Party */}
-      <div className="rounded-lg border border-gray-200 p-4 space-y-1">
+      <div className="rounded-lg border border-border p-4 space-y-1">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">לקוח / ליד</p>
         <p className="font-medium">{state.partyName || state.newLeadName}</p>
-        {state.partyEmail && <p className="text-sm text-gray-500">{state.partyEmail}</p>}
+        {state.partyEmail && <p className="text-sm text-muted-foreground">{state.partyEmail}</p>}
         <Badge variant="outline" className="text-xs">
           {state.partyType === "customer" ? "לקוח" : state.partyType === "lead" ? "ליד" : "ליד חדש"}
         </Badge>
       </div>
 
       {/* Quote details */}
-      <div className="rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+      <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">פרטי הצעה</p>
-        {state.projectTitle && <div className="flex justify-between"><span className="text-gray-500">כותרת</span><span className="font-medium">{state.projectTitle}</span></div>}
-        {state.validUntil && <div className="flex justify-between"><span className="text-gray-500">תוקף עד</span><span>{state.validUntil}</span></div>}
-        <div className="flex justify-between"><span className="text-gray-500">גרסה</span><span>1</span></div>
+        {state.projectTitle && <div className="flex justify-between"><span className="text-muted-foreground">כותרת</span><span className="font-medium">{state.projectTitle}</span></div>}
+        {state.validUntil && <div className="flex justify-between"><span className="text-muted-foreground">תוקף עד</span><span>{state.validUntil}</span></div>}
+        <div className="flex justify-between"><span className="text-muted-foreground">גרסה</span><span>1</span></div>
       </div>
 
       {/* Items */}
-      <div className="rounded-lg border border-gray-200 p-4 space-y-2">
+      <div className="rounded-lg border border-border p-4 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">שורות הצעה ({state.items.length})</p>
         {state.items.map((item) => (
           <div key={item.line_id} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
-            <span className="text-gray-700">{item.product_name_snapshot || "שורה ידנית"} × {item.quantity}</span>
+            <span className="text-foreground/70">{item.product_name_snapshot || "שורה ידנית"} × {item.quantity}</span>
             <span className="font-medium">{formatILS(item.unit_price * item.quantity)}</span>
           </div>
         ))}
       </div>
 
       {/* Totals */}
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-1.5 text-sm">
-        <div className="flex justify-between"><span className="text-gray-600">סה״כ לפני הנחה</span><span>{formatILS(calc.effectiveSubtotal)}</span></div>
+      <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
+        <div className="flex justify-between"><span className="text-muted-foreground">סה״כ לפני הנחה</span><span>{formatILS(calc.effectiveSubtotal)}</span></div>
         {calc.discount > 0 && <div className="flex justify-between text-green-700"><span>הנחה</span><span>-{formatILS(calc.discount)}</span></div>}
-        <div className="flex justify-between"><span className="text-gray-600">סה״כ אחרי הנחה</span><span>{formatILS(calc.afterDiscount)}</span></div>
-        <div className="flex justify-between text-gray-500"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">סה״כ אחרי הנחה</span><span>{formatILS(calc.afterDiscount)}</span></div>
+        <div className="flex justify-between text-muted-foreground"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
         <Separator />
         <div className="flex justify-between font-bold text-base"><span>סה״כ כולל מע״מ</span><span className="text-primary">{formatILS(calc.total)}</span></div>
         {deposit > 0 && <>
-          <div className="flex justify-between text-sm"><span className="text-gray-500">מקדמה</span><span>{formatILS(deposit)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">מקדמה</span><span>{formatILS(deposit)}</span></div>
           <div className="flex justify-between text-sm font-medium"><span>יתרה לתשלום</span><span>{formatILS(remaining)}</span></div>
         </>}
       </div>
 
       {/* Terms */}
       {(state.paymentTerms || state.deliveryTerms) && (
-        <div className="rounded-lg border border-gray-200 p-4 space-y-1 text-sm">
-          {state.paymentTerms && <div><span className="text-gray-500">תנאי תשלום: </span>{state.paymentTerms}</div>}
-          {state.deliveryTerms && <div><span className="text-gray-500">זמן אספקה: </span>{state.deliveryTerms}</div>}
+        <div className="rounded-lg border border-border p-4 space-y-1 text-sm">
+          {state.paymentTerms && <div><span className="text-muted-foreground">תנאי תשלום: </span>{state.paymentTerms}</div>}
+          {state.deliveryTerms && <div><span className="text-muted-foreground">זמן אספקה: </span>{state.deliveryTerms}</div>}
         </div>
       )}
 
       {/* Customer notes */}
       {state.customerNotes && (
-        <div className="rounded-lg border border-gray-200 p-4 text-sm">
+        <div className="rounded-lg border border-border p-4 text-sm">
           <p className="text-xs font-semibold text-muted-foreground mb-1">הערות ללקוח</p>
-          <p className="text-gray-700 whitespace-pre-line">{state.customerNotes}</p>
+          <p className="text-foreground/70 whitespace-pre-line">{state.customerNotes}</p>
         </div>
       )}
 

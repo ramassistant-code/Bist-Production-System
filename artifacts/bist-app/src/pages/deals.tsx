@@ -127,7 +127,7 @@ export default function Deals() {
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">עסקאות</h1>
+              <h1 className="text-2xl font-bold text-foreground">עסקאות</h1>
               {!isLoading && (
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {total.toLocaleString("he-IL")} עסקאות
@@ -151,7 +151,7 @@ export default function Deals() {
                 {inputValue && (
                   <button
                     onClick={handleClearSearch}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gray-600"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -176,7 +176,7 @@ export default function Deals() {
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="flex flex-col items-center gap-3">
@@ -196,27 +196,27 @@ export default function Deals() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">מספר עסקה</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600">שם לקוח</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600">מקור</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">סכום עסקה</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600">סטטוס</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">תאריך פתיחה</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">עדכון אחרון</th>
-                      <th className="text-right px-4 py-3 font-medium text-gray-600">פעולות</th>
+                    <tr className="border-b border-border/50 bg-muted/50">
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">מספר עסקה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם לקוח</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">מקור</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">סכום עסקה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">סטטוס</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">תאריך פתיחה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">עדכון אחרון</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
                     {deals.map((deal, idx) => (
                       <tr
                         key={deal.id}
-                        className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                        className={`border-b border-border/30 hover:bg-muted/50 transition-colors ${idx % 2 === 0 ? "" : "bg-muted/50/30"}`}
                       >
-                        <td className="px-4 py-3 font-mono font-medium text-gray-800 whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono font-medium text-foreground/80 whitespace-nowrap">
                           {deal.deal_number}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 max-w-[160px] truncate">
+                        <td className="px-4 py-3 text-foreground/70 max-w-[160px] truncate">
                           {getCustomerDisplayName(deal)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -225,10 +225,10 @@ export default function Deals() {
                               {deal.quote_number ? `הצעה ${deal.quote_number}` : "הצעת מחיר"}
                             </span>
                           ) : (
-                            <span className="text-gray-400 text-xs">ייבוא היסטורי</span>
+                            <span className="text-muted-foreground text-xs">ייבוא היסטורי</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-medium">
+                        <td className="px-4 py-3 text-foreground/70 whitespace-nowrap font-medium">
                           {formatILS(deal.total_amount)}
                         </td>
                         <td className="px-4 py-3">
@@ -239,10 +239,10 @@ export default function Deals() {
                             {deal.execution_status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
                           {formatDate(deal.created_at)}
                         </td>
-                        <td className="px-4 py-3 text-gray-400 whitespace-nowrap text-xs">
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
                           {formatDate(deal.updated_at)}
                         </td>
                         <td className="px-4 py-3">

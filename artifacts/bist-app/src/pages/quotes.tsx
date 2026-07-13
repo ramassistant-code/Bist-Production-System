@@ -135,16 +135,16 @@ export default function Quotes() {
             </div>
           )}
           {!isLoading && !isError && quotes && quotes.length > 0 && (
-            <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
+            <div className="h-full overflow-y-auto rounded-lg border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
+                <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
                   <tr>
                     {["מספר הצעה","לקוח / ליד","טלפון","כותרת","גרסה","סטטוס","סה״כ כולל מע״מ","תוקף עד","תאריך יצירה",""].map((h, i) => (
-                      <th key={i} className={`text-right px-4 py-3 font-medium text-gray-600 ${i >= 2 && i <= 3 ? "hidden md:table-cell" : ""} ${i >= 6 && i <= 7 ? "hidden xl:table-cell" : ""} ${i === 8 ? "hidden lg:table-cell" : ""}`}>{h}</th>
+                      <th key={i} className={`text-right px-4 py-3 font-medium text-muted-foreground ${i >= 2 && i <= 3 ? "hidden md:table-cell" : ""} ${i >= 6 && i <= 7 ? "hidden xl:table-cell" : ""} ${i === 8 ? "hidden lg:table-cell" : ""}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/30">
                   {quotes.map((q) => {
                     const party = q.customer_name ?? q.lead_name ?? "—";
                     const phone = q.customer_phone ?? q.lead_phone ?? "—";
@@ -153,16 +153,16 @@ export default function Quotes() {
                     const validUntil = formatDate(q.terms_snapshot?.valid_until);
                     const st = q.version_status ?? q.status;
                     return (
-                      <tr key={q.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={q.id} className="hover:bg-muted/50 transition-colors">
                         <td className="px-4 py-3"><div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" /><span className="font-mono font-medium">{q.quote_number}</span></div></td>
-                        <td className="px-4 py-3 font-medium text-gray-900">{party}</td>
-                        <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{phone}</td>
-                        <td className="px-4 py-3 text-gray-500 hidden md:table-cell truncate max-w-[160px]">{title}</td>
-                        <td className="px-4 py-3 text-gray-500">v{q.version_number ?? 1}</td>
+                        <td className="px-4 py-3 font-medium text-foreground">{party}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{phone}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell truncate max-w-[160px]">{title}</td>
+                        <td className="px-4 py-3 text-muted-foreground">v{q.version_number ?? 1}</td>
                         <td className="px-4 py-3"><Badge variant={STATUS_VARIANT[st] ?? "secondary"}>{STATUS_LABELS[st] ?? st}</Badge></td>
-                        <td className="px-4 py-3 font-medium text-gray-800 hidden xl:table-cell">{total}</td>
-                        <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">{validUntil}</td>
-                        <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{formatDate(q.created_at)}</td>
+                        <td className="px-4 py-3 font-medium text-foreground/80 hidden xl:table-cell">{total}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">{validUntil}</td>
+                        <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{formatDate(q.created_at)}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1 justify-end">
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/quotes/${q.id}`)} title="צפייה"><Eye className="w-4 h-4" /></Button>
@@ -178,7 +178,7 @@ export default function Quotes() {
         </div>
 
         {!isLoading && !isError && (page > 0 || showingCount === LIMIT) && (
-          <div className="shrink-0 flex items-center justify-center gap-3 px-8 py-3 border-t bg-white">
+          <div className="shrink-0 flex items-center justify-center gap-3 px-8 py-3 border-t bg-card">
             <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>הקודם</Button>
             <span className="text-sm text-muted-foreground">עמוד {page + 1}</span>
             <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={showingCount < LIMIT}>הבא</Button>

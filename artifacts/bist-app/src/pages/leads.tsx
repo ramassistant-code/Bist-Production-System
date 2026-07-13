@@ -221,7 +221,7 @@ function LeadDetails({ lead }: { lead: Lead }) {
     { label: "לקוח מקושר (ID)", value: empty(lead.linked_customer_id) },
   ];
   return (
-    <div className="divide-y divide-gray-100" dir="rtl">
+    <div className="divide-y divide-border/50" dir="rtl">
       {rows.map(({ label, value }) => (
         <div key={label} className="flex justify-between py-2 text-sm">
           <span className="text-muted-foreground">{label}</span>
@@ -395,27 +395,27 @@ export default function Leads() {
           )}
 
           {!isLoading && !isError && leads && leads.length > 0 && (
-            <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
+            <div className="h-full overflow-y-auto rounded-lg border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
+                <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">מספר ליד</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">סטטוס</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">מקור</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">פולואפ</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">מספר ליד</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">טלפון</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">אימייל</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">סטטוס</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">מקור</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">פולואפ</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/30">
                   {leads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={lead.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-4 py-3">
                         <Badge variant="secondary" className="font-mono text-xs">{lead.lead_number}</Badge>
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                      <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <User className="w-3.5 h-3.5 text-primary" />
@@ -423,23 +423,23 @@ export default function Leads() {
                           {lead.name}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                         {lead.phone ? (
                           <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
-                        ) : <span className="text-gray-300">—</span>}
+                        ) : <span className="text-muted-foreground/40">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
                         {lead.email ? (
                           <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{lead.email}</span>
-                        ) : <span className="text-gray-300">—</span>}
+                        ) : <span className="text-muted-foreground/40">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         {lead.status
                           ? <Badge variant={statusVariant(lead.status)}>{lead.status}</Badge>
-                          : <span className="text-gray-300">—</span>}
+                          : <span className="text-muted-foreground/40">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{empty(lead.lead_source)}</td>
-                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">{formatDate(lead.followup_at)}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{empty(lead.lead_source)}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">{formatDate(lead.followup_at)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 justify-end">
                           <Button size="sm" variant="ghost" onClick={() => setDetailsLead(lead)} title="פרטים">
@@ -460,7 +460,7 @@ export default function Leads() {
 
         {/* Pagination */}
         {!isLoading && !isError && (hasPrev || hasMore) && (
-          <div className="shrink-0 flex items-center justify-center gap-3 px-8 py-3 border-t border-gray-100 bg-white">
+          <div className="shrink-0 flex items-center justify-center gap-3 px-8 py-3 border-t border-border/50 bg-card">
             <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={!hasPrev}>
               הקודם
             </Button>

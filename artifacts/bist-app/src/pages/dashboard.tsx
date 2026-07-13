@@ -29,22 +29,22 @@ interface KpiCardProps {
 }
 
 const ACCENT: Record<string, string> = {
-  blue:   "bg-blue-50 border-blue-100 text-blue-600",
-  green:  "bg-green-50 border-green-100 text-green-600",
-  orange: "bg-orange-50 border-orange-100 text-orange-600",
-  red:    "bg-red-50 border-red-100 text-red-600",
-  purple: "bg-purple-50 border-purple-100 text-purple-600",
+  blue:   "bg-blue-500/10 border-blue-500/20 text-blue-600",
+  green:  "bg-green-500/10 border-green-500/20 text-green-600",
+  orange: "bg-orange-500/10 border-orange-500/20 text-orange-600",
+  red:    "bg-red-500/10 border-red-500/20 text-red-600",
+  purple: "bg-purple-500/10 border-purple-500/20 text-purple-600",
 };
 
 function KpiCard({ icon, label, value, sub, accent = "blue" }: KpiCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex gap-4 items-start shadow-sm">
+    <div className="bg-card rounded-xl border border-border p-5 flex gap-4 items-start shadow-sm">
       <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 border ${ACCENT[accent]}`}>
         {icon}
       </div>
       <div className="min-w-0">
         <p className="text-sm text-muted-foreground font-medium mb-0.5">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 leading-tight">{value}</p>
+        <p className="text-2xl font-bold text-foreground leading-tight">{value}</p>
         {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
       </div>
     </div>
@@ -65,10 +65,10 @@ function StatusBar({ label, count, total, color }: StatusBarProps) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-muted-foreground w-36 shrink-0 truncate text-right">{label}</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+      <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
         <div className={`h-2 rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-sm font-medium text-gray-700 w-10 text-left shrink-0">{count}</span>
+      <span className="text-sm font-medium text-foreground/70 w-10 text-left shrink-0">{count}</span>
       <span className="text-xs text-muted-foreground w-8 shrink-0">{pct}%</span>
     </div>
   );
@@ -79,10 +79,10 @@ function StatusBar({ label, count, total, color }: StatusBarProps) {
 function FollowupRow({ item }: { item: FollowupItem }) {
   const overdue = isOverdue(item.followup_at);
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+    <div className="flex items-center gap-3 py-2.5 border-b border-border/30 last:border-0">
       <div className={`w-2 h-2 rounded-full shrink-0 ${overdue ? "bg-red-400" : "bg-orange-400"}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+        <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
         {item.followup_note && (
           <p className="text-xs text-muted-foreground truncate">{item.followup_note}</p>
         )}
@@ -105,8 +105,8 @@ function FollowupRow({ item }: { item: FollowupItem }) {
 // ---------- Main ----------
 
 const STATUS_COLORS = [
-  "bg-blue-500", "bg-green-500", "bg-orange-400",
-  "bg-purple-500", "bg-red-400", "bg-gray-400", "bg-teal-500", "bg-pink-400",
+  "bg-blue-500/100", "bg-green-500/100", "bg-orange-400",
+  "bg-purple-500/100", "bg-red-400", "bg-gray-400", "bg-teal-500", "bg-pink-400",
 ];
 
 export default function Dashboard() {
@@ -174,9 +174,9 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
               {/* Followup list */}
-              <div className="lg:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900 text-sm">פולואפים קרובים</h2>
+              <div className="lg:col-span-1 bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+                  <h2 className="font-semibold text-foreground text-sm">פולואפים קרובים</h2>
                   <Badge variant={stats.leads.followup_overdue > 0 ? "destructive" : "secondary"}>
                     {stats.followup_soon.length}
                   </Badge>
@@ -195,9 +195,9 @@ export default function Dashboard() {
               </div>
 
               {/* Status breakdown */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900 text-sm">לידים לפי סטטוס</h2>
+              <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-border/50">
+                  <h2 className="font-semibold text-foreground text-sm">לידים לפי סטטוס</h2>
                 </div>
                 <div className="px-5 py-4 space-y-3">
                   {stats.by_status.map((s, i) => (
@@ -213,9 +213,9 @@ export default function Dashboard() {
               </div>
 
               {/* Source breakdown */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900 text-sm">לידים לפי מקור הגעה</h2>
+              <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-border/50">
+                  <h2 className="font-semibold text-foreground text-sm">לידים לפי מקור הגעה</h2>
                 </div>
                 <div className="px-5 py-4 space-y-3">
                   {stats.by_source.map((s, i) => (
@@ -233,24 +233,24 @@ export default function Dashboard() {
 
             {/* ── Bottom alerts row ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-3">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-5 flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">פולואפ באיחור</p>
+                  <p className="text-sm font-medium text-foreground">פולואפ באיחור</p>
                   <p className="text-2xl font-bold text-red-600">{stats.leads.followup_overdue}</p>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-3">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-5 flex items-center gap-3">
                 <Clock className="w-5 h-5 text-orange-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">פולואפ 7 ימים הבאים</p>
+                  <p className="text-sm font-medium text-foreground">פולואפ 7 ימים הבאים</p>
                   <p className="text-2xl font-bold text-orange-600">{stats.leads.followup_week}</p>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-center gap-3">
+              <div className="bg-card rounded-xl border border-border shadow-sm p-5 flex items-center gap-3">
                 <TrendingUp className="w-5 h-5 text-green-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">לקוחות חדשים החודש</p>
+                  <p className="text-sm font-medium text-foreground">לקוחות חדשים החודש</p>
                   <p className="text-2xl font-bold text-green-600">{stats.customers.this_month}</p>
                 </div>
               </div>

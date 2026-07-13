@@ -236,13 +236,13 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
       dir="rtl"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 my-auto">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl mx-4 my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">פתיחת עסקה</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="text-lg font-bold text-foreground">פתיחת עסקה</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors"
             aria-label="סגור"
           >
             <X className="w-5 h-5" />
@@ -254,7 +254,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           {/* ─── Section 1: פרטי לקוח / ליד ─────────────────────────────── */}
           <section>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">פרטי לקוח / ליד</h3>
+              <h3 className="text-sm font-semibold text-foreground/70">פרטי לקוח / ליד</h3>
               <Badge variant={isLead ? "secondary" : "outline"} className="text-xs">
                 {isLead ? "ליד" : "לקוח קיים"}
               </Badge>
@@ -262,9 +262,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
             {isLead ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">שם לקוח / ליד <span className="text-red-500">*</span></label>
+                  <label className="block text-xs text-muted-foreground mb-1">שם לקוח / ליד <span className="text-red-500">*</span></label>
                   <input
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.leadName ? "border-red-400" : "border-gray-200"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.leadName ? "border-red-400" : "border-border"}`}
                     value={leadName}
                     onChange={e => setLeadName(e.target.value)}
                     placeholder="שם מלא"
@@ -272,18 +272,18 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                   {errors.leadName && <p className="text-xs text-red-500 mt-0.5">{errors.leadName}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">שם עסק</label>
+                  <label className="block text-xs text-muted-foreground mb-1">שם עסק</label>
                   <input
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     value={leadBusiness}
                     onChange={e => setLeadBusiness(e.target.value)}
                     placeholder="שם עסק (אם רלוונטי)"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">טלפון</label>
+                  <label className="block text-xs text-muted-foreground mb-1">טלפון</label>
                   <input
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     value={leadPhone}
                     onChange={e => setLeadPhone(e.target.value)}
                     placeholder="050-0000000"
@@ -291,9 +291,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">מייל</label>
+                  <label className="block text-xs text-muted-foreground mb-1">מייל</label>
                   <input
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     value={leadEmail}
                     onChange={e => setLeadEmail(e.target.value)}
                     placeholder="email@example.com"
@@ -302,9 +302,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">ח.פ / ת.ז</label>
+                  <label className="block text-xs text-muted-foreground mb-1">ח.פ / ת.ז</label>
                   <input
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     value={leadTaxId}
                     onChange={e => setLeadTaxId(e.target.value)}
                     placeholder="אם קיים"
@@ -313,41 +313,41 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-50 rounded-lg px-4 py-3 space-y-1 text-sm">
+              <div className="bg-muted/50 rounded-lg px-4 py-3 space-y-1 text-sm">
                 <div className="flex gap-2">
-                  <span className="text-gray-500 w-20 shrink-0">שם:</span>
+                  <span className="text-muted-foreground w-20 shrink-0">שם:</span>
                   <span className="font-medium">{party?.business_name || party?.contact_name || quote.customer_name || "—"}</span>
                 </div>
                 {(party?.phone || quote.customer_phone) && (
                   <div className="flex gap-2">
-                    <span className="text-gray-500 w-20 shrink-0">טלפון:</span>
+                    <span className="text-muted-foreground w-20 shrink-0">טלפון:</span>
                     <span dir="ltr">{party?.phone || quote.customer_phone}</span>
                   </div>
                 )}
                 {party?.email && (
                   <div className="flex gap-2">
-                    <span className="text-gray-500 w-20 shrink-0">מייל:</span>
+                    <span className="text-muted-foreground w-20 shrink-0">מייל:</span>
                     <span dir="ltr">{party.email}</span>
                   </div>
                 )}
                 {party?.tax_id && (
                   <div className="flex gap-2">
-                    <span className="text-gray-500 w-20 shrink-0">ח.פ / ת.ז:</span>
+                    <span className="text-muted-foreground w-20 shrink-0">ח.פ / ת.ז:</span>
                     <span dir="ltr">{party.tax_id}</span>
                   </div>
                 )}
-                <p className="text-xs text-gray-400 mt-1">פרטי לקוח קיים — לא ניתן לעריכה</p>
+                <p className="text-xs text-muted-foreground mt-1">פרטי לקוח קיים — לא ניתן לעריכה</p>
               </div>
             )}
           </section>
 
           {/* ─── Section 2: איש מכירות ────────────────────────────────────── */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">איש מכירות</h3>
+            <h3 className="text-sm font-semibold text-foreground/70 mb-3">איש מכירות</h3>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">איש מכירות <span className="text-red-500">*</span></label>
+              <label className="block text-xs text-muted-foreground mb-1">איש מכירות <span className="text-red-500">*</span></label>
               <select
-                className={`w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.salesperson ? "border-red-400" : "border-gray-200"}`}
+                className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.salesperson ? "border-red-400" : "border-border"}`}
                 value={salespersonId}
                 onChange={e => setSalespersonId(e.target.value)}
               >
@@ -365,22 +365,22 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* ─── Section 3: סיכום כספי ────────────────────────────────────── */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">סיכום כספי</h3>
+            <h3 className="text-sm font-semibold text-foreground/70 mb-3">סיכום כספי</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">סה"כ לתשלום כולל מע"מ</label>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-800">
+                <label className="block text-xs text-muted-foreground mb-1">סה"כ לתשלום כולל מע"מ</label>
+                <div className="bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm font-semibold text-foreground/80">
                   {formatILS(totalWithVat)}
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">מחושב מגרסת ההצעה — לא ניתן לשינוי</p>
+                <p className="text-xs text-muted-foreground mt-0.5">מחושב מגרסת ההצעה — לא ניתן לשינוי</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">סכום ששולם כולל מע"מ <span className="text-red-500">*</span></label>
+                <label className="block text-xs text-muted-foreground mb-1">סכום ששולם כולל מע"מ <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.amountPaid ? "border-red-400" : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.amountPaid ? "border-red-400" : "border-border"}`}
                   value={amountPaid}
                   onChange={e => setAmountPaid(e.target.value)}
                   placeholder="0"
@@ -393,10 +393,10 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* ─── Section 4: אמצעי תשלום ───────────────────────────────────── */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">אמצעי תשלום</h3>
+            <h3 className="text-sm font-semibold text-foreground/70 mb-3">אמצעי תשלום</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">סוג תשלום <span className="text-red-500">*</span></label>
+                <label className="block text-xs text-muted-foreground mb-1">סוג תשלום <span className="text-red-500">*</span></label>
                 <div className="flex gap-2 flex-wrap">
                   {["cash", "credit_card", "bank_transfer"].map(pt => (
                     <button
@@ -406,7 +406,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                       className={`px-4 py-2 rounded-lg text-sm border transition-colors ${
                         paymentType === pt
                           ? "bg-primary text-white border-primary"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                          : "bg-card text-foreground/70 border-border hover:border-border"
                       }`}
                     >
                       {PAYMENT_LABELS[pt]}
@@ -418,11 +418,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
               {paymentType === "credit_card" && (
                 <div className="w-40">
-                  <label className="block text-xs text-gray-500 mb-1">כמות תשלומים <span className="text-red-500">*</span></label>
+                  <label className="block text-xs text-muted-foreground mb-1">כמות תשלומים <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     min="1"
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.installments ? "border-red-400" : "border-gray-200"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.installments ? "border-red-400" : "border-border"}`}
                     value={installments}
                     onChange={e => setInstallments(e.target.value)}
                     dir="ltr"
@@ -432,12 +432,12 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
               )}
 
               {paymentType && paymentType !== "credit_card" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-50 rounded-lg p-4">
-                  <p className="col-span-full text-xs text-blue-700 font-medium">פרטי חשבונית</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-500/10 rounded-lg p-4">
+                  <p className="col-span-full text-xs text-blue-400 font-medium">פרטי חשבונית</p>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">שם על החשבונית <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">שם על החשבונית <span className="text-red-500">*</span></label>
                     <input
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white ${errors.invoiceName ? "border-red-400" : "border-gray-200"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceName ? "border-red-400" : "border-border"}`}
                       value={invoiceName}
                       onChange={e => setInvoiceName(e.target.value)}
                       placeholder="שם מלא / שם חברה"
@@ -445,9 +445,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                     {errors.invoiceName && <p className="text-xs text-red-500 mt-0.5">{errors.invoiceName}</p>}
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">מספר ת.ז / ח.פ <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">מספר ת.ז / ח.פ <span className="text-red-500">*</span></label>
                     <input
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white ${errors.invoiceIdNumber ? "border-red-400" : "border-gray-200"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceIdNumber ? "border-red-400" : "border-border"}`}
                       value={invoiceIdNumber}
                       onChange={e => setInvoiceIdNumber(e.target.value)}
                       placeholder="000000000"
@@ -456,10 +456,10 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                     {errors.invoiceIdNumber && <p className="text-xs text-red-500 mt-0.5">{errors.invoiceIdNumber}</p>}
                   </div>
                   <div className="col-span-full">
-                    <label className="block text-xs text-gray-500 mb-1">מייל לשליחת החשבונית <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">מייל לשליחת החשבונית <span className="text-red-500">*</span></label>
                     <input
                       type="email"
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white ${errors.invoiceEmail ? "border-red-400" : "border-gray-200"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceEmail ? "border-red-400" : "border-border"}`}
                       value={invoiceEmail}
                       onChange={e => setInvoiceEmail(e.target.value)}
                       placeholder="email@example.com"
@@ -477,11 +477,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
             <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 checked={coordRequested}
                 onChange={e => setCoordRequested(e.target.checked)}
               />
-              <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">
+              <span className="text-sm font-semibold text-foreground/70 group-hover:text-foreground">
                 פתיחת משימות מיוחדות לתיאום
               </span>
             </label>
@@ -490,12 +490,12 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
               <div className="mt-4 space-y-3">
                 {errors.tasks && <p className="text-xs text-red-500">{errors.tasks}</p>}
                 {tasks.map((task, i) => (
-                  <div key={i} className="flex gap-2 items-start bg-gray-50 rounded-lg p-3">
+                  <div key={i} className="flex gap-2 items-start bg-muted/50 rounded-lg p-3">
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1">טקסט משימה <span className="text-red-500">*</span></label>
+                        <label className="block text-xs text-muted-foreground mb-1">טקסט משימה <span className="text-red-500">*</span></label>
                         <input
-                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_text_${i}`] ? "border-red-400" : "border-gray-200"}`}
+                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_text_${i}`] ? "border-red-400" : "border-border"}`}
                           value={task.task_text}
                           onChange={e => updateTask(i, "task_text", e.target.value)}
                           placeholder="תיאור המשימה"
@@ -503,9 +503,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                         {errors[`task_text_${i}`] && <p className="text-xs text-red-500 mt-0.5">{errors[`task_text_${i}`]}</p>}
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-500 mb-1">אחראי <span className="text-red-500">*</span></label>
+                        <label className="block text-xs text-muted-foreground mb-1">אחראי <span className="text-red-500">*</span></label>
                         <select
-                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_role_${i}`] ? "border-red-400" : "border-gray-200"}`}
+                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_role_${i}`] ? "border-red-400" : "border-border"}`}
                           value={task.assignee_role}
                           onChange={e => updateTask(i, "assignee_role", e.target.value)}
                         >
@@ -539,9 +539,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* ─── Section 6: הערות פנימיות ─────────────────────────────────── */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">הערות לאופרציה</h3>
+            <h3 className="text-sm font-semibold text-foreground/70 mb-2">הערות לאופרציה</h3>
             <textarea
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
               rows={3}
               value={operationNotes}
               onChange={e => setOperationNotes(e.target.value)}
@@ -558,7 +558,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border bg-muted/50 rounded-b-xl">
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             ביטול
           </Button>

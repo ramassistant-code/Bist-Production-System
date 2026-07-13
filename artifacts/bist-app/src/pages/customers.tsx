@@ -255,7 +255,7 @@ function CustomerDetails({ customer }: CustomerDetailsProps) {
   ];
 
   return (
-    <div className="divide-y divide-gray-100" dir="rtl">
+    <div className="divide-y divide-border/50" dir="rtl">
       {rows.map(({ label, value }) => (
         <div key={label} className="flex justify-between py-2 text-sm">
           <span className="text-muted-foreground">{label}</span>
@@ -355,28 +355,28 @@ export default function Customers() {
           )}
 
           {!isLoading && !isError && customers && customers.length > 0 && (
-            <div className="h-full overflow-y-auto rounded-lg border border-gray-200 bg-white">
+            <div className="h-full overflow-y-auto rounded-lg border border-border bg-card">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
+                <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">מספר לקוח</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">שם</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden md:table-cell">טלפון</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">אימייל</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">סוג לקוח</th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">הצטרף</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">מספר לקוח</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">טלפון</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">אימייל</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">סוג לקוח</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">הצטרף</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-border/30">
                   {customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={customer.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-4 py-3">
                         <Badge variant="secondary" className="font-mono text-xs">
                           {customer.customer_number}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                      <td className="px-4 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <User className="w-3.5 h-3.5 text-primary" />
@@ -384,34 +384,34 @@ export default function Customers() {
                           {customer.name}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                         {customer.phone ? (
                           <span className="flex items-center gap-1">
                             <Phone className="w-3 h-3" />
                             {customer.phone}
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/40">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
                         {customer.email ? (
                           <span className="flex items-center gap-1">
                             <Mail className="w-3 h-3" />
                             {customer.email}
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/40">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         {customer.customer_type ? (
                           <Badge variant="outline">{customer.customer_type}</Badge>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/40">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden xl:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
                         {formatDate(customer.joined_at)}
                       </td>
                       <td className="px-4 py-3">

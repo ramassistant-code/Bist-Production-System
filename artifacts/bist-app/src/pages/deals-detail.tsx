@@ -192,7 +192,7 @@ function formatILS(val: string | number | null | undefined) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const CREDIT_STATUS_STYLE: Record<string, string> = {
-  "ממתין":         "bg-gray-100 text-gray-600",
+  "ממתין":         "bg-muted text-muted-foreground",
   "בתהליך":        "bg-blue-100 text-blue-700",
   "ממתין ללקוח":   "bg-yellow-100 text-yellow-700",
   "בבדיקת איכות": "bg-orange-100 text-orange-700",
@@ -202,7 +202,7 @@ const CREDIT_STATUS_STYLE: Record<string, string> = {
 
 const PAYMENT_STATUS_STYLE: Record<string, string> = {
   "התקבל":          "bg-green-100 text-green-700",
-  "ממתין לתשלום":   "bg-gray-100 text-gray-500",
+  "ממתין לתשלום":   "bg-muted text-muted-foreground",
   "חלקי":           "bg-yellow-100 text-yellow-700",
   "נכשל":           "bg-red-100 text-red-600",
   "הוחזר":          "bg-purple-100 text-purple-700",
@@ -300,7 +300,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
           {/* Amount + Date row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground/70">
                 סכום <span className="text-destructive">*</span>
               </label>
               <input
@@ -316,7 +316,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
               {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">תאריך תשלום</label>
+              <label className="text-sm font-medium text-foreground/70">תאריך תשלום</label>
               <input
                 type="date"
                 value={paymentDate}
@@ -329,7 +329,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
 
           {/* Payment type */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-foreground/70">
               אמצעי תשלום <span className="text-destructive">*</span>
             </label>
             <div className="flex gap-2 flex-wrap">
@@ -341,7 +341,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     paymentType === pt
                       ? "bg-primary text-white border-primary"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                      : "bg-card text-foreground/70 border-border hover:border-gray-400"
                   }`}
                 >
                   {PAYMENT_LABELS[pt]}
@@ -353,7 +353,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
 
           {/* Purpose */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">מטרת תשלום</label>
+            <label className="text-sm font-medium text-foreground/70">מטרת תשלום</label>
             <select
               value={paymentPurpose}
               onChange={(e) => setPaymentPurpose(e.target.value)}
@@ -368,7 +368,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
           {/* Credit card — installments */}
           {paymentType === "credit_card" && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground/70">
                 כמות תשלומים <span className="text-destructive">*</span>
               </label>
               <input
@@ -388,37 +388,37 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
             <div className="space-y-3 bg-blue-50 rounded-lg p-3">
               <p className="text-xs text-blue-700 font-medium">פרטי חשבונית</p>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-foreground/70">
                   שם על החשבונית <span className="text-destructive">*</span>
                 </label>
                 <input
                   value={invoiceName}
                   onChange={(e) => setInvoiceName(e.target.value)}
                   placeholder="שם מלא / שם חברה"
-                  className={`w-full h-9 rounded-md border bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.invoiceName ? "border-destructive" : "border-input"}`}
+                  className={`w-full h-9 rounded-md border bg-card px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${errors.invoiceName ? "border-destructive" : "border-input"}`}
                 />
                 {errors.invoiceName && <p className="text-xs text-destructive">{errors.invoiceName}</p>}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">ת.ז / ח.פ</label>
+                  <label className="text-sm font-medium text-foreground/70">ת.ז / ח.פ</label>
                   <input
                     value={invoiceIdNumber}
                     onChange={(e) => setInvoiceIdNumber(e.target.value)}
                     placeholder="000000000"
                     dir="ltr"
-                    className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full h-9 rounded-md border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">מייל חשבונית</label>
+                  <label className="text-sm font-medium text-foreground/70">מייל חשבונית</label>
                   <input
                     type="email"
                     value={invoiceEmail}
                     onChange={(e) => setInvoiceEmail(e.target.value)}
                     placeholder="email@example.com"
                     dir="ltr"
-                    className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full h-9 rounded-md border border-input bg-card px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
               </div>
@@ -489,7 +489,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">סטטוס ביצוע</label>
+            <label className="text-sm font-medium text-foreground/70">סטטוס ביצוע</label>
             <select
               value={execStatus}
               onChange={(e) => setExecStatus(e.target.value)}
@@ -508,7 +508,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">סטטוס תשלום</label>
+            <label className="text-sm font-medium text-foreground/70">סטטוס תשלום</label>
             <select
               value={payStatus}
               onChange={(e) => setPayStatus(e.target.value)}
@@ -522,7 +522,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-foreground/70">
               הערות פנימיות / אופרציה
               {requiresNote && <span className="text-destructive mr-1">*</span>}
             </label>
@@ -638,7 +638,7 @@ export default function DealsDetail() {
                   רשימת עסקאות
                 </Button>
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{deal.deal_number}</h1>
+              <h1 className="text-xl font-bold text-foreground">{deal.deal_number}</h1>
               {isQuoteBased && deal.quote_number && (
                 <p className="text-muted-foreground text-sm mt-0.5">
                   מבוסס על הצעה{" "}
@@ -686,17 +686,17 @@ export default function DealsDetail() {
               { label: "שולם", value: formatILS(deal.paid_amount) },
               { label: "יתרה", value: formatILS(deal.remaining_amount) },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-gray-200 p-3 bg-white">
+              <div key={label} className="rounded-lg border border-border p-3 bg-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="font-semibold text-gray-900 mt-0.5 truncate">{value}</p>
+                <p className="font-semibold text-foreground mt-0.5 truncate">{value}</p>
               </div>
             ))}
           </div>
 
           {/* ── Payments section ── */}
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/50">
+              <h3 className="text-sm font-semibold text-foreground/70">
                 תשלומים
                 {payments.length > 0 && (
                   <span className="mr-1.5 text-xs font-normal text-muted-foreground">({payments.length})</span>
@@ -718,12 +718,12 @@ export default function DealsDetail() {
             {payments.length === 0 ? (
               <p className="text-sm text-muted-foreground px-4 py-4">אין תשלומים רשומים לעסקה זו.</p>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border/50">
                 {payments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50/50">
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/50/50">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs text-muted-foreground font-mono shrink-0">{p.payment_number}</span>
-                      <div className="flex items-center gap-1.5 text-gray-600 shrink-0">
+                      <div className="flex items-center gap-1.5 text-muted-foreground shrink-0">
                         {p.payment_method && PAYMENT_METHOD_ICON[p.payment_method]}
                         <span className="text-xs">{p.payment_method ?? "—"}</span>
                       </div>
@@ -731,15 +731,15 @@ export default function DealsDetail() {
                         <span className="text-xs text-muted-foreground hidden sm:inline">{p.payment_purpose}</span>
                       )}
                       {p.invoice_name && (
-                        <span className="text-xs text-gray-500 truncate hidden md:inline">/ {p.invoice_name}</span>
+                        <span className="text-xs text-muted-foreground truncate hidden md:inline">/ {p.invoice_name}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 shrink-0 mr-4">
                       <span className="text-xs text-muted-foreground">
                         {p.payment_date ? formatDate(p.payment_date) : "—"}
                       </span>
-                      <span className="font-semibold text-gray-900">{formatILS(p.amount_paid)}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_STYLE[p.status] ?? "bg-gray-100 text-gray-600"}`}>
+                      <span className="font-semibold text-foreground">{formatILS(p.amount_paid)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_STYLE[p.status] ?? "bg-muted text-muted-foreground"}`}>
                         {p.status}
                       </span>
                     </div>
@@ -750,9 +750,9 @@ export default function DealsDetail() {
           </div>
 
           {/* ── Credits section ── */}
-          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-700">
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-muted/50">
+              <h3 className="text-sm font-semibold text-foreground/70">
                 קרדיטים
                 {credits.length > 0 && (
                   <span className="mr-1.5 text-xs font-normal text-muted-foreground">({credits.length})</span>
@@ -763,34 +763,34 @@ export default function DealsDetail() {
             {credits.length === 0 ? (
               <p className="text-sm text-muted-foreground px-4 py-4">אין קרדיטים לעסקה זו.</p>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border/50">
                 {credits.map((c) => {
                   const qty = Number(c.quantity);
                   const done = Number(c.completed_quantity);
                   const pct = qty > 0 ? Math.min(100, Math.round((done / qty) * 100)) : 0;
                   return (
-                    <div key={c.id} className="px-4 py-2.5 hover:bg-gray-50/50">
+                    <div key={c.id} className="px-4 py-2.5 hover:bg-muted/50/50">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground font-mono shrink-0">{c.credit_number}</span>
-                            <span className="text-sm font-medium text-gray-800 truncate">{c.credit_name}</span>
+                            <span className="text-sm font-medium text-foreground/80 truncate">{c.credit_name}</span>
                           </div>
                           {c.parent_product_name && (
                             <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.parent_product_name}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {done}/{qty}
                           </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CREDIT_STATUS_STYLE[c.status] ?? "bg-gray-100 text-gray-600"}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CREDIT_STATUS_STYLE[c.status] ?? "bg-muted text-muted-foreground"}`}>
                             {c.status}
                           </span>
                         </div>
                       </div>
                       {qty > 0 && (
-                        <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="mt-1.5 h-1 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary rounded-full transition-all"
                             style={{ width: `${pct}%` }}
@@ -806,8 +806,8 @@ export default function DealsDetail() {
 
           {/* Source badge */}
           {!isQuoteBased && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-gray-50 border border-gray-200 rounded-lg px-4 py-2">
-              <AlertCircle className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 border border-border rounded-lg px-4 py-2">
+              <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
               עסקה ממוקד ייבוא היסטורי (Monday.com) — אין נתוני הצעת מקור
             </div>
           )}
@@ -817,8 +817,8 @@ export default function DealsDetail() {
             <>
               {/* Party info from snapshot */}
               {party && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3 bg-white">
-                  <h3 className="text-sm font-semibold text-gray-700">פרטי לקוח (מהצעת המחיר)</h3>
+                <div className="rounded-lg border border-border p-4 space-y-3 bg-card">
+                  <h3 className="text-sm font-semibold text-foreground/70">פרטי לקוח (מהצעת המחיר)</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">שם</span>
@@ -849,15 +849,15 @@ export default function DealsDetail() {
               {/* Items */}
               {items.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700">סל מוצרים</h3>
+                  <h3 className="text-sm font-semibold text-foreground/70">סל מוצרים</h3>
                   {items.map((item, i) => (
                     <div
                       key={i}
-                      className="rounded-lg border border-gray-200 bg-white overflow-hidden"
+                      className="rounded-lg border border-border bg-card overflow-hidden"
                     >
-                      <div className="flex items-start justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                      <div className="flex items-start justify-between px-4 py-3 bg-muted/50 border-b border-border/50">
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-foreground">
                             {item.product_name_snapshot}
                           </p>
                           {item.product_description_snapshot && (
@@ -867,7 +867,7 @@ export default function DealsDetail() {
                           )}
                         </div>
                         <div className="text-left shrink-0 mr-3">
-                          <p className="font-bold text-gray-800">
+                          <p className="font-bold text-foreground/80">
                             {formatILS(item.line_subtotal)}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -899,14 +899,14 @@ export default function DealsDetail() {
                           )}
                           {item.components_snapshot && item.components_snapshot.length > 0 && (
                             <div className="mt-1">
-                              <p className="text-xs font-medium text-gray-500 mb-1">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">
                                 {item.components_snapshot.length} רכיבים:
                               </p>
                               <div className="space-y-1">
                                 {item.components_snapshot.map((c, ci) => (
                                   <div
                                     key={ci}
-                                    className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1"
+                                    className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1"
                                   >
                                     <span className="font-medium">
                                       {c.component_name_snapshot}
@@ -929,10 +929,10 @@ export default function DealsDetail() {
 
                   {/* Totals */}
                   {totals && (
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-1.5 text-sm">
+                    <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
                       {(totals.subtotal_before_discount ?? 0) > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">סה״כ לפני הנחה</span>
+                          <span className="text-muted-foreground">סה״כ לפני הנחה</span>
                           <span>{formatILS(totals.subtotal_before_discount)}</span>
                         </div>
                       )}
@@ -943,7 +943,7 @@ export default function DealsDetail() {
                         </div>
                       )}
                       {(totals.vat_amount ?? 0) > 0 && (
-                        <div className="flex justify-between text-gray-500">
+                        <div className="flex justify-between text-muted-foreground">
                           <span>מע״מ {Math.round((totals.vat_rate ?? 0.18) * 100)}%</span>
                           <span>{formatILS(totals.vat_amount)}</span>
                         </div>
@@ -960,8 +960,8 @@ export default function DealsDetail() {
 
               {/* Terms */}
               {terms && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-2 text-sm bg-white">
-                  <h3 className="font-semibold text-gray-700 mb-3">תנאים</h3>
+                <div className="rounded-lg border border-border p-4 space-y-2 text-sm bg-card">
+                  <h3 className="font-semibold text-foreground/70 mb-3">תנאים</h3>
                   {terms.project_title && (
                     <div className="flex justify-between gap-2">
                       <span className="text-muted-foreground">שם פרויקט</span>
@@ -997,14 +997,14 @@ export default function DealsDetail() {
 
               {/* Notes */}
               {notes && (notes.customer_notes || notes.operation_notes || notes.internal_notes) && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3 bg-white">
-                  <h3 className="font-semibold text-gray-700">הערות</h3>
+                <div className="rounded-lg border border-border p-4 space-y-3 bg-card">
+                  <h3 className="font-semibold text-foreground/70">הערות</h3>
                   {notes.customer_notes && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">
                         הערות ללקוח
                       </p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-blue-50 rounded p-2">
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-blue-50 rounded p-2">
                         {notes.customer_notes}
                       </p>
                     </div>
@@ -1014,7 +1014,7 @@ export default function DealsDetail() {
                       <p className="text-xs font-medium text-muted-foreground">
                         הערות לצוות האופרציה
                       </p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded p-2">
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-muted/50 rounded p-2">
                         {notes.operation_notes}
                       </p>
                     </div>
@@ -1024,7 +1024,7 @@ export default function DealsDetail() {
                       <p className="text-xs font-medium text-muted-foreground">
                         הערות פנימיות
                       </p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded p-2">
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-muted/50 rounded p-2">
                         {notes.internal_notes}
                       </p>
                     </div>
@@ -1038,9 +1038,9 @@ export default function DealsDetail() {
           {!isQuoteBased && (
             <div className="space-y-4">
               {deal.what_is_included && (
-                <div className="rounded-lg border border-gray-200 p-4 bg-white">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">מה כלול בעסקה</h3>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">
+                <div className="rounded-lg border border-border p-4 bg-card">
+                  <h3 className="text-sm font-semibold text-foreground/70 mb-2">מה כלול בעסקה</h3>
+                  <p className="text-sm text-foreground/70 whitespace-pre-line">
                     {deal.what_is_included}
                   </p>
                 </div>
@@ -1049,23 +1049,23 @@ export default function DealsDetail() {
               {/* Legacy numeric details */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {deal.studio_hours_remaining != null && (
-                  <div className="rounded-lg border border-gray-200 p-3 bg-white">
+                  <div className="rounded-lg border border-border p-3 bg-card">
                     <p className="text-xs text-muted-foreground">שעות סטודיו שנותרו</p>
-                    <p className="font-semibold text-gray-900 mt-0.5">
+                    <p className="font-semibold text-foreground mt-0.5">
                       {Number(deal.studio_hours_remaining).toLocaleString("he-IL")}
                     </p>
                   </div>
                 )}
                 {deal.editing_tasks_remaining != null && (
-                  <div className="rounded-lg border border-gray-200 p-3 bg-white">
+                  <div className="rounded-lg border border-border p-3 bg-card">
                     <p className="text-xs text-muted-foreground">משימות עריכה שנותרו</p>
-                    <p className="font-semibold text-gray-900 mt-0.5">
+                    <p className="font-semibold text-foreground mt-0.5">
                       {Number(deal.editing_tasks_remaining).toLocaleString("he-IL")}
                     </p>
                   </div>
                 )}
                 {deal.quote_link && (
-                  <div className="rounded-lg border border-gray-200 p-3 bg-white">
+                  <div className="rounded-lg border border-border p-3 bg-card">
                     <p className="text-xs text-muted-foreground">קישור להצעה</p>
                     <a
                       href={deal.quote_link}
@@ -1083,15 +1083,15 @@ export default function DealsDetail() {
 
           {/* Special notes (editable field — shown for both types) */}
           {deal.special_notes && (
-            <div className="rounded-lg border border-gray-200 p-4 bg-white">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">הערות פנימיות / אופרציה</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-line">{deal.special_notes}</p>
+            <div className="rounded-lg border border-border p-4 bg-card">
+              <h3 className="text-sm font-semibold text-foreground/70 mb-2">הערות פנימיות / אופרציה</h3>
+              <p className="text-sm text-foreground/70 whitespace-pre-line">{deal.special_notes}</p>
             </div>
           )}
 
           {/* Dates */}
-          <div className="rounded-lg border border-gray-200 p-4 bg-white space-y-2 text-sm">
-            <h3 className="font-semibold text-gray-700 mb-3">תאריכים</h3>
+          <div className="rounded-lg border border-border p-4 bg-card space-y-2 text-sm">
+            <h3 className="font-semibold text-foreground/70 mb-3">תאריכים</h3>
             {deal.purchase_date && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">תאריך רכישה</span>

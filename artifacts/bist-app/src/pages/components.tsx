@@ -349,7 +349,7 @@ export default function Components() {
           description={search ? "נסה חיפוש אחר" : "לחץ על 'רכיב חדש' להוספת רכיב ראשון"}
         />
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
+        <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b">
               <tr>

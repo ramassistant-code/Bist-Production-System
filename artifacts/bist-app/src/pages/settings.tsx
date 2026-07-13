@@ -79,17 +79,17 @@ function SetPasswordDialog({
     >
       <div
         dir="rtl"
-        className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4"
+        className="bg-card rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4"
       >
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-foreground">
           הגדר סיסמה ראשונית
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           משתמש:{" "}
           <span className="font-medium">
             {user.full_name ?? user.email}
           </span>{" "}
-          <span className="text-gray-400">({user.email})</span>
+          <span className="text-muted-foreground">({user.email})</span>
         </p>
 
         {success ? (
@@ -99,7 +99,7 @@ function SetPasswordDialog({
             </p>
             <button
               onClick={onClose}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
+              className="w-full bg-muted hover:bg-gray-200 text-foreground/80 text-sm font-medium rounded-lg px-4 py-2 transition-colors"
             >
               סגור
             </button>
@@ -107,7 +107,7 @@ function SetPasswordDialog({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-foreground/70">
                 סיסמה חדשה
               </label>
               <input
@@ -116,7 +116,7 @@ function SetPasswordDialog({
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="לפחות 8 תווים"
                 autoFocus
               />
@@ -132,7 +132,7 @@ function SetPasswordDialog({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted/50 transition-colors"
               >
                 ביטול
               </button>
@@ -166,16 +166,16 @@ export default function Settings() {
 
         {/* Quick links */}
         <section>
-          <h2 className="text-base font-semibold text-gray-800 mb-3">מסמכים ותבניות</h2>
+          <h2 className="text-base font-semibold text-foreground/80 mb-3">מסמכים ותבניות</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link href="/settings/quote-pdf-template">
-              <a className="flex items-center gap-3 bg-white border border-gray-200 hover:border-blue-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
+              <a className="flex items-center gap-3 bg-card border border-border hover:border-blue-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
                 <div className="w-10 h-10 rounded-lg bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-gray-900">טמפלט הצעת מחיר</div>
-                  <div className="text-xs text-gray-500">עיצוב ותוכן PDF</div>
+                  <div className="text-sm font-semibold text-foreground">טמפלט הצעת מחיר</div>
+                  <div className="text-xs text-muted-foreground">עיצוב ותוכן PDF</div>
                 </div>
               </a>
             </Link>
@@ -183,12 +183,12 @@ export default function Settings() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold text-gray-800 mb-3">
+          <h2 className="text-base font-semibold text-foreground/80 mb-3">
             ניהול משתמשים
           </h2>
 
           {isLoading && (
-            <p className="text-sm text-gray-500">טוען משתמשים...</p>
+            <p className="text-sm text-muted-foreground">טוען משתמשים...</p>
           )}
 
           {error && (
@@ -198,35 +198,35 @@ export default function Settings() {
           )}
 
           {users && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">
                       שם
                     </th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">
                       אימייל
                     </th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">
                       תפקיד
                     </th>
-                    <th className="text-right px-4 py-3 font-medium text-gray-600">
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">
                       סטטוס
                     </th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border/50">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                    <tr key={u.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">
                         {u.full_name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                         {u.email}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {u.role ? (ROLE_LABELS[u.role] ?? u.role) : "—"}
                       </td>
                       <td className="px-4 py-3">
@@ -234,7 +234,7 @@ export default function Settings() {
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                             u.is_active
                               ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-500"
+                              : "bg-muted text-muted-foreground"
                           }`}
                         >
                           {u.is_active ? "פעיל" : "לא פעיל"}

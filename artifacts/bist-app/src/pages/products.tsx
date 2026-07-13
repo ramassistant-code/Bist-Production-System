@@ -228,7 +228,7 @@ function AddComponentRow({ productId, onAdded, onCancel }: AddComponentRowProps)
           <div className="flex-1 min-w-[180px]">
             <Label className="text-xs mb-1 block">רכיב</Label>
             <select
-              className="w-full border rounded-md px-2 py-1.5 text-sm bg-white"
+              className="w-full border rounded-md px-2 py-1.5 text-sm bg-card"
               dir="rtl"
               value={selectedId}
               onChange={(e) => {
@@ -635,7 +635,7 @@ export default function Products() {
           )}
 
           {!isLoading && filtered.length > 0 && (
-            <div className="h-full overflow-y-auto bg-white rounded-xl border shadow-sm">
+            <div className="h-full overflow-y-auto bg-card rounded-xl border shadow-sm">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-muted/40 border-b">
                   <tr>

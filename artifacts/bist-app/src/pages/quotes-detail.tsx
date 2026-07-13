@@ -286,7 +286,7 @@ export default function QuotesDetail() {
                   <ChevronRight className="w-4 h-4 ml-0.5" />רשימת הצעות
                 </Button>
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{quote.quote_number}</h1>
+              <h1 className="text-xl font-bold text-foreground">{quote.quote_number}</h1>
               {terms?.project_title && <p className="text-muted-foreground text-sm mt-0.5">{terms.project_title}</p>}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -374,9 +374,9 @@ export default function QuotesDetail() {
               { label: "תוקף עד", value: formatDate(terms?.valid_until) },
               { label: "גרסה", value: `v${verData?.version_number ?? 1}` },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-gray-200 p-3 bg-white">
+              <div key={label} className="rounded-lg border border-border p-3 bg-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="font-semibold text-gray-900 mt-0.5 truncate">{value}</p>
+                <p className="font-semibold text-foreground mt-0.5 truncate">{value}</p>
               </div>
             ))}
           </div>
@@ -389,11 +389,11 @@ export default function QuotesDetail() {
           )}
 
           {/* Tabs */}
-          <div className="border-b border-gray-200">
+          <div className="border-b border-border">
             <div className="flex gap-0">
               {TABS.map((t) => (
                 <button key={t.key} type="button"
-                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-gray-700"}`}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground/70"}`}
                   onClick={() => setTab(t.key)}>
                   {t.label}
                   {t.key === "versions" && versions.length > 0 && (
@@ -408,8 +408,8 @@ export default function QuotesDetail() {
           {tab === "info" && (
             <div className="space-y-4" dir="rtl">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700">פרטי צד</h3>
+                <div className="rounded-lg border border-border p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground/70">פרטי צד</h3>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">שם</span><span className="font-medium">{partyName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">טלפון</span><span>{party?.phone ?? "—"}</span></div>
@@ -418,8 +418,8 @@ export default function QuotesDetail() {
                     <div className="flex justify-between"><span className="text-muted-foreground">סוג</span><span>{party?.party_type === "customer" ? "לקוח" : "ליד"}</span></div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-700">פרטי הצעה</h3>
+                <div className="rounded-lg border border-border p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground/70">פרטי הצעה</h3>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">מספר הצעה</span><span className="font-mono font-medium">{quote.quote_number}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">סטטוס</span><Badge variant={STATUS_VARIANT[vStatus] ?? "secondary"} className="text-xs">{STATUS_LABELS[vStatus] ?? vStatus}</Badge></div>
@@ -438,14 +438,14 @@ export default function QuotesDetail() {
             <div className="space-y-3" dir="rtl">
               {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">אין שורות להצגה</p>}
               {items.map((item, i) => (
-                <div key={i} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-                  <div className="flex items-start justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
+                  <div className="flex items-start justify-between px-4 py-3 bg-muted/50 border-b border-border/50">
                     <div>
-                      <p className="font-medium text-gray-900">{item.product_name_snapshot}</p>
+                      <p className="font-medium text-foreground">{item.product_name_snapshot}</p>
                       {item.product_description_snapshot && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.product_description_snapshot}</p>}
                     </div>
                     <div className="text-left shrink-0 mr-3">
-                      <p className="font-bold text-gray-800">{formatILS(item.line_subtotal)}</p>
+                      <p className="font-bold text-foreground/80">{formatILS(item.line_subtotal)}</p>
                       <p className="text-xs text-muted-foreground">{item.quantity} × {formatILS(item.unit_price)}</p>
                     </div>
                   </div>
@@ -458,10 +458,10 @@ export default function QuotesDetail() {
                       )}
                       {item.components_snapshot && item.components_snapshot.length > 0 && (
                         <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-600 mb-1">{item.components_snapshot.length} רכיבים:</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">{item.components_snapshot.length} רכיבים:</p>
                           <div className="space-y-1">
                             {item.components_snapshot.map((c, ci) => (
-                              <div key={ci} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded px-2 py-1">
+                              <div key={ci} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
                                 <span className="font-medium">{c.component_name_snapshot}</span>
                                 <span className="text-muted-foreground">× {c.quantity}</span>
                                 {c.customer_note && <span className="text-blue-600 mr-auto">{c.customer_note}</span>}
@@ -477,11 +477,11 @@ export default function QuotesDetail() {
 
               {/* Totals */}
               {totals && (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-1.5 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-600">סה״כ לפני הנחה</span><span>{formatILS(totals.subtotal_before_discount)}</span></div>
+                <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">סה״כ לפני הנחה</span><span>{formatILS(totals.subtotal_before_discount)}</span></div>
                   {(totals.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-700"><span>הנחה</span><span>-{formatILS(totals.discount_amount)}</span></div>}
-                  <div className="flex justify-between"><span className="text-gray-600">סה״כ אחרי הנחה</span><span>{formatILS(totals.subtotal_after_discount)}</span></div>
-                  <div className="flex justify-between text-gray-500"><span>מע״מ {Math.round((totals.vat_rate ?? 0.18) * 100)}%</span><span>{formatILS(totals.vat_amount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">סה״כ אחרי הנחה</span><span>{formatILS(totals.subtotal_after_discount)}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>מע״מ {Math.round((totals.vat_rate ?? 0.18) * 100)}%</span><span>{formatILS(totals.vat_amount)}</span></div>
                   <Separator />
                   <div className="flex justify-between font-bold text-base"><span>סה״כ כולל מע״מ</span><span className="text-primary">{formatILS(totals.total_with_vat)}</span></div>
                   {(totals.cost_total ?? 0) > 0 && (
@@ -502,8 +502,8 @@ export default function QuotesDetail() {
           {tab === "terms" && (
             <div className="space-y-4" dir="rtl">
               {terms && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
-                  <h3 className="font-semibold text-gray-700 mb-3">תנאים</h3>
+                <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
+                  <h3 className="font-semibold text-foreground/70 mb-3">תנאים</h3>
                   {terms.payment_terms && <div className="flex justify-between"><span className="text-muted-foreground">תנאי תשלום</span><span>{terms.payment_terms}</span></div>}
                   {terms.valid_until && <div className="flex justify-between"><span className="text-muted-foreground">תוקף עד</span><span>{formatDate(terms.valid_until)}</span></div>}
                   {(terms.deposit_amount ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">מקדמה</span><span>{formatILS(terms.deposit_amount)}</span></div>}
@@ -512,24 +512,24 @@ export default function QuotesDetail() {
                 </div>
               )}
               {notes && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                  <h3 className="font-semibold text-gray-700">הערות</h3>
+                <div className="rounded-lg border border-border p-4 space-y-3">
+                  <h3 className="font-semibold text-foreground/70">הערות</h3>
                   {notes.customer_notes && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">הערות ללקוח (מוצגות ללקוח)</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-blue-50 rounded p-2">{notes.customer_notes}</p>
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-blue-50 rounded p-2">{notes.customer_notes}</p>
                     </div>
                   )}
                   {notes.operation_notes && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">הערות לצוות האופרציה (פנימי)</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded p-2">{notes.operation_notes}</p>
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-muted/50 rounded p-2">{notes.operation_notes}</p>
                     </div>
                   )}
                   {notes.internal_notes && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">הערות פנימיות (פנימי)</p>
-                      <p className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded p-2">{notes.internal_notes}</p>
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-muted/50 rounded p-2">{notes.internal_notes}</p>
                     </div>
                   )}
                   {!notes.customer_notes && !notes.operation_notes && !notes.internal_notes && (
@@ -545,7 +545,7 @@ export default function QuotesDetail() {
             <div className="space-y-2" dir="rtl">
               {versions.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">אין גרסאות</p>}
               {versions.map((v) => (
-                <div key={v.id} className="rounded-lg border border-gray-200 p-4 flex items-center justify-between bg-white">
+                <div key={v.id} className="rounded-lg border border-border p-4 flex items-center justify-between bg-card">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">גרסה {v.version_number}</span>
