@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, Search, X, User, UserCheck } from "lucide-react";
 import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch, useListProducts, useGetProduct } from "@workspace/api-client-react";
 import type { Product } from "@workspace/api-client-react";
@@ -183,6 +184,116 @@ function StepBar({ current }: { current: number }) {
   );
 }
 
+// ── Name Search Dialog ─────────────────────────────────────────────────────
+
+interface NameSearchResult {
+  type: "customer" | "lead";
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
+
+function NameSearchDialog({ open, onClose, onSelect }: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (result: NameSearchResult) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<NameSearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setResults([]);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (query.trim().length < 2) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await customFetch<{ results: NameSearchResult[] }>(
+          `/api/quotes/name-search?q=${encodeURIComponent(query.trim())}`
+        );
+        setResults(data.results);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+  }, [query]);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle>חיפוש לקוח / ליד לפי שם</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="הזינו שם לחיפוש..."
+              className="w-full border border-border rounded-lg pr-9 pl-8 py-2 text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="min-h-[120px] max-h-72 overflow-y-auto space-y-1">
+            {loading && (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">מחפש...</div>
+            )}
+            {!loading && query.trim().length >= 2 && results.length === 0 && (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">לא נמצאו תוצאות</div>
+            )}
+            {!loading && query.trim().length < 2 && (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">הזינו לפחות 2 תווים לחיפוש</div>
+            )}
+            {results.map((r) => (
+              <button
+                key={`${r.type}-${r.id}`}
+                onClick={() => { onSelect(r); onClose(); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 text-right transition-colors border border-transparent hover:border-border/50"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-green-500/15" : "bg-blue-500/15"}`}>
+                  {r.type === "customer"
+                    ? <UserCheck className="w-3.5 h-3.5 text-green-600" />
+                    : <User className="w-3.5 h-3.5 text-blue-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-foreground">{r.name}</span>
+                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-green-500/40 text-green-700" : "border-blue-500/40 text-blue-700"}`}>
+                      {r.type === "customer" ? "לקוח" : "ליד"}
+                    </Badge>
+                  </div>
+                  {r.phone && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{r.phone}</p>}
+                  {!r.phone && <p className="text-xs text-muted-foreground/50 mt-0.5">אין טלפון</p>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Step 1: Party lookup ───────────────────────────────────────────────────
 
 function Step1({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
@@ -190,23 +301,43 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   const [lookupError, setLookupError] = useState("");
   const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
   const [isLooking, setIsLooking] = useState(false);
+  const [nameSearchOpen, setNameSearchOpen] = useState(false);
 
-  async function doLookup() {
-    if (!state.phone.trim()) { setLookupError("חובה להזין מספר טלפון לפני המשך"); return; }
+  async function doLookup(phoneOverride?: string) {
+    const phone = phoneOverride ?? state.phone;
+    if (!phone.trim()) { setLookupError("חובה להזין מספר טלפון לפני המשך"); return; }
     setIsLooking(true); setLookupError("");
     try {
-      const result = await customFetch<PhoneLookupResult>(`/api/quotes/phone-lookup?phone=${encodeURIComponent(state.phone)}`);
+      const result = await customFetch<PhoneLookupResult>(`/api/quotes/phone-lookup?phone=${encodeURIComponent(phone)}`);
       setLookupResult(result);
       setLookupDone(true);
       if (result.found === "customer" || result.found === "lead") {
         update({ partyType: result.found, partyId: result.id ?? null, partyName: result.name ?? "", partyEmail: result.email ?? "" });
       } else {
-        update({ partyType: "new", partyId: null, newLeadPhone: state.phone });
+        update({ partyType: "new", partyId: null, newLeadPhone: phone });
       }
     } catch {
       setLookupError("שגיאה בחיפוש טלפון. אנא נסו שנית.");
     } finally {
       setIsLooking(false);
+    }
+  }
+
+  function handleNameSelect(r: NameSearchResult) {
+    if (r.phone) {
+      update({ phone: r.phone });
+      doLookup(r.phone);
+    } else {
+      update({
+        phone: "",
+        partyType: r.type,
+        partyId: r.id,
+        partyName: r.name,
+        partyEmail: r.email ?? "",
+        newLeadPhone: "",
+      });
+      setLookupResult({ found: r.type, id: r.id, name: r.name, email: r.email ?? undefined, phone: undefined });
+      setLookupDone(true);
     }
   }
 
@@ -222,12 +353,22 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <Input value={state.phone} onChange={(e) => { update({ phone: e.target.value }); setLookupDone(false); setLookupResult(null); }}
             placeholder="050-0000000" dir="ltr" className="flex-1"
             onKeyDown={(e) => e.key === "Enter" && doLookup()} />
-          <Button type="button" onClick={doLookup} disabled={isLooking}>
+          <Button type="button" onClick={() => doLookup()} disabled={isLooking}>
             {isLooking ? "מחפש..." : "חיפוש"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setNameSearchOpen(true)} title="חיפוש לפי שם">
+            <Search className="w-4 h-4 ml-1" />
+            חפש לפי שם
           </Button>
         </div>
         {lookupError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" />{lookupError}</p>}
       </div>
+
+      <NameSearchDialog
+        open={nameSearchOpen}
+        onClose={() => setNameSearchOpen(false)}
+        onSelect={handleNameSelect}
+      />
 
       {lookupDone && lookupResult && state.partyType && (
         <div className="space-y-2">

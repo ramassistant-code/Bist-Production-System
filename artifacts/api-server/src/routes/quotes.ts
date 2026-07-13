@@ -90,6 +90,37 @@ router.get("/quotes/phone-lookup", async (req: Request, res: Response): Promise<
   }
 });
 
+// ── GET /quotes/name-search ───────────────────────────────────────────────────
+router.get("/quotes/name-search", async (req: Request, res: Response): Promise<void> => {
+  const q = typeof req.query["q"] === "string" ? req.query["q"].trim() : "";
+  if (!q || q.length < 2) {
+    res.json({ results: [] });
+    return;
+  }
+  try {
+    const [customers, leads] = await Promise.all([
+      db
+        .select({ id: customersTable.id, name: customersTable.name, phone: customersTable.phone, email: customersTable.email })
+        .from(customersTable)
+        .where(and(isNull(customersTable.deleted_at), ilike(customersTable.name, `%${q}%`)))
+        .limit(10),
+      db
+        .select({ id: leadsTable.id, name: leadsTable.name, phone: leadsTable.phone, email: leadsTable.email })
+        .from(leadsTable)
+        .where(and(isNull(leadsTable.deleted_at), ilike(leadsTable.name, `%${q}%`)))
+        .limit(10),
+    ]);
+    const results = [
+      ...customers.map((c) => ({ type: "customer" as const, id: c.id, name: c.name, phone: c.phone, email: c.email })),
+      ...leads.map((l) => ({ type: "lead" as const, id: l.id, name: l.name, phone: l.phone, email: l.email })),
+    ];
+    res.json({ results });
+  } catch (err) {
+    logger.error({ err }, "name-search error");
+    res.status(500).json({ error: "שגיאה בחיפוש" });
+  }
+});
+
 // ── GET /quotes ───────────────────────────────────────────────────────────────
 router.get("/quotes", async (req: Request, res: Response): Promise<void> => {
   try {
