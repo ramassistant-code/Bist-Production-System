@@ -796,31 +796,31 @@ export default function QuotePdfTemplate() {
               <DialogTitle>היסטוריית גרסאות טמפלט</DialogTitle>
             </DialogHeader>
             {loadingHistory ? (
-              <p className="text-sm text-gray-500 py-4">טוען היסטוריה...</p>
+              <p className="text-sm text-muted-foreground py-4">טוען היסטוריה...</p>
             ) : (
               <div className="overflow-auto max-h-[60vh]">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
+                  <thead className="bg-muted/50 border-b border-border sticky top-0">
                     <tr>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">גרסה</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">שם</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">סטטוס</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך יצירה</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך הפעלה</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-600">נוצר על ידי</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">גרסה</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">שם</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">סטטוס</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">תאריך יצירה</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">תאריך הפעלה</th>
+                      <th className="text-right px-4 py-2 font-medium text-muted-foreground">נוצר על ידי</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border/50">
                     {(historyData?.history ?? []).map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-2.5 font-mono text-xs text-gray-700">v{row.version}</td>
-                        <td className="px-4 py-2.5 text-gray-900">{row.name}</td>
+                      <tr key={row.id} className="hover:bg-muted/40 transition-colors">
+                        <td className="px-4 py-2.5 font-mono text-xs text-foreground">v{row.version}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.name}</td>
                         <td className="px-4 py-2.5">
                           <StatusBadge status={row.status} />
                         </td>
-                        <td className="px-4 py-2.5 text-gray-500 text-xs">{fmtDate(row.created_at)}</td>
-                        <td className="px-4 py-2.5 text-gray-500 text-xs">{fmtDate(row.activated_at)}</td>
-                        <td className="px-4 py-2.5 text-gray-400 text-xs font-mono">
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs">{fmtDate(row.created_at)}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs">{fmtDate(row.activated_at)}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground text-xs font-mono">
                           {row.created_by ? row.created_by.slice(0, 8) + "…" : "מערכת"}
                         </td>
                       </tr>
