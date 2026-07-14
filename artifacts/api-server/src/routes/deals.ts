@@ -8,6 +8,7 @@ import {
   leadsTable,
   paymentsTable,
   creditsTable,
+  dealCoordinationTasksTable,
 } from "@workspace/db/schema";
 import {
   isNull,
@@ -271,6 +272,7 @@ interface OpenDealBody {
   invoice_id_number?: string;
   invoice_email?: string;
   coordination_tasks_requested?: boolean;
+  coordination_tasks?: Array<{ task_text: string; assignee_role: string }>;
   operation_notes?: string;
   lead_name?: string;
   lead_phone?: string;
@@ -285,6 +287,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     salesperson_user_id,
     payment_type,
     coordination_tasks_requested = false,
+    coordination_tasks = [],
     operation_notes,
     lead_name,
     lead_phone,
@@ -783,6 +786,21 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             source_key: creditSourceKey,
           })
           .onConflictDoNothing();
+      }
+    }
+
+    // ── Step 11: Coordination tasks ──────────────────────────────────────────
+    if (coordination_tasks_requested && coordination_tasks.length > 0 && !result.alreadyExists) {
+      const validTasks = coordination_tasks.filter(t => t.task_text?.trim() && t.assignee_role?.trim());
+      if (validTasks.length > 0) {
+        await db.insert(dealCoordinationTasksTable).values(
+          validTasks.map(t => ({
+            deal_id: result.dealId,
+            task_text: t.task_text.trim(),
+            assignee_role: t.assignee_role.trim(),
+            status: "open",
+          }))
+        );
       }
     }
 

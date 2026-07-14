@@ -233,6 +233,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           invoice_id_number: paymentType !== "credit_card" ? invoiceIdNumber : null,
           invoice_email: paymentType !== "credit_card" ? invoiceEmail : null,
           coordination_tasks_requested: coordRequested,
+          coordination_tasks: coordRequested ? tasks : [],
           operation_notes: operationNotes || null,
           ...(isLead ? {
             lead_name: leadName,
