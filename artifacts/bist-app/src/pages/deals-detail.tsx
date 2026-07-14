@@ -691,16 +691,6 @@ export default function DealsDetail() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={mondayRunMutation.isPending || (mondayData?.runs ?? []).some((r) => ["pending","queued","running","waiting"].includes(r.status))}
-                onClick={() => mondayRunMutation.mutate({ actionType: "start" })}
-                title="שלח ל-Monday"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ml-1 ${mondayRunMutation.isPending ? "animate-spin" : ""}`} />
-                Monday
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
                 onClick={() => setEditOpen(true)}
               >
                 <Pencil className="w-3.5 h-3.5 ml-1" />
