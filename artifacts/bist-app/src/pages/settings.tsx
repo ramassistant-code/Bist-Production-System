@@ -166,7 +166,7 @@ export default function Settings() {
 
         {/* Quick links */}
         <section>
-          <h2 className="text-base font-semibold text-foreground/80 mb-3">מסמכים ותבניות</h2>
+          <h2 className="text-base font-semibold text-foreground/80 mb-3">הגדרות מערכת</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link href="/settings/quote-pdf-template">
               <a className="flex items-center gap-3 bg-card border border-border hover:border-blue-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
@@ -179,13 +179,6 @@ export default function Settings() {
                 </div>
               </a>
             </Link>
-          </div>
-        </section>
-
-        {/* Integrations */}
-        <section>
-          <h2 className="text-base font-semibold text-foreground/80 mb-3">אינטגרציות</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link href="/settings/monday">
               <a className="flex items-center gap-3 bg-card border border-border hover:border-indigo-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
                 <div className="w-10 h-10 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
