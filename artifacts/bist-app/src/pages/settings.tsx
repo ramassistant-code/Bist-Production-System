@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
-import { FileText } from "lucide-react";
+import { FileText, RefreshCw } from "lucide-react";
 
 interface AppUser {
   id: string;
@@ -176,6 +176,24 @@ export default function Settings() {
                 <div>
                   <div className="text-sm font-semibold text-foreground">טמפלט הצעת מחיר</div>
                   <div className="text-xs text-muted-foreground">עיצוב ותוכן PDF</div>
+                </div>
+              </a>
+            </Link>
+          </div>
+        </section>
+
+        {/* Integrations */}
+        <section>
+          <h2 className="text-base font-semibold text-foreground/80 mb-3">אינטגרציות</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <Link href="/settings/monday">
+              <a className="flex items-center gap-3 bg-card border border-border hover:border-indigo-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
+                <div className="w-10 h-10 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+                  <RefreshCw className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">סנכרון Monday</div>
+                  <div className="text-xs text-muted-foreground">יעדים, מיפויים וריצות</div>
                 </div>
               </a>
             </Link>

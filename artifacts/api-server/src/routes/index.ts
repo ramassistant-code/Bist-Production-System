@@ -11,6 +11,7 @@ import usersRouter from "./users";
 import dealsRouter from "./deals";
 import pdfTemplatesRouter from "./pdf-templates";
 import quoteVersionsRouter from "./quote-versions";
+import mondayRouter from "./monday";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(usersRouter);
 router.use(dealsRouter);
 router.use(pdfTemplatesRouter);
 router.use(quoteVersionsRouter);
+router.use(mondayRouter);
 
 export default router;

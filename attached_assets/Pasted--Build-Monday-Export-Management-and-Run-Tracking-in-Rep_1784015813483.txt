@@ -1,0 +1,957 @@
+# Build Monday Export Management and Run Tracking in Replit
+
+Implement the application-side management interface for the Supabase-to-Monday deal export process.
+
+The application already uses Supabase as its database.
+
+The following tables already exist:
+
+* `monday_export_targets`
+* `monday_export_field_mappings`
+* `monday_export_runs`
+* `monday_export_run_steps`
+* `monday_export_run_items`
+* `monday_entity_links`
+* `monday_export_run_logs`
+
+The following view also exists:
+
+* `monday_export_runs_overview`
+
+Do not recreate or rename these tables.
+
+## Important Architecture Rules
+
+Replit is responsible for:
+
+* Managing Monday export configuration.
+* Displaying export runs and their progress.
+* Creating new export run records.
+* Triggering the CodeWords webhook.
+* Providing retry, resume and dry-run actions.
+* Displaying logs, steps and item-level results.
+
+CodeWords is responsible for:
+
+* Reading the deal data from Supabase.
+* Transforming the data.
+* Creating or updating Monday items.
+* Updating run, step, item and log records.
+* Retry and recovery execution logic.
+
+Do not implement the actual Monday synchronization logic inside Replit.
+
+Do not call Monday APIs directly from the Replit frontend.
+
+Do not use database triggers to launch the export.
+
+## General UI Requirements
+
+The entire interface must be in Hebrew.
+
+Use full RTL layout.
+
+All labels, buttons, validation messages, tables, dialogs and notifications must be in Hebrew.
+
+Use the existing application design system and components.
+
+Keep the implementation simple, stable and easy to maintain.
+
+Do not introduce unnecessary dependencies.
+
+Use Supabase through the application’s existing server-side data layer.
+
+Never expose the Supabase service role key or the CodeWords webhook secret to the browser.
+
+## Navigation
+
+Add a new administration section:
+
+`ניהול > אינטגרציות > Monday`
+
+Inside it, create the following tabs:
+
+1. יעדי סנכרון
+2. מיפוי שדות
+3. ריצות
+4. בדיקת הגדרות
+
+Also add a Monday export section inside the deal details screen.
+
+---
+
+# 1. Monday Export Targets Screen
+
+Create a screen for managing records from:
+
+`monday_export_targets`
+
+## Table Columns
+
+Display:
+
+* שם היעד
+* מפתח יעד
+* סוג ישות
+* מזהה לוח Monday
+* מזהה קבוצה
+* סדר ריצה
+* יצירה פעילה
+* עדכון פעיל
+* דילוג על נתונים ללא שינוי
+* פעיל
+* עודכן לאחרונה
+* פעולות
+
+## Actions
+
+Support:
+
+* יצירת יעד חדש
+* עריכת יעד
+* שכפול יעד
+* הפעלה
+* השבתה
+* מחיקה
+
+Before deleting a target, check whether it is referenced by:
+
+* `monday_export_runs`
+* `monday_export_run_steps`
+* `monday_export_run_items`
+* `monday_entity_links`
+
+If references exist, do not delete it. Allow disabling it instead.
+
+## Target Form
+
+Fields:
+
+* `target_name`
+* `target_key`
+* `monday_workspace_id`
+* `monday_board_id`
+* `monday_group_id`
+* `entity_type`
+* `source_type`
+* `source_query_key`
+* `sync_order`
+* `create_enabled`
+* `update_enabled`
+* `delete_enabled`
+* `skip_unchanged_enabled`
+* `is_active`
+* `settings`
+
+Do not show `settings` as a raw JSON field by default.
+
+Show an advanced settings section with structured fields where possible.
+
+Include an optional raw JSON editor only under an “הגדרות מתקדמות” section.
+
+## Validation
+
+Validate:
+
+* Target key is required and unique.
+* Target name is required.
+* Monday board ID is required.
+* Entity type is required.
+* Source query key is required.
+* Sync order must be zero or greater.
+* At least one of create or update must be enabled for an active target.
+* A target with `CONFIGURE_BOARD_ID` cannot be activated.
+
+Display clear Hebrew errors.
+
+---
+
+# 2. Monday Field Mapping Screen
+
+Create a screen for managing:
+
+`monday_export_field_mappings`
+
+The user must first select a target.
+
+## Target Selector
+
+Display:
+
+* Target name
+* Target key
+* Monday board ID
+* Active status
+
+After selecting a target, show its field mappings.
+
+## Mapping Table Columns
+
+Display:
+
+* שם עמודת Monday
+* מזהה עמודת Monday
+* שדה מקור
+* סוג ערך
+* סוג המרה
+* שדה חובה
+* ערך ברירת מחדל
+* סדר
+* פעיל
+* פעולות
+
+## Actions
+
+Support:
+
+* יצירת מיפוי
+* עריכת מיפוי
+* שכפול מיפוי
+* הפעלה
+* השבתה
+* מחיקה
+* שינוי סדר
+
+## Mapping Form
+
+Fields:
+
+* `monday_column_id`
+* `monday_column_name`
+* `source_field`
+* `value_type`
+* `transform_type`
+* `transform_config`
+* `required`
+* `default_value`
+* `sync_order`
+* `is_active`
+
+Use dropdowns for `value_type` and `transform_type`.
+
+### Allowed Value Types
+
+* text
+* long_text
+* number
+* currency
+* status
+* date
+* datetime
+* checkbox
+* email
+* phone
+* link
+* person
+* dropdown
+* json
+
+Show user-facing Hebrew labels while saving the original database value.
+
+### Allowed Transform Types
+
+* direct
+* concatenate
+* format_currency
+* format_date
+* boolean_to_label
+* enum_mapping
+* lookup
+* constant
+* fallback
+* join_array
+
+Show a suitable configuration form according to the selected transformation.
+
+Examples:
+
+### direct
+
+No additional configuration.
+
+### concatenate
+
+Fields:
+
+* List of source fields
+* Separator
+* Prefix
+* Suffix
+
+### enum_mapping
+
+Allow adding key-value rows.
+
+Example:
+
+* `pending` → `ממתין`
+* `paid` → `שולם`
+
+### format_date
+
+Fields:
+
+* Input format
+* Output format
+* Time zone
+
+### boolean_to_label
+
+Fields:
+
+* True value
+* False value
+
+### fallback
+
+Fields:
+
+* Primary source field
+* Fallback source fields
+* Default value
+
+Save the result as valid JSON in `transform_config`.
+
+## Duplicate Protection
+
+Do not allow two active mappings for the same:
+
+* `target_id`
+* `monday_column_id`
+
+Handle the database unique constraint with a clear Hebrew error.
+
+---
+
+# 3. Export Runs Screen
+
+Create a runs screen based primarily on:
+
+`monday_export_runs_overview`
+
+## Table Columns
+
+Display:
+
+* תאריך ושעה
+* מספר עסקה
+* סוג פעולה
+* סטטוס
+* אחוז התקדמות
+* שלב נוכחי
+* יעד נוכחי
+* מספר שלבים
+* רשומות שנוצרו
+* רשומות שעודכנו
+* רשומות שדולגו
+* רשומות שנכשלו
+* משך
+* הופעל על ידי
+* פעולות
+
+## Filters
+
+Support:
+
+* Deal ID or deal number
+* Status
+* Action type
+* Date range
+* Requested by
+* Current target
+* Runs with errors only
+
+Use pagination.
+
+Default sorting:
+
+`created_at desc`
+
+## Status Labels
+
+Use Hebrew labels:
+
+* `pending` → ממתין
+* `queued` → בתור
+* `running` → פועל
+* `waiting` → ממתין להמשך
+* `completed` → הושלם
+* `completed_with_warnings` → הושלם עם אזהרות
+* `failed` → נכשל
+* `cancelled` → בוטל
+
+Use consistent status badges.
+
+## Run Actions
+
+Display actions according to status.
+
+### View Details
+
+Available for every run.
+
+### Retry
+
+Available for:
+
+* failed
+* completed_with_warnings
+* completed
+
+This must create a new run record.
+
+Do not reset or modify the old run.
+
+The new record must contain:
+
+* Same `deal_id`
+* `action_type = retry`
+* `status = pending`
+* `parent_run_id = previous run id`
+* New `run_number`
+* Relevant execution options in `execution_context`
+
+Then call the CodeWords webhook with the new run ID.
+
+### Resume
+
+Available for:
+
+* failed
+* waiting
+
+Create a new run:
+
+* `action_type = resume`
+* `status = pending`
+* `parent_run_id = previous run id`
+* `execution_context.retry_failed_only = true`
+
+Then call CodeWords.
+
+### Dry Run
+
+Allow launching a new dry run.
+
+Create a new run with:
+
+```json
+{
+  "dry_run": true,
+  "force_update": false,
+  "retry_failed_only": false
+}
+```
+
+### Cancel
+
+Only allow cancellation when the run is:
+
+* pending
+* queued
+
+Update status to `cancelled`.
+
+Do not allow frontend cancellation of a currently running CodeWords execution unless a cancellation API is explicitly added later.
+
+---
+
+# 4. Run Details Screen
+
+Create a detailed page for a selected run.
+
+## Summary Header
+
+Display:
+
+* Run ID
+* Deal ID
+* Run number
+* Action type
+* Status
+* Progress
+* Created at
+* Started at
+* Completed at
+* Duration
+* Last heartbeat
+* Parent run
+* Error message
+* Result summary
+
+Do not expose internal secrets.
+
+## Tabs
+
+Create the following tabs:
+
+1. סיכום
+2. שלבים
+3. רשומות
+4. לוגים
+5. נתוני ביצוע
+
+## Steps Tab
+
+Read from:
+
+`monday_export_run_steps`
+
+Display:
+
+* Step order
+* Step name
+* Target
+* Status
+* Total records
+* Processed
+* Created
+* Updated
+* Skipped
+* Failed
+* Start time
+* Completion time
+* Error
+
+Allow expanding a step to show:
+
+* `input_snapshot`
+* `output_summary`
+* `error_details`
+
+Render JSON in a readable structured viewer.
+
+## Items Tab
+
+Read from:
+
+`monday_export_run_items`
+
+Display:
+
+* Entity type
+* Source record ID
+* Target
+* Operation
+* Status
+* Monday board ID
+* Monday item ID
+* Attempts
+* Start time
+* Completion time
+* Error
+
+Filters:
+
+* Step
+* Target
+* Entity type
+* Operation
+* Status
+* Failed only
+
+Allow expanding an item to show:
+
+* Request payload
+* Response payload
+* Error details
+* Source hash
+* Idempotency key
+
+If `monday_board_id` and `monday_item_id` are available, show:
+
+`פתח ב-Monday`
+
+Build the Monday URL through a server-side helper or safe URL template.
+
+## Logs Tab
+
+Read from:
+
+`monday_export_run_logs`
+
+Display:
+
+* Time
+* Level
+* Event type
+* Message
+* Step
+* Item
+
+Filters:
+
+* Log level
+* Event type
+* Search text
+
+Use Hebrew labels:
+
+* debug → דיבאג
+* info → מידע
+* warning → אזהרה
+* error → שגיאה
+
+Allow expanding `details`.
+
+## Execution Data Tab
+
+Display:
+
+* `execution_context`
+* `result_summary`
+* `error_details`
+
+Use a structured JSON viewer.
+
+Do not show secrets, authorization headers or tokens.
+
+---
+
+# 5. Configuration Validation Screen
+
+Create a validation screen that checks the Supabase configuration before an export is activated.
+
+This screen does not need to call Monday yet unless an authenticated server endpoint already exists.
+
+## Local Supabase Validation
+
+Check:
+
+* At least one active target exists.
+* Active targets do not contain `CONFIGURE_BOARD_ID`.
+* Active targets have create or update enabled.
+* Every active target has at least one active mapping.
+* No duplicate active mapping exists for a Monday column.
+* Required mappings have a source field or default value.
+* Field mapping value type is valid.
+* Transform type is valid.
+* `transform_config` is valid for the selected transform type.
+* Sync order values are valid.
+* Target keys are unique.
+
+Display results grouped as:
+
+* תקין
+* אזהרה
+* שגיאה
+
+Each result must include:
+
+* Target
+* Mapping when relevant
+* Explanation
+* Suggested correction
+
+Do not activate a target from this screen automatically.
+
+---
+
+# 6. Deal Details Integration
+
+Add a section inside the deal details screen:
+
+`סנכרון ל-Monday`
+
+## Display
+
+Show:
+
+* Latest run status
+* Last successful export date
+* Current active run
+* Number of Monday-linked records
+* Errors from the last run
+
+Read linked record count from:
+
+`monday_entity_links`
+
+filtered by `deal_id`.
+
+## Actions
+
+Show:
+
+* שלח ל-Monday
+* הרצת בדיקה
+* הרץ שוב
+* המשך
+* הצג היסטוריית ריצות
+
+### Send to Monday
+
+Create a run record with:
+
+* `deal_id`
+* `run_number`
+* `action_type = start`
+* `status = pending`
+* `requested_by`
+* `request_source = replit`
+* `execution_context`
+
+Then trigger CodeWords.
+
+Disable the button while another run for the same deal is active with status:
+
+* pending
+* queued
+* running
+* waiting
+
+Show the current active run instead.
+
+---
+
+# 7. Run Creation Logic
+
+Create one server-side function or API route responsible for creating runs.
+
+Do not create run records directly from multiple UI components.
+
+Suggested function:
+
+`createMondayExportRun`
+
+Input:
+
+```ts
+type CreateMondayExportRunInput = {
+  dealId: string;
+  actionType: "start" | "retry" | "resume";
+  parentRunId?: string;
+  dryRun?: boolean;
+  forceUpdate?: boolean;
+  retryFailedOnly?: boolean;
+  targetIds?: string[];
+  continueFromStep?: string;
+};
+```
+
+The function must:
+
+1. Validate the deal exists.
+2. Validate active targets exist.
+3. Prevent duplicate active runs.
+4. Get the next run number.
+5. Insert into `monday_export_runs`.
+6. Call the CodeWords webhook.
+7. Return the created run.
+8. If the webhook call fails:
+
+   * Update the run to `failed`.
+   * Save `error_code`.
+   * Save `error_message`.
+   * Save `error_details`.
+   * Insert a record into `monday_export_run_logs`.
+
+Use the existing Supabase deal table.
+
+Do not assume its structure without checking the current database schema.
+
+## Run Number
+
+Use:
+
+```sql
+select public.get_next_monday_export_run_number(:deal_id);
+```
+
+Because two users may click at the same time, also handle race conditions.
+
+If needed, retry run creation once after a duplicate run-number error.
+
+---
+
+# 8. CodeWords Webhook Integration
+
+Create a server-side CodeWords client.
+
+Environment variables:
+
+* `CODEWORDS_MONDAY_EXPORT_WEBHOOK_URL`
+* `CODEWORDS_MONDAY_EXPORT_WEBHOOK_SECRET`
+
+Do not expose them to the frontend.
+
+Send:
+
+```json
+{
+  "run_id": "UUID",
+  "deal_id": "UUID",
+  "action": "start",
+  "requested_by": "UUID",
+  "options": {
+    "parent_run_id": null,
+    "target_ids": [],
+    "continue_from_step": null,
+    "retry_failed_only": false,
+    "force_update": false,
+    "dry_run": false
+  }
+}
+```
+
+Send authentication through a server-side header.
+
+Suggested headers:
+
+```text
+Content-Type: application/json
+X-Webhook-Secret: <secret>
+X-Request-Id: <run_id>
+```
+
+Use a reasonable request timeout.
+
+The webhook should only confirm that the execution was accepted.
+
+Do not keep the browser request open until CodeWords completes the process.
+
+After the webhook accepts the run:
+
+* Set the run status to `queued` if CodeWords does not update it immediately.
+* Store the external execution ID if returned.
+
+---
+
+# 9. Live Progress
+
+The runs screen and run details screen should update automatically.
+
+Prefer Supabase Realtime if it is already configured in the project.
+
+Subscribe to changes in:
+
+* `monday_export_runs`
+* `monday_export_run_steps`
+* `monday_export_run_items`
+* `monday_export_run_logs`
+
+If Realtime is not available, use polling every 5 seconds only while a run is active.
+
+Stop polling when the run reaches a final state.
+
+Final states:
+
+* completed
+* completed_with_warnings
+* failed
+* cancelled
+
+Do not refresh the full page.
+
+---
+
+# 10. Permissions and Security
+
+Use the application’s existing authentication and roles.
+
+Suggested permissions:
+
+### Admin
+
+Can:
+
+* Manage targets
+* Manage mappings
+* View all runs
+* Retry
+* Resume
+* Dry run
+* Disable configuration
+
+### Operational User
+
+Can:
+
+* Launch a deal export
+* View run status
+* View run details
+* Retry or resume if allowed
+
+### Read Only
+
+Can:
+
+* View runs
+* View logs
+* View configuration
+
+Do not allow client-side direct writes without server-side authorization.
+
+Review existing Supabase RLS policies.
+
+Do not disable RLS globally.
+
+Do not add an overly permissive policy such as:
+
+```sql
+using (true)
+with check (true)
+```
+
+unless the project already has a secure server-only pattern.
+
+---
+
+# 11. Error Handling
+
+All errors must be displayed in Hebrew.
+
+Examples:
+
+* לא הוגדרו יעדי Monday פעילים.
+* לא ניתן להפעיל יעד עם מזהה לוח זמני.
+* כבר קיימת ריצה פעילה לעסקה זו.
+* הפעלת תהליך CodeWords נכשלה.
+* חסר מיפוי לשדה חובה.
+* הרשומה לא נמצאה.
+* אין הרשאה לבצע פעולה זו.
+
+Log technical details server-side.
+
+Show a user-friendly message in the UI.
+
+---
+
+# 12. Acceptance Criteria
+
+The feature is complete only when:
+
+1. An admin can manage Monday export targets.
+2. An admin can manage field mappings.
+3. An admin can validate the configuration.
+4. A user can start an export from a deal.
+5. Replit creates a valid `monday_export_runs` record.
+6. Replit calls CodeWords securely from the server.
+7. The user can see live run progress.
+8. The user can open full run details.
+9. Steps, items and logs are displayed.
+10. Retry creates a new linked run.
+11. Resume creates a new linked run.
+12. Dry run is supported.
+13. Duplicate active runs are prevented.
+14. No Monday API token or CodeWords secret is exposed to the browser.
+15. The entire interface is Hebrew and full RTL.
+16. Existing application functionality remains unchanged.
+
+## Before Coding
+
+First inspect:
+
+* The current project structure.
+* The existing authentication and roles.
+* The existing Supabase client architecture.
+* The actual deals table and deal details screen.
+* Existing UI components.
+* Existing routing and navigation.
+* Existing RLS policies.
+
+Then provide a brief implementation plan.
+
+After the plan, implement the feature completely.
+
+Do not recreate existing infrastructure when reusable project components already exist.
