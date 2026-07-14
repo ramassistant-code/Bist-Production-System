@@ -3,7 +3,8 @@ import bistBannerUrl from "../assets/bist-banner.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, History } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -468,6 +469,7 @@ export default function QuotePdfTemplate() {
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // --- Load active template
   const { data: activeData, isLoading: loadingTemplate } = useQuery<{ template: PdfTemplate }>({
@@ -745,15 +747,26 @@ export default function QuotePdfTemplate() {
                 </div>
               )}
 
-              {/* Save button */}
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={publishMutation.isPending}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl px-4 py-3 transition-colors"
-              >
-                {publishMutation.isPending ? "מפרסם גרסה חדשה..." : "שמור ופרסם גרסה חדשה"}
-              </button>
+              {/* Buttons row */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={publishMutation.isPending}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl px-4 py-3 transition-colors"
+                >
+                  {publishMutation.isPending ? "מפרסם..." : "שמור ופרסם גרסה חדשה"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen(true)}
+                  className="flex items-center gap-1.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl px-3 py-3 transition-colors"
+                  title="היסטוריית גרסאות"
+                >
+                  <History className="w-4 h-4" />
+                  גרסאות
+                </button>
+              </div>
 
             </div>
           </div>
@@ -776,44 +789,48 @@ export default function QuotePdfTemplate() {
           </div>
         </div>
 
-        {/* ── Version history ── */}
-        <div className="border-t border-gray-200 bg-white flex-shrink-0 max-h-64 overflow-y-auto">
-          <div className="px-5 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">היסטוריית גרסאות</h3>
-          </div>
-          {loadingHistory ? (
-            <p className="text-sm text-gray-500 px-5 py-4">טוען היסטוריה...</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
-                <tr>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">גרסה</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">שם</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">סטטוס</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך יצירה</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך הפעלה</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">נוצר על ידי</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {(historyData?.history ?? []).map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-2 font-mono text-xs text-gray-700">v{row.version}</td>
-                    <td className="px-4 py-2 text-gray-900">{row.name}</td>
-                    <td className="px-4 py-2">
-                      <StatusBadge status={row.status} />
-                    </td>
-                    <td className="px-4 py-2 text-gray-500 text-xs">{fmtDate(row.created_at)}</td>
-                    <td className="px-4 py-2 text-gray-500 text-xs">{fmtDate(row.activated_at)}</td>
-                    <td className="px-4 py-2 text-gray-400 text-xs font-mono">
-                      {row.created_by ? row.created_by.slice(0, 8) + "…" : "מערכת"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {/* ── Version history dialog ── */}
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-2xl" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>היסטוריית גרסאות טמפלט</DialogTitle>
+            </DialogHeader>
+            {loadingHistory ? (
+              <p className="text-sm text-gray-500 py-4">טוען היסטוריה...</p>
+            ) : (
+              <div className="overflow-auto max-h-[60vh]">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
+                    <tr>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">גרסה</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">שם</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">סטטוס</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך יצירה</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">תאריך הפעלה</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-600">נוצר על ידי</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(historyData?.history ?? []).map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-2.5 font-mono text-xs text-gray-700">v{row.version}</td>
+                        <td className="px-4 py-2.5 text-gray-900">{row.name}</td>
+                        <td className="px-4 py-2.5">
+                          <StatusBadge status={row.status} />
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-500 text-xs">{fmtDate(row.created_at)}</td>
+                        <td className="px-4 py-2.5 text-gray-500 text-xs">{fmtDate(row.activated_at)}</td>
+                        <td className="px-4 py-2.5 text-gray-400 text-xs font-mono">
+                          {row.created_by ? row.created_by.slice(0, 8) + "…" : "מערכת"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </div>
     </Shell>
