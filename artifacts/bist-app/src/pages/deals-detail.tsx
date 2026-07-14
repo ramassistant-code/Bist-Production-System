@@ -691,6 +691,16 @@ export default function DealsDetail() {
               <Button
                 size="sm"
                 variant="outline"
+                disabled={mondayRunMutation.isPending || (mondayData?.runs ?? []).some((r) => ["pending","queued","running","waiting"].includes(r.status))}
+                onClick={() => mondayRunMutation.mutate({ actionType: "start" })}
+                title="שלח ל-Monday"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ml-1 ${mondayRunMutation.isPending ? "animate-spin" : ""}`} />
+                Monday
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => setEditOpen(true)}
               >
                 <Pencil className="w-3.5 h-3.5 ml-1" />
@@ -1101,118 +1111,6 @@ export default function DealsDetail() {
               </div>
             </div>
           )}
-
-          {/* Monday Sync section */}
-          {(() => {
-            const MONDAY_STATUS_LABELS: Record<string, string> = {
-              pending: "ממתין", queued: "בתור", running: "פועל", waiting: "ממתין להמשך",
-              completed: "הושלם", completed_with_warnings: "הושלם עם אזהרות",
-              failed: "נכשל", cancelled: "בוטל",
-            };
-            const MONDAY_STATUS_CLASSES: Record<string, string> = {
-              pending: "bg-yellow-100 text-yellow-700", queued: "bg-blue-100 text-blue-700",
-              running: "bg-blue-100 text-blue-700", waiting: "bg-orange-100 text-orange-700",
-              completed: "bg-green-100 text-green-700", completed_with_warnings: "bg-yellow-100 text-yellow-700",
-              failed: "bg-red-100 text-red-700", cancelled: "bg-muted text-muted-foreground",
-            };
-            const ACTIVE_STATUSES = ["pending", "queued", "running", "waiting"];
-            const mondayRuns = mondayData?.runs ?? [];
-            const latestRun = mondayRuns[0];
-            const hasActiveRun = mondayRuns.some((r) => ACTIVE_STATUSES.includes(r.status));
-            const fmtShort = (d?: string | null) => d ? new Date(d).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "—";
-
-            return (
-              <div className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-                  <h3 className="text-sm font-semibold text-foreground/70">סנכרון ל-Monday</h3>
-                  <div className="flex items-center gap-2">
-                    {mondayData && <span className="text-xs text-muted-foreground">{mondayData.linked_count} רשומות מקושרות</span>}
-                    <button onClick={() => void refetchMonday()} disabled={mondayFetching} className="p-1.5 rounded hover:bg-muted/60 text-muted-foreground transition-colors" title="רענן">
-                      <RefreshCw className={`w-3.5 h-3.5 ${mondayFetching ? "animate-spin" : ""}`} />
-                    </button>
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  {latestRun && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-muted-foreground">ריצה אחרונה:</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${MONDAY_STATUS_CLASSES[latestRun.status] ?? "bg-muted text-muted-foreground"}`}>
-                        {MONDAY_STATUS_LABELS[latestRun.status] ?? latestRun.status}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{fmtShort(latestRun.created_at)}</span>
-                      {latestRun.error_message && <span className="text-xs text-red-600 flex-1 truncate">{latestRun.error_message}</span>}
-                    </div>
-                  )}
-                  {mondayRuns.length > 0 && (
-                    <div className="bg-muted/30 rounded-lg overflow-hidden">
-                      <table className="w-full text-xs">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="text-right px-3 py-2 font-medium text-muted-foreground">#</th>
-                            <th className="text-right px-3 py-2 font-medium text-muted-foreground">סוג</th>
-                            <th className="text-right px-3 py-2 font-medium text-muted-foreground">סטטוס</th>
-                            <th className="text-right px-3 py-2 font-medium text-muted-foreground">תאריך</th>
-                            <th className="px-3 py-2" />
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/30">
-                          {mondayRuns.slice(0, 5).map((r) => (
-                            <tr key={r.id} className="hover:bg-muted/40 transition-colors">
-                              <td className="px-3 py-2 text-muted-foreground">{r.run_number}</td>
-                              <td className="px-3 py-2 text-muted-foreground">{r.action_type}</td>
-                              <td className="px-3 py-2">
-                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${MONDAY_STATUS_CLASSES[r.status] ?? "bg-muted text-muted-foreground"}`}>
-                                  {MONDAY_STATUS_LABELS[r.status] ?? r.status}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 text-muted-foreground">{fmtShort(r.created_at)}</td>
-                              <td className="px-3 py-2 text-left">
-                                <a href={`/settings/monday/runs/${r.id}`} className="text-blue-600 hover:text-blue-800 hover:underline transition-colors">פרטים</a>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <button
-                      disabled={hasActiveRun || mondayRunMutation.isPending}
-                      onClick={() => mondayRunMutation.mutate({ actionType: "start" })}
-                      className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg px-3 py-2 transition-colors"
-                    >
-                      שלח ל-Monday
-                    </button>
-                    <button
-                      disabled={hasActiveRun || mondayRunMutation.isPending}
-                      onClick={() => mondayRunMutation.mutate({ actionType: "start", dryRun: true })}
-                      className="flex items-center gap-1.5 border border-indigo-300 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-700 text-xs font-medium rounded-lg px-3 py-2 transition-colors"
-                    >
-                      הרצת בדיקה
-                    </button>
-                    {latestRun && ["failed", "completed", "completed_with_warnings"].includes(latestRun.status) && (
-                      <button
-                        disabled={hasActiveRun || mondayRunMutation.isPending}
-                        onClick={() => mondayRunMutation.mutate({ actionType: "retry" })}
-                        className="flex items-center gap-1.5 border border-border hover:bg-muted/60 disabled:opacity-50 disabled:cursor-not-allowed text-foreground text-xs font-medium rounded-lg px-3 py-2 transition-colors"
-                      >
-                        הרץ שוב
-                      </button>
-                    )}
-                    <a href="/settings/monday?tab=runs" className="flex items-center gap-1.5 border border-border hover:bg-muted/60 text-foreground text-xs font-medium rounded-lg px-3 py-2 transition-colors">
-                      היסטוריית ריצות
-                    </a>
-                  </div>
-                  {hasActiveRun && (
-                    <p className="text-xs text-blue-600">ריצה פעילה בתהליך. לא ניתן להתחיל ריצה חדשה.</p>
-                  )}
-                  {mondayRunMutation.isError && (
-                    <p className="text-xs text-red-600">{(mondayRunMutation.error as Error).message}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Special notes (editable field — shown for both types) */}
           {deal.special_notes && (
