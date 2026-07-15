@@ -278,11 +278,47 @@ router.post("/monday/targets/:id/duplicate", async (req: Request, res: Response)
 router.post("/monday/targets/:id/activate", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { data: t } = await supabaseAdmin.from("monday_export_targets").select("monday_board_id").eq("id", id).single();
-    if ((t as Record<string, unknown>)?.["monday_board_id"] === "CONFIGURE_BOARD_ID") {
-      res.status(400).json({ error: "לא ניתן להפעיל יעד עם מזהה לוח זמני" });
+    const { data: tRaw, error: tErr } = await supabaseAdmin.from("monday_export_targets").select("*").eq("id", id).single();
+    if (tErr || !tRaw) { res.status(404).json({ error: "יעד לא נמצא" }); return; }
+    const t = tRaw as Record<string, unknown>;
+    const blockers: string[] = [];
+
+    if (!t["monday_board_id"] || t["monday_board_id"] === "CONFIGURE_BOARD_ID")
+      blockers.push("מזהה לוח Monday לא הוגדר (יש להחליף את CONFIGURE_BOARD_ID)");
+    if (!t["board_name_expected"])
+      blockers.push("שם לוח צפוי לא הוגדר");
+    if (t["environment"] === "test" && t["board_name_expected"] && !String(t["board_name_expected"]).startsWith("TEST |"))
+      blockers.push("יעד בסביבת בדיקות: שם הלוח הצפוי חייב להתחיל ב-'TEST |'");
+    if (t["allow_inbound_create"] && t["inbound_create_policy"] === "reject")
+      blockers.push("יצירת רשומות מ-Monday הופעלה אך מדיניות היצירה מוגדרת לחסימה");
+    const protectedTypes = ["deal", "payment"];
+    if (t["allow_inbound_delete"] && protectedTypes.includes(String(t["entity_type"] ?? "")))
+      blockers.push(`מחיקה נכנסת מ-Monday אסורה עבור ישות מסוג '${String(t["entity_type"])}'`);
+
+    // Check mappings
+    const { data: mappings } = await supabaseAdmin
+      .from("monday_export_field_mappings")
+      .select("id, sync_direction, is_active")
+      .eq("target_id", id)
+      .eq("is_active", true);
+    const active = (mappings ?? []) as Array<{ id: string; sync_direction?: string; is_active?: boolean }>;
+
+    if (active.length === 0)
+      blockers.push("לא הוגדרו מיפויי שדות פעילים ליעד זה");
+    if (t["inbound_enabled"]) {
+      const hasInbound = active.some(m => ["monday_to_supabase", "bidirectional"].includes(m.sync_direction ?? "supabase_to_monday"));
+      if (!hasInbound) blockers.push("סנכרון נכנס מ-Monday הופעל אך אין מיפויים נכנסים (monday_to_supabase / bidirectional)");
+    }
+    if (t["outbound_enabled"]) {
+      const hasOutbound = active.some(m => ["supabase_to_monday", "bidirectional"].includes(m.sync_direction ?? "supabase_to_monday"));
+      if (!hasOutbound) blockers.push("סנכרון יוצא ל-Monday הופעל אך אין מיפויים יוצאים (supabase_to_monday / bidirectional)");
+    }
+
+    if (blockers.length > 0) {
+      res.status(400).json({ error: "לא ניתן להפעיל יעד זה — נמצאו חסמי הגדרה", blockers });
       return;
     }
+
     const { data, error } = await supabaseAdmin.from("monday_export_targets").update({ is_active: true, updated_at: new Date().toISOString() }).eq("id", id).select().single();
     if (error) throw error;
     res.json({ target: data });
@@ -301,6 +337,30 @@ router.post("/monday/targets/:id/deactivate", async (req: Request, res: Response
   } catch (err) {
     logger.error({ err }, "Failed to deactivate Monday target");
     res.status(500).json({ error: "שגיאה בהשבתת יעד" });
+  }
+});
+
+// ── HEALTH OVERVIEW ───────────────────────────────────────────────────────────
+
+router.get("/monday/health", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { data: health, error } = await supabaseAdmin
+      .from("monday_sync_health_overview")
+      .select("*")
+      .order("target_key", { ascending: true });
+    if (error) throw error;
+    const rows = (health ?? []) as Array<Record<string, unknown>>;
+    const summary = {
+      active_targets: rows.filter((r) => r["is_active"]).length,
+      polling_active: rows.filter((r) => r["inbound_enabled"]).length,
+      pending_events: rows.reduce((s, r) => s + (Number(r["pending_events"]) || 0), 0),
+      failed_events: rows.reduce((s, r) => s + (Number(r["failed_events"]) || 0), 0),
+      open_conflicts: rows.reduce((s, r) => s + (Number(r["open_conflicts"]) || 0), 0),
+    };
+    res.json({ health: rows, summary });
+  } catch (err) {
+    logger.error({ err }, "Failed to get Monday health overview");
+    res.status(500).json({ error: "שגיאה בטעינת נתוני ניטור" });
   }
 });
 
