@@ -240,7 +240,6 @@ function fmtDate(d?: string | null) {
 function computeTargetStatus(t: MondayTarget): string {
   if (!t.monday_board_id || t.monday_board_id === "CONFIGURE_BOARD_ID") return "לא מוגדר";
   if (!t.board_name_expected) return "מוגדר חלקית";
-  if (t.environment === "test" && !t.board_name_expected.startsWith("TEST |")) return "חסום";
   if (t.allow_inbound_create && t.inbound_create_policy === "reject") return "חסום";
   if (t.allow_inbound_delete && PROTECTED_ENTITY_TYPES.includes(t.entity_type)) return "חסום";
   if (t.is_active) return "פעיל";

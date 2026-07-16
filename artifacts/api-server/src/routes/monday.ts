@@ -287,8 +287,6 @@ router.post("/monday/targets/:id/activate", async (req: Request, res: Response):
       blockers.push("מזהה לוח Monday לא הוגדר (יש להחליף את CONFIGURE_BOARD_ID)");
     if (!t["board_name_expected"])
       blockers.push("שם לוח צפוי לא הוגדר");
-    if (t["environment"] === "test" && t["board_name_expected"] && !String(t["board_name_expected"]).startsWith("TEST |"))
-      blockers.push("יעד בסביבת בדיקות: שם הלוח הצפוי חייב להתחיל ב-'TEST |'");
     if (t["allow_inbound_create"] && t["inbound_create_policy"] === "reject")
       blockers.push("יצירת רשומות מ-Monday הופעלה אך מדיניות היצירה מוגדרת לחסימה");
     const protectedTypes = ["deal", "payment"];
