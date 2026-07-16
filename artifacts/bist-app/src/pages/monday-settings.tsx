@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
 import {
-  ChevronRight, Plus, Pencil, Trash2, Copy, Power, PowerOff, RefreshCw,
+  ChevronRight, Plus, Pencil, Trash2, Copy, RefreshCw,
   CheckCircle, AlertCircle, Info, ArrowRightLeft, ArrowRight, ArrowLeft,
   Shield, Clock, Activity,
 } from "lucide-react";
@@ -583,15 +583,24 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
                   <td className="px-3 py-3 text-center">{t.outbound_enabled ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}</td>
                   <td className="px-3 py-3 text-center">{t.inbound_enabled ? <CheckCircle className="w-4 h-4 text-purple-600 mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{t.inbound_enabled ? `${t.polling_interval_seconds ?? 120}ש׳` : "—"}</td>
-                  <td className="px-4 py-3"><TargetStatusBadge status={status} /></td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        dir="ltr"
+                        onClick={() => actionMutation.mutate({ id: t.id, action: t.is_active ? "deactivate" : "activate" })}
+                        title={t.is_active ? "לחץ לכיבוי" : "לחץ להפעלה"}
+                        disabled={actionMutation.isPending}
+                        className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${t.is_active ? "bg-green-500" : "bg-muted-foreground/30"}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform duration-200 ${t.is_active ? "translate-x-4" : "translate-x-0"}`} />
+                      </button>
+                      <TargetStatusBadge status={status} />
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
                       <button onClick={() => { setIsNew(false); setEditTarget(t); setFormError(null); }} title="עריכה" className="p-1.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                       <button onClick={() => actionMutation.mutate({ id: t.id, action: "duplicate" })} title="שכפול" className="p-1.5 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"><Copy className="w-3.5 h-3.5" /></button>
-                      {t.is_active
-                        ? <button onClick={() => actionMutation.mutate({ id: t.id, action: "deactivate" })} title="השבת" className="p-1.5 rounded hover:bg-muted/60 text-orange-500 hover:text-orange-700 transition-colors"><PowerOff className="w-3.5 h-3.5" /></button>
-                        : <button onClick={() => actionMutation.mutate({ id: t.id, action: "activate" })} title="הפעל" className="p-1.5 rounded hover:bg-muted/60 text-green-600 hover:text-green-800 transition-colors"><Power className="w-3.5 h-3.5" /></button>
-                      }
                       <button onClick={() => { if (confirm("למחוק יעד זה?")) deleteMutation.mutate(t.id); }} title="מחיקה" className="p-1.5 rounded hover:bg-muted/60 text-red-500 hover:text-red-700 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
