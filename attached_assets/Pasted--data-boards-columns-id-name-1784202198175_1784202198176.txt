@@ -1,0 +1,169 @@
+{
+  "data": {
+    "boards": [
+      {
+        "columns": [
+          {
+            "id": "name",
+            "title": "שם הליד"
+          },
+          {
+            "id": "subtasks_mm08ydyg",
+            "title": "Subitems"
+          },
+          {
+            "id": "link_mkygq585",
+            "title": "מס׳ טלפון"
+          },
+          {
+            "id": "phone_mky9yqdr",
+            "title": "טלפון"
+          },
+          {
+            "id": "board_relation_mky9akx2",
+            "title": "איש מכירות"
+          },
+          {
+            "id": "lookup_mm3jj0jc",
+            "title": "מקור הגעה"
+          },
+          {
+            "id": "color_mm24vagp",
+            "title": "לענות"
+          },
+          {
+            "id": "color_mky9mkkk",
+            "title": "סטטוס"
+          },
+          {
+            "id": "color_mm1gz5qk",
+            "title": "נסיונות תפיסה"
+          },
+          {
+            "id": "date_mkyc8h67",
+            "title": "תאריך ושעה לפולואפ"
+          },
+          {
+            "id": "long_text_mkycegxp",
+            "title": "הערה לפולואפ"
+          },
+          {
+            "id": "text_mkz37sb4",
+            "title": "פרסומת שממנה הגיע (רלוונטי לפניות מוואטסאפ)"
+          },
+          {
+            "id": "text_mky9axj6",
+            "title": "תחום פעילות"
+          },
+          {
+            "id": "lookup_mkz2v9fy",
+            "title": "שם מפנה"
+          },
+          {
+            "id": "long_text_mkyrkxgv",
+            "title": "הערה לתזכורת"
+          },
+          {
+            "id": "date_mkyrxhcb",
+            "title": "תאריך ושעה לתזכורת"
+          },
+          {
+            "id": "color_mky92wqn",
+            "title": "סיבת דחייה"
+          },
+          {
+            "id": "long_text_mky9way2",
+            "title": "סיבת דחייה טקסט"
+          },
+          {
+            "id": "text_mkyb2w98",
+            "title": "אימייל"
+          },
+          {
+            "id": "lookup_mkypa92z",
+            "title": "איש מכירות - people"
+          },
+          {
+            "id": "date_mkysmkbz",
+            "title": "תאריך השארת פנייה"
+          },
+          {
+            "id": "board_relation_mkz22z7s",
+            "title": "הפנייה"
+          },
+          {
+            "id": "board_relation_mkzav9qz",
+            "title": "שם מודעה"
+          },
+          {
+            "id": "board_relation_mkzmfvm4",
+            "title": "link to לקוח"
+          },
+          {
+            "id": "date_mm2wtkm8",
+            "title": "תאריך סגירה"
+          },
+          {
+            "id": "long_text_mm3nevzp",
+            "title": "משימה"
+          },
+          {
+            "id": "date_mm3n8x3c",
+            "title": "תאריך ושעה למשימה"
+          },
+          {
+            "id": "button_mm3nmpfx",
+            "title": "יצירת משימה"
+          },
+          {
+            "id": "lookup_mm3nrryf",
+            "title": "טלפון איש מכירות"
+          },
+          {
+            "id": "board_relation_mm3pyf62",
+            "title": "משימות לידים"
+          },
+          {
+            "id": "color_mky9bzmw",
+            "title": "מקור הגעה1"
+          },
+          {
+            "id": "board_relation_mm3j66r4",
+            "title": "מקור הגעה"
+          },
+          {
+            "id": "pulse_log_mm07jgx4",
+            "title": "Creation log"
+          },
+          {
+            "id": "board_relation_mm3q63d0",
+            "title": "link to הקלטות שיחה"
+          },
+          {
+            "id": "lookup_mm3qexgn",
+            "title": "תאריך משימות לביצוע"
+          },
+          {
+            "id": "numeric_mm3qv41q",
+            "title": "סכום עסקה ראשונה"
+          },
+          {
+            "id": "pulse_id_mm3r4aw7",
+            "title": "Item ID"
+          },
+          {
+            "id": "multiple_person_mm5267cy",
+            "title": "People"
+          },
+          {
+            "id": "numeric_mm3jzzkv",
+            "title": "כמות לידים"
+          }
+        ]
+      }
+    ]
+  },
+  "extensions": {
+    "request_id": "b537cfc1-5ea1-9e31-ba28-814981936bd2"
+  }
+}
