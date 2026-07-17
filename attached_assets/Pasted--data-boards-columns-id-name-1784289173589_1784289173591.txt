@@ -1,0 +1,137 @@
+{
+  "data": {
+    "boards": [
+      {
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name"
+          },
+          {
+            "id": "subtasks_mm06vpc5",
+            "title": "Subitems"
+          },
+          {
+            "id": "phone_mktn65dp",
+            "title": "טלפון"
+          },
+          {
+            "id": "text_mktnvncv",
+            "title": "אימייל"
+          },
+          {
+            "id": "board_relation_mm3pqgms",
+            "title": "מנהל תיק לקוח - עמודת עזר"
+          },
+          {
+            "id": "long_text_mm3pn4t0",
+            "title": "תיאור המשימה - עמודת עזר"
+          },
+          {
+            "id": "date_mm3pntgr",
+            "title": "תאריך ושעה לתזכורת - עמודת עזר"
+          },
+          {
+            "id": "button_mm3p4kgj",
+            "title": "פתיחת משימה"
+          },
+          {
+            "id": "board_relation_mm3gp01",
+            "title": "link to Agencies - הזמנות לקוחות סוכנויות"
+          },
+          {
+            "id": "boolean_mkzrxxea",
+            "title": "tried to connect to lead"
+          },
+          {
+            "id": "board_relation_mkzm5f4f",
+            "title": "ליד מקושר"
+          },
+          {
+            "id": "text_mky9kvk6",
+            "title": "שם על החשבונית"
+          },
+          {
+            "id": "text_mky9w12t",
+            "title": "ת.ז / ח.פ"
+          },
+          {
+            "id": "email_mky9c8h5",
+            "title": "אימייל לשליחת חשבונית"
+          },
+          {
+            "id": "lookup_mm3qdh40",
+            "title": "מוצרי שעות"
+          },
+          {
+            "id": "lookup_mm3q6mg8",
+            "title": "מוצרי עריכה"
+          },
+          {
+            "id": "lookup_mm3qsscc",
+            "title": "תשלומים מקושרים"
+          },
+          {
+            "id": "board_relation_mm3qpbte",
+            "title": "link to עסקאות"
+          },
+          {
+            "id": "board_relation_mm3q1695",
+            "title": "הקלטות שיחה לקוח"
+          },
+          {
+            "id": "long_text_mm3p1tyt",
+            "title": "נקודות כאב שזוהו במכירה"
+          },
+          {
+            "id": "dropdown_mm3phb83",
+            "title": "סוג לקוח"
+          },
+          {
+            "id": "dropdown_mm3pq7n3",
+            "title": "תחום"
+          },
+          {
+            "id": "board_relation_mm3pded1",
+            "title": "משימות לקוחות"
+          },
+          {
+            "id": "lookup_mm3pjz8x",
+            "title": "טלפון מנהל תיק לקוח"
+          },
+          {
+            "id": "lookup_mm3q55rz",
+            "title": "LTV"
+          },
+          {
+            "id": "lookup_mm3q2cet",
+            "title": "הקלטות שיחה ליד"
+          },
+          {
+            "id": "pulse_id_mm3rpc5s",
+            "title": "Item ID"
+          },
+          {
+            "id": "color_mm41hx8m",
+            "title": "מנהל תיק לקוח - יצירת קשר"
+          },
+          {
+            "id": "date_mm415s34",
+            "title": "מנהל תיק לקוח - תאריך יצירת קשר"
+          },
+          {
+            "id": "numeric_mm41am3e",
+            "title": "Pipeline ללא מעמ"
+          },
+          {
+            "id": "pulse_log_mm54sr85",
+            "title": "Creation log"
+          }
+        ]
+      }
+    ]
+  },
+  "extensions": {
+    "request_id": "99b91814-fff5-933d-ba83-3d971e4d9f43"
+  }
+}
