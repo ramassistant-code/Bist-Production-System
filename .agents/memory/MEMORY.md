@@ -1,3 +1,4 @@
 - [Phase 2 payment+credits pattern](phase2-payment-credits.md) — deal creation creates payment + credits after the DB transaction; both idempotent via source_key unique partial index + onConflictDoNothing()
 - [party_snapshot customer resolution](party-snapshot-customer-resolve.md) — party_snapshot uses source_id (not customer_id) when party_type==="customer"; fallback to quote.customer_id
 - [refresh_deal_payment_totals migration](refresh-deal-payment-totals.md) — migrated to update amount_paid_including_vat + use COALESCE(total_amount_including_vat, total_amount)
+- [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
