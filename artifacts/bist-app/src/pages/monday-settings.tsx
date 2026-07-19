@@ -875,7 +875,7 @@ function MappingsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
           >
             <option value="">-- בחר יעד --</option>
             {targets.map((t) => (
-              <option key={t.id} value={t.id}>{t.target_name} — {ENV_LABELS[t.environment ?? "test"] ?? t.environment}</option>
+              <option key={t.id} value={t.id}>{t.target_name}</option>
             ))}
           </select>
         </div>
