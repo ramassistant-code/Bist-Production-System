@@ -4,6 +4,7 @@ import { customersTable, insertCustomerSchema, updateCustomerSchema } from "@wor
 import type { Customer } from "@workspace/db/schema";
 import { isNull, asc, eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/notifySync";
 
 const router: IRouter = Router();
 
@@ -96,6 +97,7 @@ router.patch("/customers/:id", async (req: Request, res: Response): Promise<void
       res.status(404).json({ error: "לקוח לא נמצא" });
       return;
     }
+    notifySync("customer", customer.id);
     res.json(customer);
   } catch (err) {
     logger.error({ err }, "Failed to update customer");

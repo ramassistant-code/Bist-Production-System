@@ -4,6 +4,7 @@ import { leadsTable, insertLeadSchema, updateLeadSchema } from "@workspace/db/sc
 import type { Lead } from "@workspace/db/schema";
 import { isNull, asc, sql, and, or, ilike, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/notifySync";
 
 const router: IRouter = Router();
 
@@ -122,6 +123,7 @@ router.patch("/leads/:id", async (req: Request, res: Response): Promise<void> =>
       res.status(404).json({ error: "ליד לא נמצא" });
       return;
     }
+    notifySync("lead", lead.id);
     res.json(lead);
   } catch (err) {
     logger.error({ err }, "Failed to update lead");

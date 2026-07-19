@@ -18,6 +18,7 @@ import {
   desc,
 } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/notifySync";
 
 const router: IRouter = Router();
 
@@ -804,6 +805,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       }
     }
 
+    notifySync("deal", result.dealId);
     res.status(result.alreadyExists ? 200 : 201).json(result);
 
   } catch (err) {
