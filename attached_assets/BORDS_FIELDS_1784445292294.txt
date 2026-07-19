@@ -1,0 +1,1124 @@
+{
+  "data": {
+    "boards": [
+      {
+        "name": "משימות מיוחדות לתיאום ☑️",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mm51embb",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "pulse_log_mm57rqzp",
+            "title": "Creation log",
+            "type": "creation_log"
+          },
+          {
+            "id": "color_mm57w197",
+            "title": "אחראי",
+            "type": "status"
+          },
+          {
+            "id": "long_text_mm574dqe",
+            "title": "תיאור המשימה",
+            "type": "long_text"
+          }
+        ]
+      },
+      {
+        "name": "מוצרים",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mm3jd228",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "board_relation_mm50zk3g",
+            "title": "רכיבים במוצר",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm50k7jf",
+            "title": "עלות ייצור",
+            "type": "mirror"
+          },
+          {
+            "id": "color_mm50k1ye",
+            "title": "קטגוריה",
+            "type": "status"
+          },
+          {
+            "id": "color_mm502gr2",
+            "title": "סוג תוצר",
+            "type": "status"
+          },
+          {
+            "id": "numeric_mm514sdk",
+            "title": "מחיר בתפזורת",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mm50wdp9",
+            "title": "מחיר לצרכן",
+            "type": "numbers"
+          },
+          {
+            "id": "long_text_mm51fkkf",
+            "title": "הסבר מוצר",
+            "type": "long_text"
+          },
+          {
+            "id": "long_text_mm51dr9g",
+            "title": "הערות מכירה",
+            "type": "long_text"
+          },
+          {
+            "id": "link_mm51e8k6",
+            "title": "תיק עבודות",
+            "type": "link"
+          },
+          {
+            "id": "formula_mm51e9vw",
+            "title": "רווח מינימלי",
+            "type": "formula"
+          },
+          {
+            "id": "long_text_mm5157g2",
+            "title": "תיאור מוצר ברמת הצעת מחיר",
+            "type": "long_text"
+          },
+          {
+            "id": "long_text_mm51mncz",
+            "title": "הערות למוצר ברמת הצעת מחיר",
+            "type": "long_text"
+          },
+          {
+            "id": "link_mm58nb4a",
+            "title": "תסריט מכירות",
+            "type": "link"
+          }
+        ]
+      },
+      {
+        "name": "רכיבים במוצר",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mm3jd228",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "board_relation_mm50cxjm",
+            "title": "מוצרים",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mm50hagj",
+            "title": "רכיב",
+            "type": "board_relation"
+          },
+          {
+            "id": "numeric_mm50ve5f",
+            "title": "כמות רכיב במוצר",
+            "type": "numbers"
+          },
+          {
+            "id": "lookup_mm50ck2w",
+            "title": "כמה עולה הרכיב",
+            "type": "mirror"
+          },
+          {
+            "id": "formula_mm50d0v4",
+            "title": "עלות רכיבים במוצר",
+            "type": "formula"
+          },
+          {
+            "id": "numeric_mm50zfnx",
+            "title": "סדר רכיב במוצר",
+            "type": "numbers"
+          }
+        ]
+      },
+      {
+        "name": "עלויות - משאבים ברכיבים",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "board_relation_mm3jv4cj",
+            "title": "רכיב",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mm3jw21q",
+            "title": "משאב",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3ja5vq",
+            "title": "עלות משאב",
+            "type": "mirror"
+          },
+          {
+            "id": "numeric_mm3jea0r",
+            "title": "כמות",
+            "type": "numbers"
+          },
+          {
+            "id": "formula_mm3jhznc",
+            "title": "כמה זה עולה לי",
+            "type": "formula"
+          }
+        ]
+      },
+      {
+        "name": "משאבים",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "numeric_mm3jmsn7",
+            "title": "כמה עולה לי",
+            "type": "numbers"
+          },
+          {
+            "id": "pulse_id_mm50nbw4",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "autonumber_mm506mvr",
+            "title": "Auto number",
+            "type": "auto_number"
+          }
+        ]
+      },
+      {
+        "name": "רכיבים - פעולות וקרדיטים",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "long_text_mm50mx7w",
+            "title": "תוצר",
+            "type": "long_text"
+          },
+          {
+            "id": "link_mm3j5c39",
+            "title": "SOP ביצוע רכיב",
+            "type": "link"
+          },
+          {
+            "id": "board_relation_mm3jm0y4",
+            "title": "משאבים במוצרים",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3jarv4",
+            "title": "כמה זה עולה לי",
+            "type": "mirror"
+          },
+          {
+            "id": "color_mm503xmb",
+            "title": "קטגוריה",
+            "type": "status"
+          },
+          {
+            "id": "color_mm508m0y",
+            "title": "אחראי תיאום",
+            "type": "status"
+          },
+          {
+            "id": "pulse_id_mm509xnr",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "numeric_mm50taas",
+            "title": "כמה זה עולה לי עזר",
+            "type": "numbers"
+          },
+          {
+            "id": "formula_mm50hb4p",
+            "title": "צריך עדכון דחוף",
+            "type": "formula"
+          },
+          {
+            "id": "long_text_mm51e705",
+            "title": "הערות לרכיב",
+            "type": "long_text"
+          },
+          {
+            "id": "long_text_mm51a676",
+            "title": "תיאור רכיב ברמת הצעת מחיר",
+            "type": "long_text"
+          },
+          {
+            "id": "long_text_mm512sws",
+            "title": "הערות לרכיב ברמת הצעת מחיר",
+            "type": "long_text"
+          }
+        ]
+      },
+      {
+        "name": "אנשי מכירות 🙍‍♂️",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "status",
+            "title": "סטטוס",
+            "type": "status"
+          },
+          {
+            "id": "phone_mky9b5vp",
+            "title": "מספר עסקי",
+            "type": "phone"
+          },
+          {
+            "id": "email_mky97bc0",
+            "title": "אימייל",
+            "type": "email"
+          },
+          {
+            "id": "color_mky932q4",
+            "title": "Choosen sellet",
+            "type": "status"
+          },
+          {
+            "id": "numeric_mky9x3d2",
+            "title": "Position",
+            "type": "numbers"
+          },
+          {
+            "id": "multiple_person_mkyppt",
+            "title": "People",
+            "type": "people"
+          },
+          {
+            "id": "pulse_id_mm3st0wv",
+            "title": "Item ID",
+            "type": "item_id"
+          }
+        ]
+      },
+      {
+        "name": "לידים 🎯",
+        "columns": [
+          {
+            "id": "name",
+            "title": "שם הליד",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mm08ydyg",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "link_mkygq585",
+            "title": "מס׳ טלפון",
+            "type": "link"
+          },
+          {
+            "id": "phone_mky9yqdr",
+            "title": "טלפון",
+            "type": "phone"
+          },
+          {
+            "id": "board_relation_mky9akx2",
+            "title": "איש מכירות",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3jj0jc",
+            "title": "מקור הגעה",
+            "type": "mirror"
+          },
+          {
+            "id": "color_mm24vagp",
+            "title": "לענות",
+            "type": "status"
+          },
+          {
+            "id": "color_mky9mkkk",
+            "title": "סטטוס",
+            "type": "status"
+          },
+          {
+            "id": "color_mm1gz5qk",
+            "title": "נסיונות תפיסה",
+            "type": "status"
+          },
+          {
+            "id": "date_mkyc8h67",
+            "title": "תאריך ושעה לפולואפ",
+            "type": "date"
+          },
+          {
+            "id": "long_text_mkycegxp",
+            "title": "הערה לפולואפ",
+            "type": "long_text"
+          },
+          {
+            "id": "text_mkz37sb4",
+            "title": "פרסומת שממנה הגיע (רלוונטי לפניות מוואטסאפ)",
+            "type": "text"
+          },
+          {
+            "id": "text_mky9axj6",
+            "title": "תחום פעילות",
+            "type": "text"
+          },
+          {
+            "id": "lookup_mkz2v9fy",
+            "title": "שם מפנה",
+            "type": "mirror"
+          },
+          {
+            "id": "long_text_mkyrkxgv",
+            "title": "הערה לתזכורת",
+            "type": "long_text"
+          },
+          {
+            "id": "date_mkyrxhcb",
+            "title": "תאריך ושעה לתזכורת",
+            "type": "date"
+          },
+          {
+            "id": "color_mky92wqn",
+            "title": "סיבת דחייה",
+            "type": "status"
+          },
+          {
+            "id": "long_text_mky9way2",
+            "title": "סיבת דחייה טקסט",
+            "type": "long_text"
+          },
+          {
+            "id": "text_mkyb2w98",
+            "title": "אימייל",
+            "type": "text"
+          },
+          {
+            "id": "lookup_mkypa92z",
+            "title": "איש מכירות - people",
+            "type": "mirror"
+          },
+          {
+            "id": "date_mkysmkbz",
+            "title": "תאריך השארת פנייה",
+            "type": "date"
+          },
+          {
+            "id": "board_relation_mkz22z7s",
+            "title": "הפנייה",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mkzav9qz",
+            "title": "שם מודעה",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mkzmfvm4",
+            "title": "link to לקוח",
+            "type": "board_relation"
+          },
+          {
+            "id": "date_mm2wtkm8",
+            "title": "תאריך סגירה",
+            "type": "date"
+          },
+          {
+            "id": "long_text_mm3nevzp",
+            "title": "משימה",
+            "type": "long_text"
+          },
+          {
+            "id": "date_mm3n8x3c",
+            "title": "תאריך ושעה למשימה",
+            "type": "date"
+          },
+          {
+            "id": "button_mm3nmpfx",
+            "title": "יצירת משימה",
+            "type": "button"
+          },
+          {
+            "id": "lookup_mm3nrryf",
+            "title": "טלפון איש מכירות",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mm3pyf62",
+            "title": "משימות לידים",
+            "type": "board_relation"
+          },
+          {
+            "id": "color_mky9bzmw",
+            "title": "מקור הגעה1",
+            "type": "status"
+          },
+          {
+            "id": "board_relation_mm3j66r4",
+            "title": "מקור הגעה",
+            "type": "board_relation"
+          },
+          {
+            "id": "pulse_log_mm07jgx4",
+            "title": "Creation log",
+            "type": "creation_log"
+          },
+          {
+            "id": "board_relation_mm3q63d0",
+            "title": "link to הקלטות שיחה",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3qexgn",
+            "title": "תאריך משימות לביצוע",
+            "type": "mirror"
+          },
+          {
+            "id": "numeric_mm3qv41q",
+            "title": "סכום עסקה ראשונה",
+            "type": "numbers"
+          },
+          {
+            "id": "pulse_id_mm3r4aw7",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "multiple_person_mm5267cy",
+            "title": "People",
+            "type": "people"
+          },
+          {
+            "id": "numeric_mm3jzzkv",
+            "title": "כמות לידים",
+            "type": "numbers"
+          }
+        ]
+      },
+      {
+        "name": "קרדיטים שעות אולפן",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mkwjg42c",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "long_text_mkvcegj5",
+            "title": "הערה איש מכירות",
+            "type": "long_text"
+          },
+          {
+            "id": "board_relation_mkv04q08",
+            "title": "מוצר",
+            "type": "board_relation"
+          },
+          {
+            "id": "color_mktn1z5a",
+            "title": "סטטוס ביצוע",
+            "type": "status"
+          },
+          {
+            "id": "numeric_mktn9499",
+            "title": "כמות",
+            "type": "numbers"
+          },
+          {
+            "id": "formula_mktnj3qc",
+            "title": "אולפן נותר",
+            "type": "formula"
+          },
+          {
+            "id": "board_relation_mktnyfhk",
+            "title": "אולפן מקושר",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mkv2qtf8",
+            "title": "שעות אולפן שנוצלו",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mkv7ganj",
+            "title": "רכישה",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mkv74pd4",
+            "title": "לקוח",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mkvbxj0s",
+            "title": "מה מגיע בשעה",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mkvbgsnf",
+            "title": "הערות מיוחדות",
+            "type": "mirror"
+          },
+          {
+            "id": "text_mkva499k",
+            "title": "אימייל",
+            "type": "text"
+          },
+          {
+            "id": "boolean_mm3v5h23",
+            "title": "צריך להעביר מערכת",
+            "type": "checkbox"
+          },
+          {
+            "id": "boolean_mm3vker2",
+            "title": "עבר מערכת",
+            "type": "checkbox"
+          }
+        ]
+      },
+      {
+        "name": "תשלומים 💰",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "date_mktnrsn6",
+            "title": "תאריך תשלום",
+            "type": "date"
+          },
+          {
+            "id": "color_mm03ctf0",
+            "title": "איש מכירות",
+            "type": "status"
+          },
+          {
+            "id": "color_mkz4grpa",
+            "title": "סוג תשלום",
+            "type": "status"
+          },
+          {
+            "id": "formula_mkz4ypbe",
+            "title": "כסף מעסקה",
+            "type": "formula"
+          },
+          {
+            "id": "numeric_mkz4n7xz",
+            "title": "מס תשלומים",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mktnyezv",
+            "title": "סכום ששולם",
+            "type": "numbers"
+          },
+          {
+            "id": "board_relation_mktnjr7z",
+            "title": "עסקה מקושרת",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mkv31msy",
+            "title": "לקוח",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mkv5kmjj",
+            "title": "איש מכירות",
+            "type": "mirror"
+          },
+          {
+            "id": "formula_mkz4ymc",
+            "title": "אחוז עמלה",
+            "type": "formula"
+          },
+          {
+            "id": "formula_mkz4y823",
+            "title": "סכום עמלה",
+            "type": "formula"
+          },
+          {
+            "id": "pulse_log_mm032eqy",
+            "title": "Creation log",
+            "type": "creation_log"
+          },
+          {
+            "id": "numeric_mm277nq8",
+            "title": "שעות אולפן",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mm2766nx",
+            "title": "כסף משעות אולפן",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mm2736qv",
+            "title": "כסף מעריכות",
+            "type": "numbers"
+          },
+          {
+            "id": "color_mm27bxc",
+            "title": "סוג תשלום",
+            "type": "status"
+          },
+          {
+            "id": "pulse_id_mm3r87fd",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "color_mm432ayr",
+            "title": "סליקה במערכת הזמנות",
+            "type": "status"
+          }
+        ]
+      },
+      {
+        "name": "קרדיטים 🏷️",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mkxk177e",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "board_relation_mkv7zwxt",
+            "title": "מוצרי עריכה - למחיקה",
+            "type": "board_relation"
+          },
+          {
+            "id": "color_mm51fsng",
+            "title": "אחראי",
+            "type": "status"
+          },
+          {
+            "id": "long_text_mkvcfdhq",
+            "title": "הערה מאיש מכירות בזמן הצעת מחיר",
+            "type": "long_text"
+          },
+          {
+            "id": "text_mm51j3q4",
+            "title": "מוצר אב",
+            "type": "text"
+          },
+          {
+            "id": "board_relation_mm51khha",
+            "title": "רכיב מקושר",
+            "type": "board_relation"
+          },
+          {
+            "id": "color_mktn1z5a",
+            "title": "סטטוס ביצוע",
+            "type": "status"
+          },
+          {
+            "id": "numeric_mktn9499",
+            "title": "כמות",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mkvb54c3",
+            "title": "בוצע עד כה",
+            "type": "numbers"
+          },
+          {
+            "id": "formula_mktnxjr7",
+            "title": "עריכות שנותר",
+            "type": "formula"
+          },
+          {
+            "id": "board_relation_mkv7apeh",
+            "title": "עסקה מקושרת",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mkv7rw1z",
+            "title": "לקוח מקושר",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mkvd1kqd",
+            "title": "משימות עריכה מקושרות",
+            "type": "board_relation"
+          },
+          {
+            "id": "numeric_mm3ekbw",
+            "title": "index ימי צילום מקושרים",
+            "type": "numbers"
+          },
+          {
+            "id": "numeric_mm3e1y6y",
+            "title": "בוצע עד כה הקודם",
+            "type": "numbers"
+          },
+          {
+            "id": "formula_mm3eja1a",
+            "title": "כמה בוצע",
+            "type": "formula"
+          },
+          {
+            "id": "formula_mm3e8xc8",
+            "title": "Formula",
+            "type": "formula"
+          },
+          {
+            "id": "numeric_mm3eqaxf",
+            "title": "כמות קודמת",
+            "type": "numbers"
+          }
+        ]
+      },
+      {
+        "name": "עסקאות 💼",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mkwxb1ge",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "lookup_mkv7jm4d",
+            "title": "שעות אולפן שנותרו",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mkv77yxx",
+            "title": "משימות עריכה שנותרו",
+            "type": "mirror"
+          },
+          {
+            "id": "long_text_mktn9hxp",
+            "title": "מה מגיע בשעה",
+            "type": "long_text"
+          },
+          {
+            "id": "long_text_mktnjcz8",
+            "title": "הערות מיוחדות",
+            "type": "long_text"
+          },
+          {
+            "id": "color_mktnb71c",
+            "title": "סטטוס תשלום",
+            "type": "status"
+          },
+          {
+            "id": "color_mktnk5tp",
+            "title": "סטטוס ביצוע",
+            "type": "status"
+          },
+          {
+            "id": "date_mktnrx96",
+            "title": "תאריך הבא לתשלום",
+            "type": "date"
+          },
+          {
+            "id": "formula_mktnr0sf",
+            "title": "נותר לתשלום",
+            "type": "formula"
+          },
+          {
+            "id": "text_mkv15qj5",
+            "title": "קישור להצעת מחיר",
+            "type": "text"
+          },
+          {
+            "id": "numeric_mktnt9wf",
+            "title": "מחיר כולל",
+            "type": "numbers"
+          },
+          {
+            "id": "lookup_mktnyjeq",
+            "title": "שולם עד כה",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mktnpmw1",
+            "title": "תשלומים",
+            "type": "board_relation"
+          },
+          {
+            "id": "date_mktns884",
+            "title": "תאריך רכישה",
+            "type": "date"
+          },
+          {
+            "id": "color_mktwdp8c",
+            "title": "איש מכירות",
+            "type": "status"
+          },
+          {
+            "id": "board_relation_mktw4xwq",
+            "title": "הפנייה של",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mktndwm0",
+            "title": "לקוח",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mkv0fjm2",
+            "title": "טלפון",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mkv02rv",
+            "title": "אימייל",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mkv7mtsq",
+            "title": "רכישות שעות אולפן",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mkv73n7v",
+            "title": "רכישות מוצרי עריכה",
+            "type": "board_relation"
+          },
+          {
+            "id": "text_mkvagw77",
+            "title": "email",
+            "type": "text"
+          },
+          {
+            "id": "pulse_id_mm3re2va",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "board_relation_mm3twpfx",
+            "title": "לידים",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3t4yha",
+            "title": "מקור הגעה",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mm3vj3gw",
+            "title": "שעות אולפן שנותרו",
+            "type": "mirror"
+          }
+        ]
+      },
+      {
+        "name": "לקוחות 🙍‍♂️",
+        "columns": [
+          {
+            "id": "name",
+            "title": "Name",
+            "type": "name"
+          },
+          {
+            "id": "subtasks_mm06vpc5",
+            "title": "Subitems",
+            "type": "subtasks"
+          },
+          {
+            "id": "phone_mktn65dp",
+            "title": "טלפון",
+            "type": "phone"
+          },
+          {
+            "id": "text_mktnvncv",
+            "title": "אימייל",
+            "type": "text"
+          },
+          {
+            "id": "board_relation_mm3pqgms",
+            "title": "מנהל תיק לקוח - עמודת עזר",
+            "type": "board_relation"
+          },
+          {
+            "id": "long_text_mm3pn4t0",
+            "title": "תיאור המשימה - עמודת עזר",
+            "type": "long_text"
+          },
+          {
+            "id": "date_mm3pntgr",
+            "title": "תאריך ושעה לתזכורת - עמודת עזר",
+            "type": "date"
+          },
+          {
+            "id": "button_mm3p4kgj",
+            "title": "פתיחת משימה",
+            "type": "button"
+          },
+          {
+            "id": "board_relation_mm3gp01",
+            "title": "link to Agencies - הזמנות לקוחות סוכנויות",
+            "type": "board_relation"
+          },
+          {
+            "id": "boolean_mkzrxxea",
+            "title": "tried to connect to lead",
+            "type": "checkbox"
+          },
+          {
+            "id": "board_relation_mkzm5f4f",
+            "title": "ליד מקושר",
+            "type": "board_relation"
+          },
+          {
+            "id": "text_mky9kvk6",
+            "title": "שם על החשבונית",
+            "type": "text"
+          },
+          {
+            "id": "text_mky9w12t",
+            "title": "ת.ז / ח.פ",
+            "type": "text"
+          },
+          {
+            "id": "email_mky9c8h5",
+            "title": "אימייל לשליחת חשבונית",
+            "type": "email"
+          },
+          {
+            "id": "lookup_mm3qdh40",
+            "title": "מוצרי שעות",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mm3q6mg8",
+            "title": "מוצרי עריכה",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mm3qsscc",
+            "title": "תשלומים מקושרים",
+            "type": "mirror"
+          },
+          {
+            "id": "board_relation_mm3qpbte",
+            "title": "link to עסקאות",
+            "type": "board_relation"
+          },
+          {
+            "id": "board_relation_mm3q1695",
+            "title": "הקלטות שיחה לקוח",
+            "type": "board_relation"
+          },
+          {
+            "id": "long_text_mm3p1tyt",
+            "title": "נקודות כאב שזוהו במכירה",
+            "type": "long_text"
+          },
+          {
+            "id": "dropdown_mm3phb83",
+            "title": "סוג לקוח",
+            "type": "dropdown"
+          },
+          {
+            "id": "dropdown_mm3pq7n3",
+            "title": "תחום",
+            "type": "dropdown"
+          },
+          {
+            "id": "board_relation_mm3pded1",
+            "title": "משימות לקוחות",
+            "type": "board_relation"
+          },
+          {
+            "id": "lookup_mm3pjz8x",
+            "title": "טלפון מנהל תיק לקוח",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mm3q55rz",
+            "title": "LTV",
+            "type": "mirror"
+          },
+          {
+            "id": "lookup_mm3q2cet",
+            "title": "הקלטות שיחה ליד",
+            "type": "mirror"
+          },
+          {
+            "id": "pulse_id_mm3rpc5s",
+            "title": "Item ID",
+            "type": "item_id"
+          },
+          {
+            "id": "color_mm41hx8m",
+            "title": "מנהל תיק לקוח - יצירת קשר",
+            "type": "status"
+          },
+          {
+            "id": "date_mm415s34",
+            "title": "מנהל תיק לקוח - תאריך יצירת קשר",
+            "type": "date"
+          },
+          {
+            "id": "numeric_mm41am3e",
+            "title": "Pipeline ללא מעמ",
+            "type": "numbers"
+          },
+          {
+            "id": "pulse_log_mm54sr85",
+            "title": "Creation log",
+            "type": "creation_log"
+          }
+        ]
+      }
+    ]
+  },
+  "extensions": {
+    "request_id": "20a482a9-522f-95bf-97ef-f3365e2deb82"
+  }
+}
