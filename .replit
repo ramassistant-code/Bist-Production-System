@@ -22,7 +22,6 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-CODWORDS_API_KEY = "cwk-dfbde4b6063f7ab1eeb61d5f49865ac3e8ff1127fc610fea7833d021e4ef99e5"
 
 [nix]
 channel = "stable-25_05"

@@ -7,6 +7,12 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+
+setAuthTokenGetter(async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+});
 
 export interface AppUser {
   id: string;

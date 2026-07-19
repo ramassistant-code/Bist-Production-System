@@ -55,9 +55,15 @@ router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// GET /users — list all app_users (no auth required — internal app)
-router.get("/users", async (_req: Request, res: Response): Promise<void> => {
+// GET /users — list all app_users (requires active session)
+router.get("/users", async (req: Request, res: Response): Promise<void> => {
   try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      res.status(401).json({ error: "לא מורשה" });
+      return;
+    }
+
     const users = await db
       .select()
       .from(appUsersTable)
