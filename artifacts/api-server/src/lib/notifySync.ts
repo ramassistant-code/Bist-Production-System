@@ -1,7 +1,7 @@
 import { logger } from "./logger";
 
 const SYNC_WEBHOOK_URL = "https://runtime.codewords.ai/run/monday_inbound_polling_d35bc976/webhook/supabase";
-const CODEWORDS_API_KEY = process.env.CODEWORDS_API_KEY ?? "";
+const CODEWORDS_API_KEY = process.env.CODWORDS_API_KEY ?? "";
 
 export function notifySync(entity_type: "customer" | "lead" | "deal", record_id: string): void {
   if (!CODEWORDS_API_KEY) {
