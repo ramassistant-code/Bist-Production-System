@@ -97,7 +97,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
   const [leadTaxId, setLeadTaxId] = useState(party?.tax_id ?? "");
 
   // ── Salesperson ─────────────────────────────────────────────────────────
-  const [salespersonId, setSalespersonId] = useState(currentUser?.id ?? "");
+  const [salespersonId, setSalespersonId] = useState("");
 
   // ── Financial ───────────────────────────────────────────────────────────
   const [amountPaid, setAmountPaid] = useState("0");
@@ -144,12 +144,12 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
     if (customerBilling.invoice_email) setInvoiceEmail(customerBilling.invoice_email);
   }, [customerBilling]);
 
-  // Set default salesperson to current user once users load
+  // Set default salesperson to current user — only after users list is loaded
   useEffect(() => {
-    if (currentUser?.id && !salespersonId) {
+    if (currentUser?.id && !salespersonId && users.some(u => u.id === currentUser.id)) {
       setSalespersonId(currentUser.id);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, users]);
 
   // ── Task helpers ────────────────────────────────────────────────────────
   function addTask() {
