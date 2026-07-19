@@ -49,7 +49,9 @@ router.post("/customers", async (req: Request, res: Response): Promise<void> => 
       .insert(customersTable)
       .values(parsed.data as unknown as typeof customersTable.$inferInsert)
       .returning();
-    res.status(201).json(rows[0] ?? null);
+    const created = rows[0] ?? null;
+    if (created) notifySync("customer", created.id);
+    res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "Failed to create customer");
     res.status(500).json({ error: "שגיאה ביצירת הלקוח" });
