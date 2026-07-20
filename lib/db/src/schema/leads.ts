@@ -74,10 +74,16 @@ export const insertLeadSchema = createInsertSchema(leadsTable)
     email: z.string().email().or(z.literal("")).nullable().optional(),
   });
 
+const dateOrNull = z.coerce.date().nullable().optional();
+
 export const updateLeadSchema = createUpdateSchema(leadsTable)
   .pick(USER_EDITABLE_FIELDS)
   .extend({
     email: z.string().email().or(z.literal("")).nullable().optional(),
+    followup_at: dateOrNull,
+    task_due_at: dateOrNull,
+    lead_created_at: dateOrNull,
+    closed_at: dateOrNull,
   })
   .partial();
 
