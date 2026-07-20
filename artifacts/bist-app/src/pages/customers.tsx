@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useState, useCallback } from "react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Pencil, Eye, Phone, Mail, Building2, User, Search, X } from "lucide-react";
@@ -21,16 +21,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { ComboboxField, type ComboboxOption } from "@/components/ui/combobox-field";
+import { LookupSelect } from "@/components/ui/lookup-select";
 
+import { supabase } from "@/lib/supabase";
 import {
   useListCustomers,
-  useCreateCustomer,
-  useUpdateCustomer,
   getListCustomersQueryKey,
 } from "@workspace/api-client-react";
 import type { Customer } from "@workspace/api-client-react";
 
-// ---------- helpers ----------
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(val: string | null | undefined): string {
   if (!val) return "—";
@@ -53,7 +54,9 @@ function empty(val: string | null | undefined): string {
   return val?.trim() ? val.trim() : "—";
 }
 
-// ---------- form schema ----------
+// ── Form schema ───────────────────────────────────────────────────────────────
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const customerFormSchema = z.object({
   name: z.string().min(1, "שם הלקוח הוא שדה חובה"),
@@ -76,12 +79,25 @@ const customerFormSchema = z.object({
     .optional(),
   customer_type: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
+  account_manager_contact_status: z.string().nullable().optional(),
+  account_manager_contact_date: z.string().nullable().optional(),
   pain_points: z.string().nullable().optional(),
+  // FK fields — only valid uuid or null (enforced via ComboboxField)
+  account_manager_id: z
+    .string()
+    .regex(UUID_REGEX, "יש לבחור מהרשימה")
+    .nullable()
+    .optional(),
+  lead_id: z
+    .string()
+    .regex(UUID_REGEX, "יש לבחור מהרשימה")
+    .nullable()
+    .optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
-function toFormValues(c?: Customer): CustomerFormValues {
+function toFormValues(c?: Customer | null): CustomerFormValues {
   return {
     name: c?.name ?? "",
     phone: c?.phone ?? "",
@@ -91,84 +107,192 @@ function toFormValues(c?: Customer): CustomerFormValues {
     invoice_name: c?.invoice_name ?? "",
     tax_id: c?.tax_id ?? "",
     invoice_email: c?.invoice_email ?? "",
-    customer_type: c?.customer_type ?? "",
-    industry: c?.industry ?? "",
+    customer_type: c?.customer_type ?? null,
+    industry: c?.industry ?? null,
+    account_manager_contact_status: c?.account_manager_contact_status ?? null,
+    account_manager_contact_date: c?.account_manager_contact_date ?? "",
     pain_points: c?.pain_points ?? "",
+    account_manager_id: c?.account_manager_id ?? null,
+    lead_id: c?.lead_id ?? null,
   };
 }
 
-// sanitize: turn empty strings to null before sending to API
-function sanitizeValues(vals: CustomerFormValues) {
+function sanitizeValues(vals: CustomerFormValues): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(vals).map(([k, v]) => [k, v === "" ? null : v]),
-  ) as CustomerFormValues;
+  );
 }
 
-// ---------- CustomerForm ----------
+// ── CustomerFormSupabase ──────────────────────────────────────────────────────
 
-interface CustomerFormProps {
-  defaultValues?: CustomerFormValues;
-  onSubmit: (values: CustomerFormValues) => void;
-  isLoading: boolean;
+interface CustomerFormSupabaseProps {
+  customer?: Customer | null;
+  readOnlyValues?: { ltv_amount?: string | null; pipeline_amount_ex_vat?: string | null };
+  onSuccess: () => void;
   onCancel: () => void;
 }
 
-function CustomerForm({ defaultValues, onSubmit, isLoading, onCancel }: CustomerFormProps) {
+function CustomerFormSupabase({
+  customer,
+  readOnlyValues,
+  onSuccess,
+  onCancel,
+}: CustomerFormSupabaseProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
-    defaultValues: defaultValues ?? toFormValues(),
+    defaultValues: toFormValues(customer),
   });
 
+  // Supabase mutation — create or update
+  const mutation = useMutation({
+    mutationFn: async (values: CustomerFormValues) => {
+      const payload = sanitizeValues(values);
+      if (customer) {
+        const { error } = await supabase
+          .from("customers")
+          .update(payload)
+          .eq("id", customer.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase
+          .from("customers")
+          .insert(payload);
+        if (error) throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
+      toast({ title: customer ? "הלקוח עודכן בהצלחה" : "הלקוח נוצר בהצלחה" });
+      onSuccess();
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message || "שגיאה בשמירת הלקוח", variant: "destructive" });
+    },
+  });
+
+  // Fetch functions for combos (stable references)
+  const fetchManagers = useCallback(async (term: string): Promise<ComboboxOption[]> => {
+    const { data } = await supabase
+      .from("app_users")
+      .select("id, full_name")
+      .eq("is_active", true)
+      .ilike("full_name", `*${term}*`)
+      .order("full_name")
+      .limit(50);
+    return (data ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.id }));
+  }, []);
+
+  const fetchManagerById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
+    const { data } = await supabase
+      .from("app_users")
+      .select("id, full_name")
+      .eq("id", id)
+      .single();
+    if (!data) return null;
+    return { id: data.id, label: data.full_name ?? data.id };
+  }, []);
+
+  const fetchLeads = useCallback(async (term: string): Promise<ComboboxOption[]> => {
+    const { data } = await supabase
+      .from("leads")
+      .select("id, name")
+      .is("deleted_at", null)
+      .ilike("name", `*${term}*`)
+      .order("name")
+      .limit(50);
+    return (data ?? []).map((l) => ({ id: l.id, label: l.name ?? l.id }));
+  }, []);
+
+  const fetchLeadById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
+    const { data } = await supabase
+      .from("leads")
+      .select("id, name")
+      .eq("id", id)
+      .single();
+    if (!data) return null;
+    return { id: data.id, label: data.name ?? data.id };
+  }, []);
+
+  const isLoading = mutation.isPending;
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" dir="rtl">
+    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" dir="rtl">
+
       {/* Name */}
       <div className="space-y-1">
         <Label htmlFor="name">
           שם הלקוח <span className="text-destructive">*</span>
         </Label>
-        <Input id="name" {...register("name")} />
-        {errors.name && (
-          <p className="text-sm text-destructive">{errors.name.message}</p>
-        )}
+        <Input id="name" {...register("name")} disabled={isLoading} />
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
 
+      {/* Phone + Email */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="phone">טלפון</Label>
-          <Input id="phone" {...register("phone")} />
+          <Input id="phone" {...register("phone")} disabled={isLoading} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="email">אימייל</Label>
-          <Input id="email" type="email" {...register("email")} />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
-          )}
+          <Input id="email" type="email" {...register("email")} disabled={isLoading} />
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
       </div>
 
+      {/* Customer Type + Industry (lookup selects) */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label htmlFor="customer_type">סוג לקוח</Label>
-          <Input id="customer_type" {...register("customer_type")} placeholder="למשל: עסקי, פרטי" />
+          <Label>סוג לקוח</Label>
+          <Controller
+            name="customer_type"
+            control={control}
+            render={({ field }) => (
+              <LookupSelect
+                table="lookup_customer_type"
+                value={field.value ?? null}
+                onChange={field.onChange}
+                placeholder="בחר סוג..."
+                disabled={isLoading}
+              />
+            )}
+          />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="industry">תחום עיסוק</Label>
-          <Input id="industry" {...register("industry")} />
+          <Label>תחום עיסוק</Label>
+          <Controller
+            name="industry"
+            control={control}
+            render={({ field }) => (
+              <LookupSelect
+                table="lookup_industry"
+                value={field.value ?? null}
+                onChange={field.onChange}
+                placeholder="בחר תחום..."
+                disabled={isLoading}
+              />
+            )}
+          />
         </div>
       </div>
 
+      {/* Joined + Birthday */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="joined_at">תאריך הצטרפות</Label>
-          <Input id="joined_at" type="date" {...register("joined_at")} />
+          <Input id="joined_at" type="date" {...register("joined_at")} disabled={isLoading} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="birthday">תאריך לידה</Label>
-          <Input id="birthday" type="date" {...register("birthday")} />
+          <Input id="birthday" type="date" {...register("birthday")} disabled={isLoading} />
         </div>
       </div>
 
@@ -178,19 +302,95 @@ function CustomerForm({ defaultValues, onSubmit, isLoading, onCancel }: Customer
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <Label htmlFor="invoice_name">שם לחשבונית</Label>
-          <Input id="invoice_name" {...register("invoice_name")} />
+          <Input id="invoice_name" {...register("invoice_name")} disabled={isLoading} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="tax_id">מספר עוסק / ח.פ.</Label>
-          <Input id="tax_id" {...register("tax_id")} />
+          <Input id="tax_id" {...register("tax_id")} disabled={isLoading} />
         </div>
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="invoice_email">אימייל לחשבוניות</Label>
-        <Input id="invoice_email" type="email" {...register("invoice_email")} />
+        <Input id="invoice_email" type="email" {...register("invoice_email")} disabled={isLoading} />
         {errors.invoice_email && (
           <p className="text-sm text-destructive">{errors.invoice_email.message}</p>
+        )}
+      </div>
+
+      <Separator />
+      <p className="text-sm font-medium text-muted-foreground">ניהול תיק</p>
+
+      {/* Account Manager (combobox) */}
+      <div className="space-y-1">
+        <Label>מנהל תיק לקוח</Label>
+        <Controller
+          name="account_manager_id"
+          control={control}
+          render={({ field }) => (
+            <ComboboxField
+              value={field.value ?? null}
+              onChange={field.onChange}
+              fetchOptions={fetchManagers}
+              fetchById={fetchManagerById}
+              placeholder="בחר מנהל תיק..."
+              disabled={isLoading}
+            />
+          )}
+        />
+        {errors.account_manager_id && (
+          <p className="text-sm text-destructive">{errors.account_manager_id.message}</p>
+        )}
+      </div>
+
+      {/* Contact Status + Contact Date */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label>סטטוס יצירת קשר</Label>
+          <Controller
+            name="account_manager_contact_status"
+            control={control}
+            render={({ field }) => (
+              <LookupSelect
+                table="lookup_contact_status"
+                value={field.value ?? null}
+                onChange={field.onChange}
+                placeholder="בחר סטטוס..."
+                disabled={isLoading}
+              />
+            )}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="account_manager_contact_date">תאריך יצירת קשר</Label>
+          <Input
+            id="account_manager_contact_date"
+            type="date"
+            {...register("account_manager_contact_date")}
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
+      {/* Lead (combobox) */}
+      <div className="space-y-1">
+        <Label>ליד מקושר</Label>
+        <Controller
+          name="lead_id"
+          control={control}
+          render={({ field }) => (
+            <ComboboxField
+              value={field.value ?? null}
+              onChange={field.onChange}
+              fetchOptions={fetchLeads}
+              fetchById={fetchLeadById}
+              placeholder="חיפוש ליד..."
+              disabled={isLoading}
+            />
+          )}
+        />
+        {errors.lead_id && (
+          <p className="text-sm text-destructive">{errors.lead_id.message}</p>
         )}
       </div>
 
@@ -199,10 +399,36 @@ function CustomerForm({ defaultValues, onSubmit, isLoading, onCancel }: Customer
 
       <div className="space-y-1">
         <Label htmlFor="pain_points">צרכים / נקודות כאב</Label>
-        <Textarea id="pain_points" {...register("pain_points")} rows={3} />
+        <Textarea id="pain_points" {...register("pain_points")} rows={3} disabled={isLoading} />
       </div>
 
-      <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
+      {/* Read-only financial fields (shown in edit mode only) */}
+      {customer && (readOnlyValues?.ltv_amount !== undefined || readOnlyValues?.pipeline_amount_ex_vat !== undefined) && (
+        <>
+          <Separator />
+          <p className="text-sm font-medium text-muted-foreground">נתונים פיננסיים (קריאה בלבד)</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>מחזור עסקאות (LTV)</Label>
+              <Input
+                value={formatCurrency(readOnlyValues?.ltv_amount)}
+                disabled
+                className="text-muted-foreground"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>צבר עסקאות (לפני מע״מ)</Label>
+              <Input
+                value={formatCurrency(readOnlyValues?.pipeline_amount_ex_vat)}
+                disabled
+                className="text-muted-foreground"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse pt-2">
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "שומר..." : "שמירה"}
         </Button>
@@ -214,7 +440,7 @@ function CustomerForm({ defaultValues, onSubmit, isLoading, onCancel }: Customer
   );
 }
 
-// ---------- CustomerDetails ----------
+// ── CustomerDetails ───────────────────────────────────────────────────────────
 
 interface CustomerDetailsProps {
   customer: Customer;
@@ -248,7 +474,12 @@ function CustomerDetails({ customer }: CustomerDetailsProps) {
     { label: "Monday - לוח", value: empty(customer.monday_board_id) },
     { label: "Monday - פריט", value: empty(customer.monday_item_id) },
     { label: "Monday - קבוצה", value: empty(customer.monday_group_id) },
-    { label: "Monday - נתונים גולמיים", value: mondayRaw ? mondayRaw.slice(0, 120) + (mondayRaw.length > 120 ? "…" : "") : "—" },
+    {
+      label: "Monday - נתונים גולמיים",
+      value: mondayRaw
+        ? mondayRaw.slice(0, 120) + (mondayRaw.length > 120 ? "…" : "")
+        : "—",
+    },
     { label: "נוצר ב", value: formatDate(customer.created_at) },
     { label: "עודכן ב", value: formatDate(customer.updated_at) },
     { label: "נמחק ב", value: formatDate(customer.deleted_at) },
@@ -266,10 +497,9 @@ function CustomerDetails({ customer }: CustomerDetailsProps) {
   );
 }
 
-// ---------- Main Page ----------
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Customers() {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -279,54 +509,18 @@ export default function Customers() {
 
   const { data: customers, isLoading, isError } = useListCustomers();
 
-  const filteredCustomers = customers?.filter((c) => {
-    if (!search.trim()) return true;
-    const q = search.trim().toLowerCase();
-    return (
-      c.name.toLowerCase().includes(q) ||
-      (c.customer_number ?? "").toLowerCase().includes(q) ||
-      (c.phone ?? "").toLowerCase().includes(q) ||
-      (c.email ?? "").toLowerCase().includes(q) ||
-      (c.customer_type ?? "").toLowerCase().includes(q)
-    );
-  }) ?? [];
-
-  const createMutation = useCreateCustomer({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
-        setCreateOpen(false);
-        toast({ title: "הלקוח נוצר בהצלחה" });
-      },
-      onError: (err: Error & { data?: { error?: string } }) => {
-        const msg = err?.data?.error ?? "שגיאה ביצירת הלקוח";
-        toast({ title: msg, variant: "destructive" });
-      },
-    },
-  });
-
-  const updateMutation = useUpdateCustomer({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
-        setEditCustomer(null);
-        toast({ title: "הלקוח עודכן בהצלחה" });
-      },
-      onError: (err: Error & { data?: { error?: string } }) => {
-        const msg = err?.data?.error ?? "שגיאה בעדכון הלקוח";
-        toast({ title: msg, variant: "destructive" });
-      },
-    },
-  });
-
-  function handleCreate(values: CustomerFormValues) {
-    createMutation.mutate({ data: sanitizeValues(values) });
-  }
-
-  function handleEdit(values: CustomerFormValues) {
-    if (!editCustomer) return;
-    updateMutation.mutate({ id: editCustomer.id, data: sanitizeValues(values) });
-  }
+  const filteredCustomers =
+    customers?.filter((c) => {
+      if (!search.trim()) return true;
+      const q = search.trim().toLowerCase();
+      return (
+        c.name.toLowerCase().includes(q) ||
+        (c.customer_number ?? "").toLowerCase().includes(q) ||
+        (c.phone ?? "").toLowerCase().includes(q) ||
+        (c.email ?? "").toLowerCase().includes(q) ||
+        (c.customer_type ?? "").toLowerCase().includes(q)
+      );
+    }) ?? [];
 
   return (
     <Shell title="לקוחות">
@@ -378,20 +572,28 @@ export default function Customers() {
           {isError && !isLoading && (
             <div className="flex items-center justify-center h-full">
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
-                <p className="text-sm text-destructive font-medium">שגיאה בטעינת הלקוחות. אנא נסו שנית.</p>
+                <p className="text-sm text-destructive font-medium">
+                  שגיאה בטעינת הלקוחות. אנא נסו שנית.
+                </p>
               </div>
             </div>
           )}
 
           {!isLoading && !isError && customers?.length === 0 && (
             <div className="flex items-center justify-center h-full">
-              <EmptyState title="אין לקוחות להצגה" description="לחצו על 'לקוח חדש' להוספת הלקוח הראשון." />
+              <EmptyState
+                title="אין לקוחות להצגה"
+                description="לחצו על 'לקוח חדש' להוספת הלקוח הראשון."
+              />
             </div>
           )}
 
           {!isLoading && !isError && customers && customers.length > 0 && filteredCustomers.length === 0 && (
             <div className="flex items-center justify-center h-full">
-              <EmptyState title="לא נמצאו תוצאות" description={`לא נמצאו לקוחות התואמים את "${search}"`} />
+              <EmptyState
+                title="לא נמצאו תוצאות"
+                description={`לא נמצאו לקוחות התואמים את "${search}"`}
+              />
             </div>
           )}
 
@@ -457,10 +659,20 @@ export default function Customers() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1 justify-end">
-                          <Button size="sm" variant="ghost" onClick={() => setDetailsCustomer(customer)} title="פרטים">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDetailsCustomer(customer)}
+                            title="פרטים"
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditCustomer(customer)} title="עריכה">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditCustomer(customer)}
+                            title="עריכה"
+                          >
                             <Pencil className="w-4 h-4" />
                           </Button>
                         </div>
@@ -480,9 +692,8 @@ export default function Customers() {
           <DialogHeader>
             <DialogTitle>לקוח חדש</DialogTitle>
           </DialogHeader>
-          <CustomerForm
-            onSubmit={handleCreate}
-            isLoading={createMutation.isPending}
+          <CustomerFormSupabase
+            onSuccess={() => setCreateOpen(false)}
             onCancel={() => setCreateOpen(false)}
           />
         </DialogContent>
@@ -495,11 +706,14 @@ export default function Customers() {
             <DialogTitle>עריכת לקוח — {editCustomer?.name}</DialogTitle>
           </DialogHeader>
           {editCustomer && (
-            <CustomerForm
+            <CustomerFormSupabase
               key={editCustomer.id}
-              defaultValues={toFormValues(editCustomer)}
-              onSubmit={handleEdit}
-              isLoading={updateMutation.isPending}
+              customer={editCustomer}
+              readOnlyValues={{
+                ltv_amount: editCustomer.ltv_amount,
+                pipeline_amount_ex_vat: editCustomer.pipeline_amount_ex_vat,
+              }}
+              onSuccess={() => setEditCustomer(null)}
               onCancel={() => setEditCustomer(null)}
             />
           )}
@@ -507,7 +721,10 @@ export default function Customers() {
       </Dialog>
 
       {/* Details dialog */}
-      <Dialog open={!!detailsCustomer} onOpenChange={(open) => !open && setDetailsCustomer(null)}>
+      <Dialog
+        open={!!detailsCustomer}
+        onOpenChange={(open) => !open && setDetailsCustomer(null)}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -520,8 +737,9 @@ export default function Customers() {
             <Button
               variant="outline"
               onClick={() => {
+                const c = detailsCustomer;
                 setDetailsCustomer(null);
-                setEditCustomer(detailsCustomer);
+                setEditCustomer(c);
               }}
             >
               <Pencil className="w-3.5 h-3.5 ml-1" />
