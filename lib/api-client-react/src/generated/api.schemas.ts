@@ -85,6 +85,8 @@ export interface Lead {
   monday_board_id?: string | null;
   monday_item_id?: string | null;
   monday_group_id?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   deleted_at?: string | null;

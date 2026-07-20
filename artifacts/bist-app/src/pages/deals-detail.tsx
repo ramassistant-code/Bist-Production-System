@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
-import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw } from "lucide-react";
+import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw, Settings2 } from "lucide-react";
+import DealFormDialog, { type DealEditable } from "@/components/deals/deal-form-dialog";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,13 +114,21 @@ interface DealDetail {
   quote_id: string | null;
   customer_id: string | null;
   lead_id: string | null;
+  salesperson_id: string | null;
   payment_status: string | null;
   execution_status: string;
   purchase_date: string | null;
   next_payment_date: string | null;
   total_amount: string | null;
+  total_amount_including_vat: string | null;
   paid_amount: string | null;
+  amount_paid_including_vat: string | null;
   remaining_amount: string | null;
+  payment_type: string | null;
+  installments_count: number | null;
+  invoice_name: string | null;
+  invoice_id_number: string | null;
+  invoice_email: string | null;
   quote_link: string | null;
   what_is_included: string | null;
   special_notes: string | null;
@@ -561,7 +570,7 @@ export default function DealsDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
-
+  const [fullEditOpen, setFullEditOpen] = useState(false);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
 
   const { data: deal, isLoading, isError } = useQuery<DealDetail>({
@@ -694,7 +703,15 @@ export default function DealsDetail() {
                 onClick={() => setEditOpen(true)}
               >
                 <Pencil className="w-3.5 h-3.5 ml-1" />
-                עריכה
+                עריכה מהירה
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setFullEditOpen(true)}
+              >
+                <Settings2 className="w-3.5 h-3.5 ml-1" />
+                עריכה מלאה
               </Button>
             </div>
           </div>
@@ -1146,6 +1163,16 @@ export default function DealsDetail() {
           onSaved={() => queryClient.invalidateQueries({ queryKey: ["deal", id] })}
         />
       )}
+
+      <DealFormDialog
+        open={fullEditOpen}
+        onClose={() => setFullEditOpen(false)}
+        deal={deal as DealEditable}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["deal", id] });
+          setFullEditOpen(false);
+        }}
+      />
 
       {addPaymentOpen && (
         <AddPaymentModal

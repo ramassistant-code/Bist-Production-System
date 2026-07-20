@@ -261,6 +261,52 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// ── POST /deals/standalone — simple create (no quote snapshot) ───────────────
+
+router.post("/deals/standalone", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const b = req.body as Record<string, unknown>;
+    const deal_number = await generateDealNumber();
+
+    const toStr  = (v: unknown) => (v === "" || v == null ? null : String(v));
+    const toNum  = (v: unknown) => (v === "" || v == null ? null : Number(v));
+    const toUuid = (v: unknown) => {
+      const s = toStr(v);
+      return s && /^[0-9a-f-]{36}$/i.test(s) ? s : null;
+    };
+
+    const rows = await db
+      .insert(dealsTable)
+      .values({
+        deal_number,
+        customer_id:        toUuid(b["customer_id"]),
+        lead_id:            toUuid(b["lead_id"]),
+        salesperson_id:     toUuid(b["salesperson_id"]),
+        salesperson_user_id: toUuid(b["salesperson_id"]),
+        quote_id:           toUuid(b["quote_id"]),
+        execution_status:   toStr(b["execution_status"]) ?? "פתוחה",
+        payment_status:     toStr(b["payment_status"]),
+        payment_type:       toStr(b["payment_type"]),
+        installments_count: toNum(b["installments_count"]),
+        purchase_date:      toStr(b["purchase_date"]),
+        next_payment_date:  toStr(b["next_payment_date"]),
+        invoice_name:       toStr(b["invoice_name"]),
+        invoice_id_number:  toStr(b["invoice_id_number"]),
+        invoice_email:      toStr(b["invoice_email"]),
+        what_is_included:   toStr(b["what_is_included"]),
+        special_notes:      toStr(b["special_notes"]),
+      })
+      .returning();
+
+    const created = rows[0] ?? null;
+    if (created) notifySync("deal", created.id);
+    res.status(201).json(created);
+  } catch (err) {
+    logger.error({ err }, "POST /deals/standalone error");
+    res.status(500).json({ error: "שגיאה ביצירת העסקה" });
+  }
+});
+
 // ── POST /deals ───────────────────────────────────────────────────────────────
 
 interface OpenDealBody {

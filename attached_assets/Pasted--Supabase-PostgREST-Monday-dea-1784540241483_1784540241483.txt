@@ -1,0 +1,29 @@
+בנה טופס עריכה/יצירה של "עסקה" שעובד רק מול Supabase (PostgREST). אין שום קריאה ל-Monday.
+טבלה: deals (מפתח id = uuid). כל שאילתה מסננת deleted_at=is.null.
+
+שדות קומבו (FK — קומבו נשלף עם חיפוש, נטען מהטבלה המקושרת, שומר uuid):
+- לקוח → customer_id → customers (תצוגה: name, סינון deleted_at=is.null)
+- ליד → lead_id → leads (תצוגה: name, סינון deleted_at=is.null)
+- איש מכירות → salesperson_id → app_users (תצוגה: full_name, סינון is_active=eq.true)
+- הצעת מחיר (אופציונלי) → quote_id → quotes (תצוגה: quote_number, סינון deleted_at=is.null)
+
+שדות <select> — enums אמיתיים ב-DB:
+- סטטוס תשלום → payment_status → ממתינה לתשלום / תשלום חלקי / שולמה במלואה / בוטלה
+- סטטוס ביצוע → execution_status → פתוחה / ממתינה לתיאום / בטיפול / הושלמה / בוטלה
+שדה <select> נוסף (הצג תווית, שמור קוד):
+- אמצעי תשלום → payment_type → credit_card=אשראי, cash=מזומן, bank_transfer=העברה בנקאית
+
+לקריאה בלבד (disabled): total_amount, paid_amount, remaining_amount, studio_hours_remaining,
+editing_tasks_remaining, total_amount_including_vat, amount_paid_including_vat
+להסתיר: *_snapshot, snapshot_locked_at, source_quote_version_id, monday_*, deleted_at
+תשלומים/קרדיטים אינם קומבו — הם רשומות-בן (payments.deal_id, credits.deal_id). הצג כרשימה/טאב.
+
+מפרט קומבו: async searchable, debounce 300ms, טעינת 50, גלילה עם offset/Range, שומר id,
+מצבי טעינה/ריק/"אין תוצאות", RTL + מקלדת, כפתור ניקוי (→ null).
+טעינה: GET /rest/v1/customers?select=id,name&deleted_at=is.null&name=ilike.*{term}*&order=name.asc&limit=50
+       GET /rest/v1/leads?select=id,name&deleted_at=is.null&name=ilike.*{term}*&order=name.asc&limit=50
+       GET /rest/v1/app_users?select=id,full_name&is_active=eq.true&full_name=ilike.*{term}*&order=full_name.asc&limit=50
+       GET /rest/v1/quotes?select=id,quote_number&deleted_at=is.null&quote_number=ilike.*{term}*&order=quote_number.desc&limit=50
+שמירה: PATCH /rest/v1/deals?id=eq.{id}
+ולידציה: FK רק uuid מהרשימה או null (ה-DB אוכף FK); enum רק ערך מהרשימה; payment_type רק אחד משלושת הקודים.
+גישה דרך ה-Supabase client (anon + RLS) — לא לחשוף secret בדפדפן.
