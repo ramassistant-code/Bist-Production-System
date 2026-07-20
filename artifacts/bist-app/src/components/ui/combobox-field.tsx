@@ -42,57 +42,48 @@ export function ComboboxField({
   const [loading, setLoading] = React.useState(false)
   const [selectedLabel, setSelectedLabel] = React.useState<string | null>(null)
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prevValueRef = React.useRef<string | null>(null)
+  const fetchOptionsRef = React.useRef(fetchOptions)
+  fetchOptionsRef.current = fetchOptions
 
-  // Resolve label for existing value when it changes
+  // Resolve label for existing value on mount / value change
   React.useEffect(() => {
-    if (value === prevValueRef.current) return
-    prevValueRef.current = value
-
-    if (!value) {
-      setSelectedLabel(null)
-      return
-    }
-    const cached = options.find((o) => o.id === value)
-    if (cached) {
-      setSelectedLabel(cached.label)
-      return
-    }
+    if (!value) { setSelectedLabel(null); return }
     if (fetchById) {
       fetchById(value)
         .then((opt) => { if (opt) setSelectedLabel(opt.label) })
         .catch(() => {})
     }
-  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, fetchById])
 
-  // Fetch options when popover opens or search term changes
-  React.useEffect(() => {
-    if (!open) return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+  // Core fetch — always uses the latest fetchOptions via ref
+  const doFetch = React.useCallback(async (term: string) => {
+    setLoading(true)
+    try {
+      const results = await fetchOptionsRef.current(term)
+      setOptions(results)
+    } catch (err) {
+      console.error("[ComboboxField] fetchOptions error:", err)
+      setOptions([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    const delay = inputValue === "" ? 0 : 300
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true)
-      try {
-        const results = await fetchOptions(inputValue)
-        setOptions(results)
-        if (value) {
-          const found = results.find((o) => o.id === value)
-          if (found) setSelectedLabel(found.label)
-        }
-      } catch {
-        setOptions([])
-      } finally {
-        setLoading(false)
-      }
-    }, delay)
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [open, inputValue]) // eslint-disable-line react-hooks/exhaustive-deps
-
+  // On open: fetch immediately
   function handleOpenChange(next: boolean) {
     setOpen(next)
-    if (!next) setInputValue("") // reset search on close
+    if (!next) {
+      setInputValue("")
+      return
+    }
+    doFetch("")
+  }
+
+  // On search term change: debounce 300ms
+  function handleInputChange(term: string) {
+    setInputValue(term)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => doFetch(term), 300)
   }
 
   function handleSelect(option: ComboboxOption) {
@@ -153,7 +144,7 @@ export function ComboboxField({
           <CommandInput
             placeholder="חיפוש..."
             value={inputValue}
-            onValueChange={setInputValue}
+            onValueChange={handleInputChange}
             className="text-right"
           />
           <CommandList>

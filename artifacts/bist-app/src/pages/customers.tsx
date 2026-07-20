@@ -36,12 +36,15 @@ import type { Customer } from "@workspace/api-client-react";
 const _BASE = (import.meta.env.BASE_URL as string)?.replace(/\/+$/, "") ?? "";
 
 async function apiFetch<T>(path: string): Promise<T> {
+  const base = (import.meta.env.BASE_URL as string)?.replace(/\/+$/, "") ?? "";
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  const res = await fetch(`${_BASE}${path}`, {
+  const url = `${base}${path}`;
+  console.log("[apiFetch] url:", url, "| token:", token ? "✓" : "✗");
+  const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) throw new Error(`API ${res.status}: ${url}`);
   return res.json() as Promise<T>;
 }
 
