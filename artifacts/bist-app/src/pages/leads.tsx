@@ -712,6 +712,15 @@ export default function Leads() {
                           <Button size="sm" variant="ghost" onClick={() => setEditLead(lead)} title="עריכה">
                             <Pencil className="w-4 h-4" />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeleteLead(lead)}
+                            title="מחיקה"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>

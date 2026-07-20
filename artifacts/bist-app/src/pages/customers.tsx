@@ -678,6 +678,15 @@ export default function Customers() {
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeleteCustomer(customer)}
+                            title="מחיקה"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
