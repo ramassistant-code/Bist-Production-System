@@ -12,6 +12,7 @@ import dealsRouter from "./deals";
 import pdfTemplatesRouter from "./pdf-templates";
 import quoteVersionsRouter from "./quote-versions";
 import mondayRouter from "./monday";
+import lookupsRouter from "./lookups";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(dealsRouter);
 router.use(pdfTemplatesRouter);
 router.use(quoteVersionsRouter);
 router.use(mondayRouter);
+router.use(lookupsRouter);
 
 export default router;

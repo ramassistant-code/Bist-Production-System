@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { supabase } from "@/lib/supabase"
+import { apiFetch } from "@/lib/api-fetch"
 import {
   Select,
   SelectContent,
@@ -32,15 +32,7 @@ export function LookupSelect({
 }: LookupSelectProps) {
   const { data: options = [], isLoading } = useQuery<LookupOption[]>({
     queryKey: ["lookup", table],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(table)
-        .select("value, label")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-      if (error) throw error
-      return (data ?? []) as LookupOption[]
-    },
+    queryFn: () => apiFetch<LookupOption[]>(`/api/lookups/${table}`),
     staleTime: 5 * 60 * 1000,
   })
 

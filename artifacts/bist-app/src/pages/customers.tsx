@@ -25,28 +25,12 @@ import { ComboboxField, type ComboboxOption } from "@/components/ui/combobox-fie
 import { LookupSelect } from "@/components/ui/lookup-select";
 
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-fetch";
 import {
   useListCustomers,
   getListCustomersQueryKey,
 } from "@workspace/api-client-react";
 import type { Customer } from "@workspace/api-client-react";
-
-// ── API helper (Bearer token, BASE_URL-aware) ─────────────────────────────────
-
-const _BASE = (import.meta.env.BASE_URL as string)?.replace(/\/+$/, "") ?? "";
-
-async function apiFetch<T>(path: string): Promise<T> {
-  const base = (import.meta.env.BASE_URL as string)?.replace(/\/+$/, "") ?? "";
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  const url = `${base}${path}`;
-  console.log("[apiFetch] url:", url, "| token:", token ? "✓" : "✗");
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${url}`);
-  return res.json() as Promise<T>;
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
