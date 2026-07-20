@@ -172,21 +172,14 @@ function LeadFormSupabase({ lead, onSuccess, onCancel }: LeadFormSupabaseProps) 
     defaultValues: toFormValues(lead),
   });
 
-  // ── Supabase mutation ────────────────────────────────────────────────────────
+  // ── Mutation via Express API (bypasses RLS) ──────────────────────────────────
   const mutation = useMutation({
     mutationFn: async (values: LeadFormValues) => {
       const payload = sanitizeValues(values);
       if (lead) {
-        const { error } = await supabase
-          .from("leads")
-          .update(payload)
-          .eq("id", lead.id);
-        if (error) throw new Error(error.message);
+        await apiFetch(`/api/leads/${lead.id}`, { method: "PATCH", body: payload });
       } else {
-        const { error } = await supabase
-          .from("leads")
-          .insert(payload);
-        if (error) throw new Error(error.message);
+        await apiFetch("/api/leads", { method: "POST", body: payload });
       }
     },
     onSuccess: () => {

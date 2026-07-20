@@ -58,6 +58,13 @@ const USER_EDITABLE_FIELDS = {
   first_deal_amount: true,
   task_text: true,
   task_due_at: true,
+  // FK + extra fields editable from the UI
+  salesperson_id: true,
+  linked_customer_id: true,
+  referral_name: true,
+  ad_name: true,
+  lead_created_at: true,
+  closed_at: true,
 } as const;
 
 export const insertLeadSchema = createInsertSchema(leadsTable)
