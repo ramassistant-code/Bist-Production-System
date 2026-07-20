@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { customersTable, insertCustomerSchema, updateCustomerSchema } from "@workspace/db/schema";
 import type { Customer } from "@workspace/db/schema";
-import { isNull, asc, sql } from "drizzle-orm";
+import { isNull, asc, sql, and, or, ilike } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { notifySync } from "../lib/notifySync";
 
@@ -21,13 +21,24 @@ async function generateCustomerNumber(): Promise<string> {
 
 const router: IRouter = Router();
 
-// GET /customers — list all active customers
-router.get("/customers", async (_req: Request, res: Response): Promise<void> => {
+// GET /customers — list active customers with optional search
+router.get("/customers", async (req: Request, res: Response): Promise<void> => {
   try {
+    const search = typeof req.query["search"] === "string" ? req.query["search"].trim() : "";
+    const conditions = [isNull(customersTable.deleted_at)];
+    if (search) {
+      conditions.push(
+        or(
+          ilike(customersTable.name, `%${search}%`),
+          ilike(customersTable.customer_number, `%${search}%`),
+          ilike(customersTable.phone, `%${search}%`),
+        )!
+      );
+    }
     const customers = await db
       .select()
       .from(customersTable)
-      .where(isNull(customersTable.deleted_at))
+      .where(and(...conditions))
       .orderBy(asc(customersTable.name));
     res.json(customers);
   } catch (err) {
