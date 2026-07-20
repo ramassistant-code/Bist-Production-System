@@ -184,7 +184,7 @@ function CustomerFormSupabase({
       .from("app_users")
       .select("id, full_name")
       .eq("is_active", true)
-      .ilike("full_name", `*${term}*`)
+      .ilike("full_name", `%${term}%`)
       .order("full_name")
       .limit(50);
     return (data ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.id }));
@@ -205,7 +205,7 @@ function CustomerFormSupabase({
       .from("leads")
       .select("id, name")
       .is("deleted_at", null)
-      .ilike("name", `*${term}*`)
+      .ilike("name", `%${term}%`)
       .order("name")
       .limit(50);
     return (data ?? []).map((l) => ({ id: l.id, label: l.name ?? l.id }));

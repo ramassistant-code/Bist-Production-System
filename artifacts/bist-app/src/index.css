@@ -281,6 +281,23 @@
     @apply hidden;
   }
 
+  /* Date/time inputs: inherit color-scheme so browser renders them correctly in dark mode */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"],
+  input[type="week"] {
+    color-scheme: light dark;
+  }
+
+  .dark input[type="date"],
+  .dark input[type="datetime-local"],
+  .dark input[type="time"],
+  .dark input[type="month"],
+  .dark input[type="week"] {
+    color-scheme: dark;
+  }
+
   /* Placeholder styling for contentEditable div */
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
