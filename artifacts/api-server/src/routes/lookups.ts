@@ -6,6 +6,11 @@ const ALLOWED_TABLES = new Set([
   "lookup_customer_type",
   "lookup_industry",
   "lookup_contact_status",
+  "lookup_lead_status",
+  "lookup_answer_status",
+  "lookup_capture_attempt",
+  "lookup_lead_source",
+  "lookup_rejection_reason",
 ]);
 
 const router: IRouter = Router();

@@ -2,3 +2,4 @@
 - [party_snapshot customer resolution](party-snapshot-customer-resolve.md) — party_snapshot uses source_id (not customer_id) when party_type==="customer"; fallback to quote.customer_id
 - [refresh_deal_payment_totals migration](refresh-deal-payment-totals.md) — migrated to update amount_paid_including_vat + use COALESCE(total_amount_including_vat, total_amount)
 - [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
+- [bist-app mutation pattern](bist-app-mutation-pattern.md) — RLS blocks anon Supabase for app_users/lookup tables; use apiFetch+Express for mutations that need number generation; use Supabase directly when RLS allows
