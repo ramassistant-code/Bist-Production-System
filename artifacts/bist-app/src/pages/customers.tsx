@@ -152,21 +152,14 @@ function CustomerFormSupabase({
     defaultValues: toFormValues(customer),
   });
 
-  // Supabase mutation — create or update
+  // Mutation — create or update via Express API (bypasses RLS, generates customer_number)
   const mutation = useMutation({
     mutationFn: async (values: CustomerFormValues) => {
       const payload = sanitizeValues(values);
       if (customer) {
-        const { error } = await supabase
-          .from("customers")
-          .update(payload)
-          .eq("id", customer.id);
-        if (error) throw new Error(error.message);
+        await apiFetch(`/api/customers/${customer.id}`, { method: "PATCH", body: payload });
       } else {
-        const { error } = await supabase
-          .from("customers")
-          .insert(payload);
-        if (error) throw new Error(error.message);
+        await apiFetch("/api/customers", { method: "POST", body: payload });
       }
     },
     onSuccess: () => {

@@ -2,9 +2,22 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { customersTable, insertCustomerSchema, updateCustomerSchema } from "@workspace/db/schema";
 import type { Customer } from "@workspace/db/schema";
-import { isNull, asc, eq, sql } from "drizzle-orm";
+import { isNull, asc, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { notifySync } from "../lib/notifySync";
+
+async function generateCustomerNumber(): Promise<string> {
+  const result = await db.execute(sql`
+    SELECT COALESCE(MAX(
+      CAST(REGEXP_REPLACE(customer_number, '[^0-9]', '', 'g') AS BIGINT)
+    ), 0) + 1 AS n
+    FROM customers
+    WHERE deleted_at IS NULL
+      AND customer_number ~ '^C-[0-9]+'
+  `);
+  const n = (result.rows[0] as Record<string, unknown>)?.["n"] ?? 1;
+  return `C-${String(n).padStart(6, "0")}`;
+}
 
 const router: IRouter = Router();
 
@@ -38,7 +51,18 @@ function hebrewValidationError(issues: Array<{ path: Array<string | number>; mes
 }
 
 router.post("/customers", async (req: Request, res: Response): Promise<void> => {
-  const parsed = insertCustomerSchema.safeParse(req.body);
+  // Inject a generated customer_number if not provided
+  const body = { ...req.body } as Record<string, unknown>;
+  if (!body["customer_number"]) {
+    try {
+      body["customer_number"] = await generateCustomerNumber();
+    } catch (err) {
+      logger.error({ err }, "Failed to generate customer number");
+      res.status(500).json({ error: "שגיאה ביצירת מספר לקוח" });
+      return;
+    }
+  }
+  const parsed = insertCustomerSchema.safeParse(body);
   if (!parsed.success) {
     res.status(400).json({ error: hebrewValidationError(parsed.error.issues as Array<{ path: Array<string | number>; message: string }>) });
     return;
