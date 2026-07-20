@@ -198,7 +198,6 @@ router.get("/deals/:id", async (req: Request, res: Response): Promise<void> => {
         quote_id: dealsTable.quote_id,
         customer_id: dealsTable.customer_id,
         lead_id: dealsTable.lead_id,
-        salesperson_user_id: dealsTable.salesperson_user_id,
         payment_status: dealsTable.payment_status,
         execution_status: dealsTable.execution_status,
         purchase_date: dealsTable.purchase_date,

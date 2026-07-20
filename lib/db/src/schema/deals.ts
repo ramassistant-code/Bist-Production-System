@@ -7,7 +7,6 @@ export const dealsTable = pgTable("deals", {
   customer_id: uuid("customer_id"),
   lead_id: uuid("lead_id"),
   salesperson_id: uuid("salesperson_id"),
-  salesperson_user_id: uuid("salesperson_user_id"),
   payment_status: text("payment_status"),
   execution_status: text("execution_status").notNull().default("פתוחה"),
   purchase_date: text("purchase_date"),
