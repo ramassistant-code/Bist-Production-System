@@ -31,6 +31,20 @@ import {
 } from "@workspace/api-client-react";
 import type { Customer } from "@workspace/api-client-react";
 
+// ── API helper (Bearer token, BASE_URL-aware) ─────────────────────────────────
+
+const _BASE = (import.meta.env.BASE_URL as string)?.replace(/\/+$/, "") ?? "";
+
+async function apiFetch<T>(path: string): Promise<T> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const res = await fetch(`${_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(val: string | null | undefined): string {
@@ -178,47 +192,30 @@ function CustomerFormSupabase({
     },
   });
 
-  // Fetch functions for combos (stable references)
+  // Fetch functions for combos — use Express API (bypasses RLS, Bearer token via apiFetch)
   const fetchManagers = useCallback(async (term: string): Promise<ComboboxOption[]> => {
-    const { data } = await supabase
-      .from("app_users")
-      .select("id, full_name")
-      .eq("is_active", true)
-      .ilike("full_name", `%${term}%`)
-      .order("full_name")
-      .limit(50);
-    return (data ?? []).map((u) => ({ id: u.id, label: u.full_name ?? u.id }));
+    const users = await apiFetch<Array<{ id: string; full_name: string | null; is_active: boolean }>>("/api/users");
+    return users
+      .filter((u) => u.is_active && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
+      .map((u) => ({ id: u.id, label: u.full_name ?? u.id }))
+      .slice(0, 50);
   }, []);
 
   const fetchManagerById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
-    const { data } = await supabase
-      .from("app_users")
-      .select("id, full_name")
-      .eq("id", id)
-      .single();
-    if (!data) return null;
-    return { id: data.id, label: data.full_name ?? data.id };
+    const users = await apiFetch<Array<{ id: string; full_name: string | null }>>("/api/users");
+    const u = users.find((u) => u.id === id);
+    return u ? { id: u.id, label: u.full_name ?? u.id } : null;
   }, []);
 
   const fetchLeads = useCallback(async (term: string): Promise<ComboboxOption[]> => {
-    const { data } = await supabase
-      .from("leads")
-      .select("id, name")
-      .is("deleted_at", null)
-      .ilike("name", `%${term}%`)
-      .order("name")
-      .limit(50);
-    return (data ?? []).map((l) => ({ id: l.id, label: l.name ?? l.id }));
+    const qs = new URLSearchParams({ limit: "50", ...(term ? { search: term } : {}) });
+    const leads = await apiFetch<Array<{ id: string; name: string }>>(`/api/leads?${qs}`);
+    return leads.map((l) => ({ id: l.id, label: l.name }));
   }, []);
 
   const fetchLeadById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
-    const { data } = await supabase
-      .from("leads")
-      .select("id, name")
-      .eq("id", id)
-      .single();
-    if (!data) return null;
-    return { id: data.id, label: data.name ?? data.id };
+    const lead = await apiFetch<{ id: string; name: string }>(`/api/leads/${id}`);
+    return { id: lead.id, label: lead.name };
   }, []);
 
   const isLoading = mutation.isPending;
