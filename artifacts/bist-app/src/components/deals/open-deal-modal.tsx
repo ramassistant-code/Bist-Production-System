@@ -587,10 +587,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border bg-muted/50 rounded-b-xl">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
             ביטול
           </Button>
           <Button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting}
             className="bg-green-600 hover:bg-green-700 text-white px-6"
