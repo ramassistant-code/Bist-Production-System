@@ -3,7 +3,7 @@ import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Eye, Phone, Mail, Building2, User, Search, X } from "lucide-react";
+import { Plus, Pencil, Eye, Phone, Mail, Building2, User, Search, X, Trash2 } from "lucide-react";
 
 import { Shell } from "@/components/layout/shell";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -15,6 +15,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -482,7 +492,23 @@ export default function Customers() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
   const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
+  const [deleteCustomer, setDeleteCustomer] = useState<Customer | null>(null);
   const [search, setSearch] = useState("");
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/customers/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast({ title: "הלקוח נמחק בהצלחה" });
+      setDeleteCustomer(null);
+      setDetailsCustomer(null);
+      void queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message || "שגיאה במחיקת הלקוח", variant: "destructive" });
+    },
+  });
 
   const { data: customers, isLoading, isError } = useListCustomers();
 
@@ -710,7 +736,7 @@ export default function Customers() {
             </DialogTitle>
           </DialogHeader>
           {detailsCustomer && <CustomerDetails customer={detailsCustomer} />}
-          <DialogFooter>
+          <DialogFooter className="flex-row-reverse justify-between sm:justify-between">
             <Button
               variant="outline"
               onClick={() => {
@@ -722,9 +748,41 @@ export default function Customers() {
               <Pencil className="w-3.5 h-3.5 ml-1" />
               עריכה
             </Button>
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteCustomer(detailsCustomer)}
+            >
+              <Trash2 className="w-3.5 h-3.5 ml-1" />
+              מחיקה
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteCustomer} onOpenChange={(open) => !open && setDeleteCustomer(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת לקוח</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את הלקוח <strong>{deleteCustomer?.name}</strong>?
+              <br />
+              פעולה זו בלתי הפיכה. לא ניתן למחוק לקוח המקושר לעסקאות, הצעות מחיר, תשלומים או קרדיטים.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteCustomer && deleteMutation.mutate(deleteCustomer.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "מוחק..." : "מחק לקוח"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Shell>
   );
 }

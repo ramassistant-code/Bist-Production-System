@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { customersTable, insertCustomerSchema, updateCustomerSchema } from "@workspace/db/schema";
+import { customersTable, dealsTable, quotesTable, paymentsTable, creditsTable, insertCustomerSchema, updateCustomerSchema } from "@workspace/db/schema";
 import type { Customer } from "@workspace/db/schema";
-import { isNull, asc, sql, and, or, ilike } from "drizzle-orm";
+import { isNull, asc, sql, and, or, ilike, eq, isNotNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { notifySync } from "../lib/notifySync";
 
@@ -139,6 +139,62 @@ router.patch("/customers/:id", async (req: Request, res: Response): Promise<void
   } catch (err) {
     logger.error({ err }, "Failed to update customer");
     res.status(500).json({ error: "שגיאה בעדכון הלקוח" });
+  }
+});
+
+// DELETE /customers/:id — soft-delete with referential integrity check
+router.delete("/customers/:id", async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  try {
+    // 1. Verify customer exists
+    const existing = await db
+      .select({ id: customersTable.id, name: customersTable.name })
+      .from(customersTable)
+      .where(sql`${customersTable.id} = ${id} AND ${customersTable.deleted_at} IS NULL`);
+    if (!existing[0]) {
+      res.status(404).json({ error: "לקוח לא נמצא" });
+      return;
+    }
+
+    // 2. Check for linked records
+    const [linkedDeals, linkedQuotes, linkedPayments, linkedCredits] = await Promise.all([
+      db.select({ id: dealsTable.id }).from(dealsTable)
+        .where(sql`${dealsTable.customer_id} = ${id} AND ${dealsTable.deleted_at} IS NULL`)
+        .limit(1),
+      db.select({ id: quotesTable.id }).from(quotesTable)
+        .where(sql`${quotesTable.customer_id} = ${id} AND ${quotesTable.deleted_at} IS NULL`)
+        .limit(1),
+      db.select({ id: paymentsTable.id }).from(paymentsTable)
+        .where(eq(paymentsTable.customer_id, id))
+        .limit(1),
+      db.select({ id: creditsTable.id }).from(creditsTable)
+        .where(eq(creditsTable.customer_id, id))
+        .limit(1),
+    ]);
+
+    const links: string[] = [];
+    if (linkedDeals.length) links.push("עסקאות");
+    if (linkedQuotes.length) links.push("הצעות מחיר");
+    if (linkedPayments.length) links.push("תשלומים");
+    if (linkedCredits.length) links.push("קרדיטים");
+
+    if (links.length) {
+      res.status(409).json({
+        error: `לא ניתן למחוק את הלקוח — קיימים רשומות מקושרות: ${links.join(", ")}`,
+      });
+      return;
+    }
+
+    // 3. Soft-delete
+    await db
+      .update(customersTable)
+      .set({ deleted_at: new Date() })
+      .where(sql`${customersTable.id} = ${id} AND ${customersTable.deleted_at} IS NULL`);
+
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "DELETE /customers/:id error");
+    res.status(500).json({ error: "שגיאה במחיקת הלקוח" });
   }
 });
 

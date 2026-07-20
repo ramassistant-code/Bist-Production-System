@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Plus, Pencil, Eye, Phone, Mail, User, Target,
-  Search, X,
+  Search, X, Trash2,
 } from "lucide-react";
 
 import { Shell } from "@/components/layout/shell";
@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -543,6 +553,22 @@ export default function Leads() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editLead, setEditLead] = useState<Lead | null>(null);
   const [detailsLead, setDetailsLead] = useState<Lead | null>(null);
+  const [deleteLead, setDeleteLead] = useState<Lead | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/leads/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast({ title: "הליד נמחק בהצלחה" });
+      setDeleteLead(null);
+      setDetailsLead(null);
+      void queryClient.invalidateQueries({ queryKey: ["listLeads"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message || "שגיאה במחיקת הליד", variant: "destructive" });
+    },
+  });
 
   const params = {
     ...(apiSearch ? { search: apiSearch } : {}),
@@ -750,7 +776,7 @@ export default function Leads() {
             </DialogTitle>
           </DialogHeader>
           {detailsLead && <LeadDetails lead={detailsLead} />}
-          <DialogFooter>
+          <DialogFooter className="flex-row-reverse justify-between sm:justify-between">
             <Button
               variant="outline"
               onClick={() => { setDetailsLead(null); setEditLead(detailsLead); }}
@@ -758,9 +784,41 @@ export default function Leads() {
               <Pencil className="w-3.5 h-3.5 ml-1" />
               עריכה
             </Button>
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteLead(detailsLead)}
+            >
+              <Trash2 className="w-3.5 h-3.5 ml-1" />
+              מחיקה
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteLead} onOpenChange={(open) => !open && setDeleteLead(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת ליד</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את הליד <strong>{deleteLead?.name}</strong>?
+              <br />
+              פעולה זו בלתי הפיכה. לא ניתן למחוק ליד המקושר לעסקאות או הצעות מחיר.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteLead && deleteMutation.mutate(deleteLead.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "מוחק..." : "מחק ליד"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Shell>
   );
 }
