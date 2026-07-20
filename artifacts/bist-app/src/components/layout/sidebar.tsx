@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Box, Layers, FileSignature, Video, CheckSquare, Settings, Target, Handshake } from "lucide-react";
+import { LayoutDashboard, Users, Box, Layers, FileSignature, Video, Settings, Target, Handshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { name: "הצעות מחיר", href: "/quotes", icon: FileSignature },
   { name: "עסקאות", href: "/deals", icon: Handshake },
   { name: "הפקה", href: "/production", icon: Video },
-  { name: "משימות", href: "/tasks", icon: CheckSquare },
   { name: "הגדרות", href: "/settings", icon: Settings },
 ];
 

@@ -665,7 +665,7 @@ export default function Customers() {
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>לקוח חדש</DialogTitle>
           </DialogHeader>
@@ -678,7 +678,7 @@ export default function Customers() {
 
       {/* Edit dialog */}
       <Dialog open={!!editCustomer} onOpenChange={(open) => !open && setEditCustomer(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>עריכת לקוח — {editCustomer?.name}</DialogTitle>
           </DialogHeader>
@@ -702,7 +702,7 @@ export default function Customers() {
         open={!!detailsCustomer}
         onOpenChange={(open) => !open && setDetailsCustomer(null)}
       >
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />

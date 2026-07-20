@@ -666,9 +666,9 @@ export default function Leads() {
                           ? <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
                           : <span className="text-muted-foreground/40">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell max-w-[160px]">
                         {lead.email
-                          ? <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{lead.email}</span>
+                          ? <span className="flex items-center gap-1 min-w-0"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></span>
                           : <span className="text-muted-foreground/40">—</span>}
                       </td>
                       <td className="px-4 py-3">
@@ -712,7 +712,7 @@ export default function Leads() {
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>ליד חדש</DialogTitle>
           </DialogHeader>
@@ -725,7 +725,7 @@ export default function Leads() {
 
       {/* Edit dialog */}
       <Dialog open={!!editLead} onOpenChange={(open) => !open && setEditLead(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>עריכת ליד — {editLead?.name}</DialogTitle>
           </DialogHeader>
@@ -742,7 +742,7 @@ export default function Leads() {
 
       {/* Details dialog */}
       <Dialog open={!!detailsLead} onOpenChange={(open) => !open && setDetailsLead(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Target className="w-4 h-4" />
