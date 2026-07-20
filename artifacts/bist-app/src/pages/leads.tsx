@@ -28,6 +28,7 @@ import { ComboboxField, type ComboboxOption } from "@/components/ui/combobox-fie
 import { LookupSelect } from "@/components/ui/lookup-select";
 
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-fetch";
 import {
   useListLeads,
   getListLeadsQueryKey,
@@ -198,60 +199,39 @@ function LeadFormSupabase({ lead, onSuccess, onCancel }: LeadFormSupabaseProps) 
     },
   });
 
-  // ── Combo fetch functions ────────────────────────────────────────────────────
+  // ── Combo fetch functions (via Express API — bypasses RLS) ───────────────────
 
-  // salesperson_id → app_users (via Supabase PostgREST)
+  // salesperson_id → app_users
   const fetchSalespersons = useCallback(async (term: string): Promise<ComboboxOption[]> => {
-    let q = supabase
-      .from("app_users")
-      .select("id,full_name")
-      .eq("is_active", true)
-      .order("full_name", { ascending: true })
-      .limit(50);
-    if (term) q = q.ilike("full_name", `%${term}%`);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((u: { id: string; full_name: string | null }) => ({
-      id: u.id,
-      label: u.full_name ?? u.id,
-    }));
+    const users = await apiFetch<Array<{ id: string; full_name: string | null; is_active: boolean }>>(
+      "/api/users",
+    );
+    return users
+      .filter((u) => u.is_active && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
+      .map((u) => ({ id: u.id, label: u.full_name ?? u.id }))
+      .slice(0, 50);
   }, []);
 
   const fetchSalespersonById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
-    const { data } = await supabase
-      .from("app_users")
-      .select("id,full_name")
-      .eq("id", id)
-      .single();
-    if (!data) return null;
-    return { id: data.id as string, label: (data.full_name as string | null) ?? id };
+    const users = await apiFetch<Array<{ id: string; full_name: string | null }>>(
+      "/api/users",
+    );
+    const u = users.find((u) => u.id === id);
+    return u ? { id: u.id, label: u.full_name ?? u.id } : null;
   }, []);
 
-  // linked_customer_id → customers (via Supabase PostgREST)
+  // linked_customer_id → customers
   const fetchCustomers = useCallback(async (term: string): Promise<ComboboxOption[]> => {
-    let q = supabase
-      .from("customers")
-      .select("id,name")
-      .is("deleted_at", null)
-      .order("name", { ascending: true })
-      .limit(50);
-    if (term) q = q.ilike("name", `%${term}%`);
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((c: { id: string; name: string }) => ({
-      id: c.id,
-      label: c.name,
-    }));
+    const qs = new URLSearchParams({ ...(term ? { search: term } : {}) });
+    const customers = await apiFetch<Array<{ id: string; name: string }>>(
+      `/api/customers${qs.toString() ? `?${qs}` : ""}`,
+    );
+    return customers.map((c) => ({ id: c.id, label: c.name })).slice(0, 50);
   }, []);
 
   const fetchCustomerById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
-    const { data } = await supabase
-      .from("customers")
-      .select("id,name")
-      .eq("id", id)
-      .single();
-    if (!data) return null;
-    return { id: data.id as string, label: data.name as string };
+    const customer = await apiFetch<{ id: string; name: string }>(`/api/customers/${id}`);
+    return { id: customer.id, label: customer.name };
   }, []);
 
   const isLoading = mutation.isPending;
