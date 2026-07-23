@@ -4,7 +4,7 @@ import { leadsTable, dealsTable, quotesTable, insertLeadSchema, updateLeadSchema
 import type { Lead } from "@workspace/db/schema";
 import { isNull, asc, sql, and, or, ilike, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { notifySync } from "../lib/notifySync";
+import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 

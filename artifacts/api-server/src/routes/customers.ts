@@ -4,7 +4,7 @@ import { customersTable, dealsTable, quotesTable, paymentsTable, creditsTable, i
 import type { Customer } from "@workspace/db/schema";
 import { isNull, asc, sql, and, or, ilike, eq, isNotNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { notifySync } from "../lib/notifySync";
+import { notifySync } from "../lib/syncClient";
 
 async function generateCustomerNumber(): Promise<string> {
   const result = await db.execute(sql`

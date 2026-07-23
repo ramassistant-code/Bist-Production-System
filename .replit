@@ -22,6 +22,8 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
+SYNC_SERVICE_URL = "https://syncdbandmonday-production.up.railway.app"
+SYNC_ENV = "test"
 
 [nix]
 channel = "stable-25_05"
