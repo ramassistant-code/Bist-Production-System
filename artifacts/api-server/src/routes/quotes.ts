@@ -69,10 +69,16 @@ router.get("/quotes/phone-lookup", async (req: Request, res: Response): Promise<
   try {
     const [customers, leads] = await Promise.all([
       db.select().from(customersTable).where(
-        and(isNull(customersTable.deleted_at), ilike(customersTable.phone, `%${localDigits}%`))
+        and(
+          isNull(customersTable.deleted_at),
+          sql`REGEXP_REPLACE(${customersTable.phone}, '[^0-9]', '', 'g') LIKE ${'%' + localDigits + '%'}`,
+        )
       ).limit(1),
       db.select().from(leadsTable).where(
-        and(isNull(leadsTable.deleted_at), ilike(leadsTable.phone, `%${localDigits}%`))
+        and(
+          isNull(leadsTable.deleted_at),
+          sql`REGEXP_REPLACE(${leadsTable.phone}, '[^0-9]', '', 'g') LIKE ${'%' + localDigits + '%'}`,
+        )
       ).limit(1),
     ]);
     if (customers.length > 0) {
