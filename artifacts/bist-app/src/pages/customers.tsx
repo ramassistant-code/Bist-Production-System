@@ -175,6 +175,7 @@ function CustomerFormSupabase({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getListCustomersQueryKey() });
       toast({ title: customer ? "הלקוח עודכן בהצלחה" : "הלקוח נוצר בהצלחה" });
+      toast({ title: "מסנכרן עם המערכת...", description: "הנתונים מועברים ברקע", duration: 3000 });
       onSuccess();
     },
     onError: (err: Error) => {

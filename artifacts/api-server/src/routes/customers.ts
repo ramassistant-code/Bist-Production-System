@@ -85,7 +85,7 @@ router.post("/customers", async (req: Request, res: Response): Promise<void> => 
       .values(parsed.data as unknown as typeof customersTable.$inferInsert)
       .returning();
     const created = rows[0] ?? null;
-    if (created) await notifySync({ action: "customer_upserted", id: created.id });
+    if (created) void notifySync({ action: "customer_upserted", id: created.id });
     res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "Failed to create customer");
@@ -134,7 +134,7 @@ router.patch("/customers/:id", async (req: Request, res: Response): Promise<void
       res.status(404).json({ error: "לקוח לא נמצא" });
       return;
     }
-    await notifySync({ action: "customer_upserted", id: customer.id });
+    void notifySync({ action: "customer_upserted", id: customer.id });
     res.json(customer);
   } catch (err) {
     logger.error({ err }, "Failed to update customer");

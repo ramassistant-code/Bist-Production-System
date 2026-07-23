@@ -297,7 +297,7 @@ router.post("/deals/standalone", async (req: Request, res: Response): Promise<vo
       .returning();
 
     const created = rows[0] ?? null;
-    if (created) await notifySync({ action: "deal_created", id: created.id });
+    if (created) void notifySync({ action: "deal_created", id: created.id });
     res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "POST /deals/standalone error");
@@ -848,7 +848,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    await notifySync({ action: "deal_created", id: result.dealId });
+    void notifySync({ action: "deal_created", id: result.dealId });
     res.status(result.alreadyExists ? 200 : 201).json(result);
 
   } catch (err) {
@@ -904,7 +904,7 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    await notifySync({ action: "deal_updated", id });
+    void notifySync({ action: "deal_updated", id });
     res.json({ success: true });
   } catch (err) {
     logger.error({ err }, "PATCH /deals/:id error");

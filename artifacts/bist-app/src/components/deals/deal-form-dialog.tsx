@@ -158,6 +158,7 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
       queryClient.invalidateQueries({ queryKey: ["deals"] });
       queryClient.invalidateQueries({ queryKey: ["deal", id] });
       toast({ title: isEdit ? "העסקה עודכנה בהצלחה" : "העסקה נוצרה בהצלחה" });
+      toast({ title: "מסנכרן עם המערכת...", description: "הנתונים מועברים ברקע", duration: 3000 });
       if (onSuccess) onSuccess(id);
       else if (!isEdit) navigate(`/deals/${id}`);
       onClose();

@@ -195,6 +195,7 @@ function LeadFormSupabase({ lead, onSuccess, onCancel }: LeadFormSupabaseProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
       toast({ title: lead ? "הליד עודכן בהצלחה" : "הליד נוצר בהצלחה" });
+      toast({ title: "מסנכרן עם המערכת...", description: "הנתונים מועברים ברקע", duration: 3000 });
       onSuccess();
     },
     onError: (err: Error) => {

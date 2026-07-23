@@ -4,6 +4,7 @@ import { X, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { customFetch } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ function formatILS(n: number | null | undefined) {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function OpenDealModal({ quote, version, currentUser, onClose, onSuccess }: OpenDealModalProps) {
+  const { toast } = useToast();
   const party = version.party_snapshot;
   const totalsSnap = version.totals_snapshot;
   const totalWithVat = totalsSnap?.total_with_vat ?? 0;
@@ -243,6 +245,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           } : {}),
         }),
       });
+      toast({ title: "מסנכרן עם המערכת...", description: "הנתונים מועברים ברקע", duration: 3000 });
       onSuccess(result.dealId, result.deal_number);
     } catch (err: unknown) {
       const e = err as { data?: { error?: string }; message?: string };
