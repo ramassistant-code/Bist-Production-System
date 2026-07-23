@@ -80,7 +80,7 @@ router.post("/leads", async (req: Request, res: Response): Promise<void> => {
       .values(parsed.data as unknown as typeof leadsTable.$inferInsert)
       .returning();
     const created = rows[0] ?? null;
-    if (created) notifySync("lead", created.id);
+    if (created) await notifySync({ action: "lead_upserted", id: created.id });
     res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "Failed to create lead");
@@ -125,7 +125,7 @@ router.patch("/leads/:id", async (req: Request, res: Response): Promise<void> =>
       res.status(404).json({ error: "ליד לא נמצא" });
       return;
     }
-    notifySync("lead", lead.id);
+    await notifySync({ action: "lead_upserted", id: lead.id });
     res.json(lead);
   } catch (err) {
     logger.error({ err }, "Failed to update lead");
