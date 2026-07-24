@@ -1214,7 +1214,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       });
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
       try {
-        await customFetch(`/api/quote-versions/${data.version.id}/pdf`, { method: "POST" });
+        await customFetch(`/api/quote-versions/${data.version.id}/generate-pdf`, { method: "POST", body: JSON.stringify({ templateId: null }) });
       } catch {
         toast({ title: "ההצעה נוצרה, אך אירעה שגיאה בהפקת ה-PDF", variant: "destructive" });
       }
