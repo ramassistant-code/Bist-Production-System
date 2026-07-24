@@ -178,12 +178,10 @@ export default function QuotesDetail() {
 
 
   const ver = data?.currentVersion;
-  const isApproved = !!ver?.id && ver?.status === "approved";
-
   const { data: dealCheck } = useQuery<{ exists: boolean; deal_id?: string }>({
     queryKey: ["deal-check", ver?.id],
     queryFn: () => customFetch<{ exists: boolean; deal_id?: string }>(`/api/deals/check-version/${ver!.id}`),
-    enabled: isApproved,
+    enabled: !!ver?.id,
     staleTime: 0,
   });
 
@@ -269,8 +267,8 @@ export default function QuotesDetail() {
   const isDraft = vStatus === "draft" && !isLocked;
   const partyName = party?.business_name || party?.contact_name || quote.customer_name || quote.lead_name || "—";
 
-  const canOpenDeal = isApproved && !dealCheck?.exists;
-  const dealAlreadyExists = isApproved && dealCheck?.exists;
+  const canOpenDeal = dealCheck !== undefined && !dealCheck?.exists;
+  const dealAlreadyExists = !!dealCheck?.exists;
 
   return (
     <>
