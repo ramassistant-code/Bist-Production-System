@@ -828,6 +828,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             status: "בתהליך",
             quantity: String(totalQty),
             source_key: creditSourceKey,
+            salesperson_note: operation_notes?.trim() || null,
           })
           .onConflictDoNothing();
       }
