@@ -110,7 +110,7 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     source_type: "product",
     product_id: product.id,
     product_name_snapshot: product.name,
-    product_description_snapshot: product.product_explanation ?? "",
+    product_description_snapshot: product.quote_description_default ?? product.product_explanation ?? "",
     category_snapshot: product.category ?? "",
     deliverable_type_snapshot: product.deliverable_type ?? "",
     quantity: 1,
@@ -119,8 +119,8 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     manual_price_override: false,
     price_override_reason: "",
     customer_note: "",
-    internal_note: product.sales_notes ?? "",
-    components: components.map(c => ({ ...c, customer_note: "", internal_note: c.internal_note ?? "" })),
+    internal_note: product.quote_notes_default ?? "",
+    components: components.map(c => ({ ...c, customer_note: c.customer_note ?? "", internal_note: c.internal_note ?? "" })),
     components_expanded: false,
   };
 }
@@ -312,7 +312,14 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       setLookupResult(result);
       setLookupDone(true);
       if (result.found === "customer" || result.found === "lead") {
-        update({ partyType: result.found, partyId: result.id ?? null, partyName: result.name ?? "", partyEmail: result.email ?? "" });
+        const name = result.name ?? "";
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const timeStr = now.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+        update({
+          partyType: result.found, partyId: result.id ?? null, partyName: name, partyEmail: result.email ?? "",
+          projectTitle: `${name} - ${dateStr} ${timeStr}`,
+        });
       } else {
         update({ partyType: "new", partyId: null, newLeadPhone: phone });
       }
@@ -328,6 +335,9 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       update({ phone: r.phone });
       doLookup(r.phone);
     } else {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const timeStr = now.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
       update({
         phone: "",
         partyType: r.type,
@@ -335,6 +345,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         partyName: r.name,
         partyEmail: r.email ?? "",
         newLeadPhone: "",
+        projectTitle: `${r.name} - ${dateStr} ${timeStr}`,
       });
       setLookupResult({ found: r.type, id: r.id, name: r.name, email: r.email ?? undefined, phone: undefined });
       setLookupDone(true);
@@ -586,7 +597,12 @@ function ComponentRow({
         </button>
       </div>
       <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערה למחלקת אופרציה</Label>
+        <Label className="text-xs text-muted-foreground">הערה להצעת מחיר</Label>
+        <Input value={comp.customer_note} className="h-7 text-xs"
+          onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
+      </div>
+      <div className="space-y-0.5">
+        <Label className="text-xs text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
         <Input value={comp.internal_note} className="h-7 text-xs"
           onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
       </div>
@@ -663,7 +679,7 @@ function BasketRow({
 
         {item.manual_price_override && (
           <div className="space-y-1">
-            <Label className="text-xs text-orange-700">סיבת שינוי מחיר <span className="text-destructive">*</span></Label>
+            <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
             <Input value={item.price_override_reason} placeholder="חובה לפרט את סיבת שינוי המחיר"
               onChange={(e) => setField("price_override_reason", e.target.value)}
               className="border-orange-200 focus-visible:ring-orange-300" />
@@ -677,7 +693,7 @@ function BasketRow({
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה למחלקת אופרציה</Label>
+          <Label className="text-xs text-muted-foreground">הערה להצעת מחיר</Label>
           <Textarea value={item.internal_note} rows={2}
             onChange={(e) => setField("internal_note", e.target.value)} />
         </div>
@@ -722,16 +738,19 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
     setLoadingProductId(product.id);
     try {
       // Fetch product with its components
-      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string; component_internal_notes?: string | null };
+      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string; component_internal_notes?: string | null; component_quote_notes_default?: string | null; sort_order?: number | null };
       const productWithComponents = await customFetch<{ components?: ProdComp[] }>(`/api/products/${product.id}`);
-      const comps = (productWithComponents.components ?? [] as ProdComp[]).map((c: ProdComp) => ({
-        component_id: c.component_id,
-        component_name_snapshot: c.component_name ?? "",
-        component_description_snapshot: c.component_deliverable ?? "",
-        quantity: parseFloat(c.default_quantity ?? "1") || 1,
-        unit_cost_snapshot: parseFloat(c.total_cost ?? "0") || 0,
-        internal_note: c.component_internal_notes ?? "",
-      }));
+      const comps = (productWithComponents.components ?? [] as ProdComp[])
+        .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999))
+        .map((c: ProdComp) => ({
+          component_id: c.component_id,
+          component_name_snapshot: c.component_name ?? "",
+          component_description_snapshot: c.component_deliverable ?? "",
+          quantity: parseFloat(c.default_quantity ?? "1") || 1,
+          unit_cost_snapshot: parseFloat(c.total_cost ?? "0") || 0,
+          customer_note: c.component_quote_notes_default ?? "",
+          internal_note: c.component_internal_notes ?? "",
+        }));
       const item = newBasketItem(product, comps);
       update({ items: [...state.items, item] });
     } finally {
@@ -755,7 +774,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-4" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 3 — סל מוצרים</h2>
+        <h2 className="text-lg font-semibold mb-1">שלב 2 — סל מוצרים</h2>
         <p className="text-sm text-muted-foreground">הוסיפו מוצרים מהקטלוג, ערכו כמויות ומחירים.</p>
       </div>
 
@@ -815,7 +834,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
                     onChange={(e) => update({ basketManualTotal: e.target.value })}
                     dir="ltr" />
                   <div className="space-y-1">
-                    <Label className="text-xs text-orange-700">הערת שינוי <span className="text-destructive">*</span></Label>
+                    <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
                     <Input value={state.basketOverrideNote} placeholder="חובה לפרט את סיבת שינוי הסה״כ"
                       onChange={(e) => update({ basketOverrideNote: e.target.value })}
                       className="border-orange-200" />
@@ -908,12 +927,13 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
 // ── Step 5: Summary ────────────────────────────────────────────────────────
 
-function Step5({ state, update, onSave, onSend, isSaving }: {
+function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
   state: WizardState;
   update: (p: Partial<WizardState>) => void;
   onSave: () => void;
-  onSend: () => void;
+  onCreateQuote: () => void;
   isSaving: boolean;
+  isCreating: boolean;
 }) {
   const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
 
@@ -974,13 +994,26 @@ function Step5({ state, update, onSave, onSend, isSaving }: {
 
       {/* Buttons */}
       <div className="flex gap-3 flex-wrap pt-2">
-        <Button onClick={onSave} disabled={isSaving} variant="outline">
+        <Button onClick={onSave} disabled={isSaving || isCreating} variant="outline">
           {isSaving ? "שומר..." : "שמור כטיוטה"}
         </Button>
-        <Button onClick={onSend} disabled={isSaving} className="bg-green-600 hover:bg-green-700 text-white">
-          {isSaving ? "שולח..." : "שלח הצעה"}
+        <Button onClick={onCreateQuote} disabled={isSaving || isCreating} className="bg-green-600 hover:bg-green-700 text-white">
+          {isCreating ? (
+            <span className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+              יוצר הצעה ומייצר PDF...
+            </span>
+          ) : "יצירת הצעת מחיר"}
         </Button>
       </div>
+      {isCreating && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
+          <div className="bg-card rounded-xl border border-border shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium text-foreground text-center">יוצר הצעת מחיר ומפיק PDF...<br/><span className="text-xs text-muted-foreground">אנא המתינו</span></p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -998,6 +1031,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(initialState);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isCreatingQuote, setIsCreatingQuote] = useState(false);
 
   function update(partial: Partial<WizardState>) {
     setState((prev) => ({ ...prev, ...partial }));
@@ -1158,15 +1192,40 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
         method: "POST",
         body: JSON.stringify(buildPayload(sendImmediately)),
       }),
-    onSuccess: (data, sendImmediately) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      toast({ title: sendImmediately ? "ההצעה נשלחה וננעלה בהצלחה" : "ההצעה נשמרה כטיוטה" });
+      toast({ title: "ההצעה נשמרה כטיוטה" });
       navigate(`/quotes/${data.quote.id}`);
     },
     onError: (err: Error & { data?: { error?: string } }) => {
       toast({ title: err?.data?.error ?? "שגיאה בשמירת ההצעה", variant: "destructive" });
     },
   });
+
+  async function handleCreateQuote() {
+    const errs = validateStep();
+    if (errs.length > 0) { setErrors(errs); return; }
+    setErrors([]);
+    setIsCreatingQuote(true);
+    try {
+      const data = await customFetch<{ quote: { id: string }; version: { id: string } }>("/api/quotes", {
+        method: "POST",
+        body: JSON.stringify(buildPayload(false)),
+      });
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      try {
+        await customFetch(`/api/quote-versions/${data.version.id}/pdf`, { method: "POST" });
+      } catch {
+        toast({ title: "ההצעה נוצרה, אך אירעה שגיאה בהפקת ה-PDF", variant: "destructive" });
+      }
+      navigate(`/quotes/${data.quote.id}`);
+    } catch (err: unknown) {
+      const e = err as Error & { data?: { error?: string } };
+      toast({ title: e?.data?.error ?? "שגיאה בשמירת ההצעה", variant: "destructive" });
+    } finally {
+      setIsCreatingQuote(false);
+    }
+  }
 
   if (sourceQuoteId && sourceLoading) {
     return (
@@ -1197,8 +1256,9 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
                 state={state}
                 update={update}
                 onSave={() => saveMutation.mutate(false)}
-                onSend={() => saveMutation.mutate(true)}
+                onCreateQuote={handleCreateQuote}
                 isSaving={saveMutation.isPending}
+                isCreating={isCreatingQuote}
               />
             )}
           </div>

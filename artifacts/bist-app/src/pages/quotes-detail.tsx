@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Copy, Plus, AlertCircle, CheckCircle, XCircle, Send, Handshake, FileDown } from "lucide-react";
+import { ChevronRight, Copy, AlertCircle, CheckCircle, Handshake, FileDown } from "lucide-react";
 import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -293,76 +293,67 @@ export default function QuotesDetail() {
               <Badge variant={STATUS_VARIANT[vStatus] ?? "secondary"} className="text-sm px-3 py-1">
                 {STATUS_LABELS[vStatus] ?? vStatus}
               </Badge>
-              {isDraft && (
-                <Button size="sm" variant="outline" onClick={() => statusMutation.mutate("sent")} disabled={statusMutation.isPending}>
-                  <Send className="w-3.5 h-3.5 ml-1" />סמן כנשלחה
-                </Button>
-              )}
-              {vStatus === "sent" && (
-                <>
-                  <Button size="sm" variant="outline" className="text-green-700 border-green-200 hover:bg-green-50"
-                    onClick={() => statusMutation.mutate("approved")} disabled={statusMutation.isPending}>
-                    <CheckCircle className="w-3.5 h-3.5 ml-1" />אשר
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-destructive border-red-200 hover:bg-red-50"
-                    onClick={() => statusMutation.mutate("rejected")} disabled={statusMutation.isPending}>
-                    <XCircle className="w-3.5 h-3.5 ml-1" />דחה
-                  </Button>
-                </>
-              )}
-              <Button size="sm" variant="outline"
-                onClick={() => navigate(`/quotes/${id}/new-version`)} disabled={isLocked && vStatus !== "approved" && vStatus !== "rejected"}>
-                <Plus className="w-3.5 h-3.5 ml-1" />גרסה חדשה
+
+              {/* 1. הצעת מחיר נחתמה */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-green-700 border-green-200 hover:bg-green-50"
+                onClick={() => statusMutation.mutate("approved")}
+                disabled={statusMutation.isPending || vStatus !== "sent"}
+              >
+                <CheckCircle className="w-3.5 h-3.5 ml-1" />הצעת מחיר נחתמה
               </Button>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/quotes/${id}/duplicate`)}>
-                <Copy className="w-3.5 h-3.5 ml-1" />הצעה חדשה מזו
-              </Button>
-              {verData?.id && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={pdfMutation.isPending}
-                  onClick={() => pdfMutation.mutate(verData.id)}
-                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
-                >
-                  <FileDown className="w-3.5 h-3.5 ml-1" />
-                  {pdfMutation.isPending ? "מייצר PDF..." : "הפק PDF"}
-                </Button>
-              )}
-              {(lastPdfUrl ?? existingPdf?.url) && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  asChild
-                  className="text-blue-600"
-                >
-                  <a href={(lastPdfUrl ?? existingPdf?.url)!} target="_blank" rel="noopener noreferrer">
-                    <FileDown className="w-3.5 h-3.5 ml-1" />פתח PDF
-                  </a>
-                </Button>
-              )}
-              {canOpenDeal && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => setShowOpenDealModal(true)}
-                >
-                  <Handshake className="w-3.5 h-3.5 ml-1" />
-                  פתח עסקה
-                </Button>
-              )}
-              {dealAlreadyExists && dealCheck?.deal_id && (
+
+              {/* 2. התקבל תשלום - פתיחת עסקה */}
+              {dealAlreadyExists && dealCheck?.deal_id ? (
                 <Button
                   size="sm"
                   variant="outline"
                   className="text-green-700 border-green-200 hover:bg-green-50"
                   onClick={() => navigate(`/deals/${dealCheck.deal_id}`)}
                 >
-                  <Handshake className="w-3.5 h-3.5 ml-1" />
-                  צפה בעסקה
+                  <Handshake className="w-3.5 h-3.5 ml-1" />צפה בעסקה
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={canOpenDeal ? "default" : "outline"}
+                  className={canOpenDeal ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  disabled={!canOpenDeal}
+                  onClick={() => canOpenDeal && setShowOpenDealModal(true)}
+                >
+                  <Handshake className="w-3.5 h-3.5 ml-1" />התקבל תשלום - פתיחת עסקה
                 </Button>
               )}
+
+              {/* 3. פתח הצעת מחיר - PDF */}
+              {verData?.id && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pdfMutation.isPending}
+                  onClick={() => {
+                    const pdfUrl = lastPdfUrl ?? existingPdf?.url;
+                    if (pdfUrl) {
+                      const a = document.createElement("a");
+                      a.href = pdfUrl; a.target = "_blank"; a.rel = "noopener noreferrer";
+                      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    } else {
+                      pdfMutation.mutate(verData.id);
+                    }
+                  }}
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                >
+                  <FileDown className="w-3.5 h-3.5 ml-1" />
+                  {pdfMutation.isPending ? "מייצר PDF..." : "פתח הצעת מחיר - PDF"}
+                </Button>
+              )}
+
+              {/* 4. יצירת הצעה חדשה בהתבסס על זו */}
+              <Button size="sm" variant="outline" onClick={() => navigate(`/quotes/${id}/duplicate`)}>
+                <Copy className="w-3.5 h-3.5 ml-1" />יצירת הצעה חדשה בהתבסס על זו
+              </Button>
             </div>
           </div>
 

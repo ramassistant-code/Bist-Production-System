@@ -192,6 +192,8 @@ export interface Product {
   production_cost?: string | null;
   product_explanation?: string | null;
   sales_notes?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
   created_at: string;
   updated_at: string;
@@ -209,6 +211,8 @@ export interface ProductComponentRow {
   component_name?: string | null;
   component_number?: string | null;
   component_deliverable?: string | null;
+  component_internal_notes?: string | null;
+  component_quote_notes_default?: string | null;
   created_at: string;
   updated_at: string;
 }
