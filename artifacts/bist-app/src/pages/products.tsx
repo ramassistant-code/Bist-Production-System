@@ -1,9 +1,24 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, PackagePlus, X } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, X, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Shell } from "@/components/layout/shell";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -33,6 +48,7 @@ import {
   getGetProductQueryKey,
 } from "@workspace/api-client-react";
 import type { Product, ProductWithComponents, ProductComponentRow } from "@workspace/api-client-react";
+import { customFetch } from "@workspace/api-client-react";
 
 // ---------- helpers ----------
 
@@ -164,6 +180,66 @@ function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel }: 
         </Button>
       </div>
     </form>
+  );
+}
+
+// ---------- sortable component row ----------
+
+interface SortableComponentRowProps {
+  pc: ProductComponentRow;
+  onRemove: (id: string) => void;
+  isRemoving: boolean;
+}
+
+function SortableComponentRow({ pc, onRemove, isRemoving }: SortableComponentRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: pc.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className="border-t hover:bg-muted/20">
+      <td className="py-2 px-2 text-center w-8">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none p-1 rounded"
+          aria-label="גרור לשינוי סדר"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      </td>
+      <td className="py-2 px-3">
+        <div className="font-medium">{pc.component_name ?? "—"}</div>
+        {pc.component_deliverable && (
+          <div className="text-xs text-muted-foreground">{pc.component_deliverable}</div>
+        )}
+      </td>
+      <td className="py-2 px-3 text-center">{pc.default_quantity ?? "1"}</td>
+      <td className="py-2 px-3 text-center">{formatCurrency(pc.default_unit_price)}</td>
+      <td className="py-2 px-3 text-center font-medium">{formatCurrency(pc.total_cost)}</td>
+      <td className="py-2 px-3 text-center">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+          onClick={() => onRemove(pc.id)}
+          disabled={isRemoving}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </td>
+    </tr>
   );
 }
 
@@ -305,6 +381,8 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddRow, setShowAddRow] = useState(false);
+  const [localComponents, setLocalComponents] = useState<ProductComponentRow[]>([]);
+  const [isReordering, setIsReordering] = useState(false);
 
   const isEdit = !!productId;
 
@@ -317,6 +395,46 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
   });
 
   const pw = productData as ProductWithComponents | undefined;
+
+  // Keep local sorted list in sync with server data (via useEffect, not during render)
+  const serverComponents = (pw?.components as ProductComponentRow[] | undefined) ?? [];
+  useEffect(() => {
+    const sorted = [...serverComponents].sort((a, b) => {
+      const sa = a.sort_order ?? 9999;
+      const sb = b.sort_order ?? 9999;
+      return sa !== sb ? sa - sb : (a.component_name ?? "").localeCompare(b.component_name ?? "");
+    });
+    setLocalComponents(sorted);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(serverComponents.map(c => c.id + (c.sort_order ?? "")))]);  
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !productId) return;
+
+    const oldIdx = localComponents.findIndex(c => c.id === active.id);
+    const newIdx = localComponents.findIndex(c => c.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+
+    const reordered = arrayMove(localComponents, oldIdx, newIdx);
+    setLocalComponents(reordered);
+    setIsReordering(true);
+    try {
+      await customFetch(`/api/products/${productId}/components/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: reordered.map(c => c.id) }),
+      });
+      queryClient.invalidateQueries({ queryKey: getGetProductQueryKey(productId) });
+    } catch {
+      toast({ title: "שגיאה בשמירת סדר הרכיבים", variant: "destructive" });
+      setLocalComponents(localComponents); // revert
+    } finally {
+      setIsReordering(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localComponents, productId]);
 
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
@@ -452,77 +570,70 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                   </div>
 
                   <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-right py-2 px-3 font-medium">רכיב</th>
-                          <th className="text-center py-2 px-3 font-medium w-20">כמות</th>
-                          <th className="text-center py-2 px-3 font-medium w-28">עלות ליחידה</th>
-                          <th className="text-center py-2 px-3 font-medium w-24">סה״כ</th>
-                          <th className="py-2 px-3 w-10" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(!pw?.components?.length && !showAddRow) && (
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
                           <tr>
-                            <td colSpan={5} className="py-6 text-center text-muted-foreground text-sm">
-                              טרם שויכו רכיבים למוצר זה — לחץ על "שייך רכיב"
-                            </td>
+                            <th className="py-2 px-2 w-8" />
+                            <th className="text-right py-2 px-3 font-medium">רכיב</th>
+                            <th className="text-center py-2 px-3 font-medium w-20">כמות</th>
+                            <th className="text-center py-2 px-3 font-medium w-28">עלות ליחידה</th>
+                            <th className="text-center py-2 px-3 font-medium w-24">סה״כ</th>
+                            <th className="py-2 px-3 w-10" />
                           </tr>
+                        </thead>
+                        <SortableContext items={localComponents.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                          <tbody>
+                            {(!localComponents.length && !showAddRow) && (
+                              <tr>
+                                <td colSpan={6} className="py-6 text-center text-muted-foreground text-sm">
+                                  טרם שויכו רכיבים למוצר זה — לחץ על "שייך רכיב"
+                                </td>
+                              </tr>
+                            )}
+                            {localComponents.map((pc) => (
+                              <SortableComponentRow
+                                key={pc.id}
+                                pc={pc}
+                                onRemove={handleRemoveComponent}
+                                isRemoving={removeMutation.isPending}
+                              />
+                            ))}
+                            {showAddRow && (
+                              <AddComponentRow
+                                productId={productId!}
+                                onAdded={() => {
+                                  setShowAddRow(false);
+                                  queryClient.invalidateQueries({
+                                    queryKey: getGetProductQueryKey(productId!),
+                                  });
+                                }}
+                                onCancel={() => setShowAddRow(false)}
+                              />
+                            )}
+                          </tbody>
+                        </SortableContext>
+                        {pw?.calculated_cost && parseFloat(pw.calculated_cost) > 0 && (
+                          <tfoot className="bg-muted/30 border-t">
+                            <tr>
+                              <td />
+                              <td colSpan={3} className="py-2 px-3 text-right font-semibold">
+                                סה״כ עלות:
+                              </td>
+                              <td className="py-2 px-3 text-center font-bold">
+                                {formatCurrency(pw.calculated_cost)}
+                              </td>
+                              <td />
+                            </tr>
+                          </tfoot>
                         )}
-                        {(pw?.components as ProductComponentRow[] | undefined)?.map((pc) => (
-                          <tr key={pc.id} className="border-t hover:bg-muted/20">
-                            <td className="py-2 px-3">
-                              <div className="font-medium">{pc.component_name ?? "—"}</div>
-                              {pc.component_deliverable && (
-                                <div className="text-xs text-muted-foreground">{pc.component_deliverable}</div>
-                              )}
-                            </td>
-                            <td className="py-2 px-3 text-center">{pc.default_quantity ?? "1"}</td>
-                            <td className="py-2 px-3 text-center">{formatCurrency(pc.default_unit_price)}</td>
-                            <td className="py-2 px-3 text-center font-medium">{formatCurrency(pc.total_cost)}</td>
-                            <td className="py-2 px-3 text-center">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => handleRemoveComponent(pc.id)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-
-                        {/* inline add row */}
-                        {showAddRow && (
-                          <AddComponentRow
-                            productId={productId!}
-                            onAdded={() => {
-                              setShowAddRow(false);
-                              queryClient.invalidateQueries({
-                                queryKey: getGetProductQueryKey(productId!),
-                              });
-                            }}
-                            onCancel={() => setShowAddRow(false)}
-                          />
-                        )}
-                      </tbody>
-
-                      {pw?.calculated_cost && parseFloat(pw.calculated_cost) > 0 && (
-                        <tfoot className="bg-muted/30 border-t">
-                          <tr>
-                            <td colSpan={3} className="py-2 px-3 text-right font-semibold">
-                              סה״כ עלות:
-                            </td>
-                            <td className="py-2 px-3 text-center font-bold">
-                              {formatCurrency(pw.calculated_cost)}
-                            </td>
-                            <td />
-                          </tr>
-                        </tfoot>
-                      )}
-                    </table>
+                      </table>
+                    </DndContext>
+                    {isReordering && (
+                      <div className="text-xs text-muted-foreground text-center py-1 border-t">
+                        שומר סדר...
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
