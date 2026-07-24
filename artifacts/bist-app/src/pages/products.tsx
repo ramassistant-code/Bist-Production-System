@@ -383,7 +383,6 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
   const [showAddRow, setShowAddRow] = useState(false);
   const [localComponents, setLocalComponents] = useState<ProductComponentRow[]>([]);
   const [orderDirty, setOrderDirty] = useState(false);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const isEdit = !!productId;
 
@@ -423,29 +422,12 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
     setOrderDirty(true);
   }, [localComponents]);
 
-  const handleSaveOrder = useCallback(async () => {
-    if (!productId) return;
-    setIsSavingOrder(true);
-    try {
-      await customFetch(`/api/products/${productId}/components/reorder`, {
-        method: "PATCH",
-        body: JSON.stringify({ order: localComponents.map(c => c.id) }),
-      });
-      queryClient.invalidateQueries({ queryKey: getGetProductQueryKey(productId) });
-      setOrderDirty(false);
-      toast({ title: "סדר הרכיבים נשמר" });
-    } catch {
-      toast({ title: "שגיאה בשמירת סדר הרכיבים", variant: "destructive" });
-    } finally {
-      setIsSavingOrder(false);
-    }
-  }, [localComponents, productId, queryClient, toast]);
 
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const removeMutation = useRemoveProductComponent();
 
-  function handleSubmit(values: ProductFormValues) {
+  async function handleSubmit(values: ProductFormValues) {
     if (isEdit) {
       updateMutation.mutate(
         {
@@ -453,7 +435,18 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
           data: sanitize(values) as unknown as Parameters<typeof updateMutation.mutate>[0]["data"],
         },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
+            if (orderDirty) {
+              try {
+                await customFetch(`/api/products/${productId}/components/reorder`, {
+                  method: "PATCH",
+                  body: JSON.stringify({ order: localComponents.map(c => c.id) }),
+                });
+                setOrderDirty(false);
+              } catch {
+                toast({ title: "שגיאה בשמירת סדר הרכיבים", variant: "destructive" });
+              }
+            }
             toast({ title: "המוצר עודכן בהצלחה" });
             queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
             queryClient.invalidateQueries({ queryKey: getGetProductQueryKey(productId!) });
@@ -566,24 +559,12 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                     <h3 className="font-semibold text-base">
                       רכיבים ({pw?.components?.length ?? 0})
                     </h3>
-                    <div className="flex items-center gap-2">
-                      {orderDirty && (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={handleSaveOrder}
-                          disabled={isSavingOrder}
-                        >
-                          {isSavingOrder ? "שומר..." : "שמור סדר רכיבים"}
-                        </Button>
-                      )}
-                      {!showAddRow && (
-                        <Button size="sm" variant="outline" onClick={() => setShowAddRow(true)}>
-                          <PackagePlus className="w-4 h-4 ml-1" />
-                          שייך רכיב
-                        </Button>
-                      )}
-                    </div>
+                    {!showAddRow && (
+                      <Button size="sm" variant="outline" onClick={() => setShowAddRow(true)}>
+                        <PackagePlus className="w-4 h-4 ml-1" />
+                        שייך רכיב
+                      </Button>
+                    )}
                   </div>
 
                   <div className="border rounded-lg overflow-hidden">
