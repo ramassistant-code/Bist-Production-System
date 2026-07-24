@@ -230,15 +230,14 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl p-0 gap-0" dir="rtl">
-        <div className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+      <DialogContent className="max-w-3xl" dir="rtl">
+        <DialogHeader>
           <DialogTitle>
             {isEdit ? `עריכת עסקה — ${deal!.deal_number}` : "עסקה חדשה"}
           </DialogTitle>
-        </div>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-5">
 
           {/* ─── מקושרים ──────────────────────────────────────────── */}
           <div>
@@ -443,15 +442,14 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
             </>
           )}
 
-          </div>
-          <div className="flex sm:flex-row sm:justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
+          <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
               ביטול
             </Button>
             <Button type="submit" disabled={isBusy}>
               {isBusy ? "שומר..." : isEdit ? "שמור שינויים" : "צור עסקה"}
             </Button>
-          </div>
+          </DialogFooter>
 
         </form>
       </DialogContent>
