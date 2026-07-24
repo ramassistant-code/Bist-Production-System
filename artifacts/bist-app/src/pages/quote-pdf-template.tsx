@@ -188,52 +188,36 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
 
   const productsHtml = cfg.show_products
     ? SAMPLE.products
-        .map(
-          (p) => `
-      <tr style="border-bottom:1px solid #e5e7eb;">
-        <td style="padding:10px 12px;font-weight:600;color:#111;">${p.name}</td>
-        <td style="padding:10px 12px;text-align:center;">${p.quantity}</td>
-        <td style="padding:10px 12px;text-align:center;">₪${fmt(p.unit_price)}</td>
-        <td style="padding:10px 12px;text-align:center;font-weight:600;">₪${fmt(p.total_price)}</td>
-      </tr>
-      ${
-        cfg.show_product_description && p.description
-          ? `<tr><td colspan="4" style="padding:4px 12px 8px;color:#6b7280;font-size:12px;">${p.description}</td></tr>`
-          : ""
-      }
-      ${
-        cfg.show_product_customer_notes && p.customer_note
-          ? `<tr><td colspan="4" style="padding:4px 12px 8px;color:#92400e;background:#fef3c7;font-size:12px;">💬 ${p.customer_note}</td></tr>`
-          : ""
-      }
-      ${
-        cfg.show_components
-          ? p.components
-              .map(
-                (c) => `
-          <tr style="background:#f9fafb;">
-            <td style="padding:6px 12px 6px 28px;color:#374151;font-size:13px;">↳ ${c.name}</td>
-            <td style="padding:6px 12px;text-align:center;font-size:13px;">${c.quantity}</td>
-            <td style="padding:6px 12px;text-align:center;font-size:13px;color:#9ca3af;">—</td>
-            <td style="padding:6px 12px;text-align:center;font-size:13px;color:#9ca3af;">—</td>
-          </tr>
-          ${
-            cfg.show_component_description && c.description
-              ? `<tr style="background:#f9fafb;"><td colspan="4" style="padding:2px 12px 6px 28px;color:#6b7280;font-size:11px;">${c.description}</td></tr>`
-              : ""
-          }
-          ${
-            cfg.show_component_customer_notes && c.customer_note
-              ? `<tr style="background:#fef9f0;"><td colspan="4" style="padding:2px 12px 6px 28px;color:#92400e;font-size:11px;">💬 ${c.customer_note}</td></tr>`
-              : ""
-          }
-        `,
-              )
-              .join("")
-          : ""
-      }
-    `,
-        )
+        .map((p) => {
+          const sortedComps = [...p.components].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          const compBlock = cfg.show_components && sortedComps.length > 0
+            ? `<tr>
+                <td colspan="4" style="padding:0 12px 14px;">
+                  <div style="background:#f8f9fa;border-radius:6px;padding:10px 14px;">
+                    ${sortedComps.map((c) => `
+                      <div style="padding:5px 0;">
+                        <span style="font-size:12px;color:#4b5563;font-weight:500;">${c.name}</span>
+                        ${cfg.show_component_description && c.description ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.description}</div>` : ""}
+                        ${cfg.show_component_customer_notes && c.customer_note ? `<div style="font-size:11px;color:#92400e;margin-top:2px;">💬 ${c.customer_note}</div>` : ""}
+                      </div>
+                    `).join("")}
+                  </div>
+                </td>
+              </tr>`
+            : "";
+          return `
+            <tbody style="page-break-inside:avoid;">
+              <tr style="border-top:1px solid #e5e7eb;">
+                <td style="padding:20px 12px 18px;font-weight:700;font-size:14px;color:#111827;width:55%;">${p.name}</td>
+                <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:10%;font-size:14px;">${p.quantity}</td>
+                <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:17.5%;font-size:14px;">₪${fmt(p.unit_price)}</td>
+                <td style="padding:20px 12px 18px;text-align:center;font-weight:700;font-size:14px;color:#111827;width:17.5%;">₪${fmt(p.total_price)}</td>
+              </tr>
+              ${cfg.show_product_description && p.description ? `<tr><td colspan="4" style="padding:0 12px 12px;color:#4b5563;font-size:13px;line-height:1.45;">${p.description}</td></tr>` : ""}
+              ${cfg.show_product_customer_notes && p.customer_note ? `<tr><td colspan="4" style="padding:0 12px 12px;color:#92400e;background:#fef9f0;font-size:13px;">💬 ${p.customer_note}</td></tr>` : ""}
+              ${compBlock}
+            </tbody>`;
+        })
         .join("")
     : "";
 
@@ -280,7 +264,7 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f4f6; direction: rtl; }
   .page { width: 794px; min-height: 1123px; background: white; margin: 16px auto; padding: 48px 56px; box-shadow: 0 2px 16px rgba(0,0,0,0.10); }
   table { width: 100%; border-collapse: collapse; }
-  th { background: #1e3a5f; color: white; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+  th { background: #111827; color: white; padding: 11px 12px; font-size: 13px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -288,17 +272,17 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
 
 <div class="page">
 
-  <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:3px solid #1e3a5f;padding-bottom:20px;">
+  <!-- Header: quote title (right/first in RTL), company (left/second) -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:2px solid #111827;padding-bottom:20px;margin-top:12px;">
     <div>
-      ${cfg.company_name ? `<div style="font-size:13px;color:#6b7280;">${cfg.company_name}</div>` : ""}
-      ${cfg.company_introduction ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;max-width:260px;">${cfg.company_introduction}</div>` : ""}
+      <div style="font-size:22px;font-weight:700;color:#111827;">${cfg.document_title}</div>
+      ${cfg.show_quote_number ? `<div style="font-size:13px;color:#374151;margin-top:8px;"><span style="color:#6b7280;">מס׳ הצעה:</span> ${SAMPLE.quote_number}</div>` : ""}
+      ${cfg.show_issue_date ? `<div style="font-size:13px;color:#374151;margin-top:3px;"><span style="color:#6b7280;">תאריך הפקה:</span> ${SAMPLE.issue_date}</div>` : ""}
+      ${cfg.show_valid_until ? `<div style="font-size:13px;color:#374151;margin-top:3px;"><span style="color:#6b7280;">בתוקף עד:</span> ${SAMPLE.valid_until}</div>` : ""}
     </div>
     <div style="text-align:left;">
-      <div style="font-size:22px;font-weight:700;color:#1e3a5f;">${cfg.document_title}</div>
-      ${cfg.show_quote_number ? `<div style="font-size:13px;color:#374151;margin-top:6px;"><span style="color:#6b7280;">מס׳ הצעה:</span> ${SAMPLE.quote_number}</div>` : ""}
-      ${cfg.show_issue_date ? `<div style="font-size:13px;color:#374151;margin-top:2px;"><span style="color:#6b7280;">תאריך הפקה:</span> ${SAMPLE.issue_date}</div>` : ""}
-      ${cfg.show_valid_until ? `<div style="font-size:13px;color:#374151;margin-top:2px;"><span style="color:#6b7280;">בתוקף עד:</span> ${SAMPLE.valid_until}</div>` : ""}
+      ${cfg.company_name ? `<div style="font-size:14px;font-weight:600;color:#374151;">${cfg.company_name}</div>` : ""}
+      ${cfg.company_introduction ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;max-width:200px;line-height:1.4;">${cfg.company_introduction}</div>` : ""}
     </div>
   </div>
 
@@ -317,19 +301,17 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
   ${
     cfg.show_products
       ? `
-  <div style="margin-bottom:24px;">
+  <div style="margin-bottom:28px;">
     <table>
       <thead>
         <tr>
-          <th style="text-align:right;">פריט</th>
-          <th style="text-align:center;width:72px;">${L.quantity}</th>
-          <th style="text-align:center;width:100px;">${L.unit_price}</th>
-          <th style="text-align:center;width:100px;">${L.product_total}</th>
+          <th style="text-align:right;width:55%;">פריט</th>
+          <th style="text-align:center;width:10%;">${L.quantity}</th>
+          <th style="text-align:center;width:17.5%;">${L.unit_price}</th>
+          <th style="text-align:center;width:17.5%;">${L.product_total}</th>
         </tr>
       </thead>
-      <tbody style="color:#374151;font-size:14px;">
-        ${productsHtml}
-      </tbody>
+      ${productsHtml}
     </table>
   </div>
   `
@@ -339,12 +321,12 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
   <!-- Totals -->
   <div style="display:flex;justify-content:flex-start;margin-bottom:24px;">
     <div style="min-width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
-      <div style="font-weight:600;color:#111;margin-bottom:10px;">${cfg.summary_title}</div>
+      <div style="font-weight:700;color:#111827;margin-bottom:10px;font-size:14px;">${cfg.summary_title}</div>
       <table style="font-size:13px;color:#374151;">
         ${vatHtml}
-        <tr style="font-weight:700;font-size:15px;border-top:2px solid #1e3a5f;">
-          <td style="padding:8px 0 0;color:#1e3a5f;">${L.total_including_vat}</td>
-          <td style="padding:8px 0 0;text-align:left;color:#1e3a5f;">₪${fmt(SAMPLE.total_including_vat)}</td>
+        <tr style="border-top:2px solid #111827;">
+          <td style="padding:8px 0 0;color:#111827;font-weight:700;font-size:15px;">${L.total_including_vat}</td>
+          <td style="padding:8px 0 0;text-align:left;color:#111827;font-weight:700;font-size:15px;">₪${fmt(SAMPLE.total_including_vat)}</td>
         </tr>
       </table>
     </div>

@@ -74,6 +74,7 @@ export interface ComponentSnapshot {
   quantity?: number;
   customer_note?: string;
   internal_note?: string;
+  sort_order?: number;
 }
 
 export interface ItemSnapshot {
@@ -208,66 +209,58 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
   const vatAmount = totals?.vat_amount ?? 0;
   const totalWithVat = totals?.total_with_vat ?? 0;
 
-  // Products rows HTML
+  // ── Products HTML (one <tbody> per product for page-break-inside:avoid) ────
   const productsHtml = cfg.show_products
-    ? items
-        .map((item) => {
-          const compRows = cfg.show_components
-            ? (item.components_snapshot ?? [])
-                .map(
-                  (c) => `
-              <tr style="background:#f9fafb;border-bottom:1px solid #f0f0f0;">
-                <td style="padding:6px 12px 6px 32px;color:#374151;font-size:12px;">↳ ${c.component_name_snapshot ?? "—"}</td>
-                <td style="padding:6px 12px;text-align:center;font-size:12px;color:#374151;">${c.quantity ?? 1}</td>
-                <td style="padding:6px 12px;text-align:center;font-size:12px;color:#9ca3af;">—</td>
-                <td style="padding:6px 12px;text-align:center;font-size:12px;color:#9ca3af;">—</td>
-              </tr>
-              ${
-                cfg.show_component_description && c.component_description_snapshot
-                  ? `<tr style="background:#f9fafb;"><td colspan="4" style="padding:2px 12px 6px 32px;color:#6b7280;font-size:11px;">${c.component_description_snapshot}</td></tr>`
-                  : ""
-              }
-              ${
-                cfg.show_component_customer_notes && c.customer_note
-                  ? `<tr style="background:#fef9f0;"><td colspan="4" style="padding:2px 12px 6px 32px;color:#92400e;font-size:11px;">💬 ${c.customer_note}</td></tr>`
-                  : ""
-              }
-              ${
-                c.internal_note
-                  ? `<tr style="background:#eff6ff;"><td colspan="4" style="padding:2px 12px 6px 32px;color:#1e40af;font-size:11px;">🔧 ${c.internal_note}</td></tr>`
-                  : ""
-              }
-            `,
-                )
-                .join("")
-            : "";
+    ? items.map((item) => {
+        // Sort components by sort_order
+        const sortedComponents = cfg.show_components
+          ? (item.components_snapshot ?? [])
+              .slice()
+              .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+          : [];
 
-          return `
-          <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:10px 12px;font-weight:600;color:#111827;">${item.product_name_snapshot ?? "—"}</td>
-            <td style="padding:10px 12px;text-align:center;color:#374151;">${item.quantity ?? 1}</td>
-            <td style="padding:10px 12px;text-align:center;color:#374151;">${fmtILS(item.unit_price)}</td>
-            <td style="padding:10px 12px;text-align:center;font-weight:600;color:#111827;">${fmtILS(item.line_subtotal)}</td>
-          </tr>
-          ${
-            cfg.show_product_description && item.product_description_snapshot
-              ? `<tr><td colspan="4" style="padding:3px 12px 8px;color:#6b7280;font-size:12px;white-space:pre-wrap;">${item.product_description_snapshot}</td></tr>`
-              : ""
-          }
-          ${
-            cfg.show_product_customer_notes && item.customer_note
-              ? `<tr><td colspan="4" style="padding:3px 12px 8px;color:#92400e;background:#fef3c7;font-size:12px;">💬 ${item.customer_note}</td></tr>`
-              : ""
-          }
-          ${
-            item.internal_note
-              ? `<tr><td colspan="4" style="padding:3px 12px 8px;color:#1e40af;background:#eff6ff;font-size:12px;">🔧 ${item.internal_note}</td></tr>`
-              : ""
-          }
-          ${compRows}
-        `;
-        })
-        .join("")
+        // Build component block (single cell spanning all 4 cols)
+        const compBlockHtml = sortedComponents.length > 0
+          ? `<tr>
+              <td colspan="4" style="padding:0 12px 14px;">
+                <div style="background-color:#f8f9fa;border-radius:6px;padding:10px 14px;">
+                  ${sortedComponents.map((c) => `
+                    <div style="padding:5px 0;${sortedComponents.indexOf(c) > 0 ? "margin-top:3px;" : ""}">
+                      <span style="font-size:12px;color:#4b5563;font-weight:500;">${c.component_name_snapshot ?? "—"}</span>
+                      ${cfg.show_component_description && c.component_description_snapshot
+                        ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.component_description_snapshot}</div>`
+                        : ""}
+                      ${cfg.show_component_customer_notes && c.customer_note
+                        ? `<div style="font-size:11px;color:#92400e;margin-top:2px;">💬 ${c.customer_note}</div>`
+                        : ""}
+                    </div>
+                  `).join("")}
+                </div>
+              </td>
+            </tr>`
+          : "";
+
+        return `
+          <tbody style="page-break-inside:avoid;">
+            <tr style="border-top:1px solid #e5e7eb;">
+              <td style="padding:20px 12px 18px;font-weight:700;font-size:14px;color:#111827;width:55%;">${item.product_name_snapshot ?? "—"}</td>
+              <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:10%;font-size:14px;">${item.quantity ?? 1}</td>
+              <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:17.5%;font-size:14px;">${fmtILS(item.unit_price)}</td>
+              <td style="padding:20px 12px 18px;text-align:center;font-weight:700;font-size:14px;color:#111827;width:17.5%;">${fmtILS(item.line_subtotal)}</td>
+            </tr>
+            ${cfg.show_product_description && item.product_description_snapshot
+              ? `<tr>
+                  <td colspan="4" style="padding:0 12px 12px;color:#4b5563;font-size:13px;line-height:1.45;white-space:pre-wrap;">${item.product_description_snapshot}</td>
+                </tr>`
+              : ""}
+            ${cfg.show_product_customer_notes && item.customer_note
+              ? `<tr>
+                  <td colspan="4" style="padding:0 12px 12px;color:#92400e;background-color:#fef9f0;font-size:13px;">💬 ${item.customer_note}</td>
+                </tr>`
+              : ""}
+            ${compBlockHtml}
+          </tbody>`;
+      }).join("")
     : "";
 
   const vatPct = Math.round(vatRate * 100);
@@ -301,9 +294,9 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; direction: rtl; background: white; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { width: 100%; padding: 32px 56px 48px; min-height: calc(100vh - 140px); }
+  .page { width: 100%; padding: 32px 56px 48px; }
   table { width: 100%; border-collapse: collapse; }
-  th { background-color: #1e3a5f !important; color: white; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+  th { background-color: #111827 !important; color: white; padding: 11px 12px; font-size: 13px; font-weight: 600; }
   @page { size: A4; margin: 0; }
 </style>
 </head>
@@ -317,22 +310,22 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
 
 <div class="page">
 
-  <!-- Header: quote title + meta -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:3px solid #1e3a5f;padding-bottom:20px;margin-top:8px;">
+  <!-- Header: quote title (right) + company name (left) -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;border-bottom:2px solid #111827;padding-bottom:20px;margin-top:12px;">
     <div>
-      ${cfg.company_name ? `<div style="font-size:13px;color:#6b7280;">${cfg.company_name}</div>` : ""}
-      ${cfg.company_introduction ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;max-width:240px;">${cfg.company_introduction}</div>` : ""}
+      <div style="font-size:22px;font-weight:700;color:#111827;">${cfg.document_title}</div>
+      ${cfg.show_quote_number ? `<div style="font-size:13px;color:#374151;margin-top:8px;"><span style="color:#6b7280;">מס׳ הצעה:</span> ${quoteNumber}</div>` : ""}
+      ${cfg.show_issue_date ? `<div style="font-size:13px;color:#374151;margin-top:3px;"><span style="color:#6b7280;">תאריך הפקה:</span> ${fmtDate(issueDate)}</div>` : ""}
+      ${cfg.show_valid_until && terms?.valid_until ? `<div style="font-size:13px;color:#374151;margin-top:3px;"><span style="color:#6b7280;">בתוקף עד:</span> ${fmtDate(terms.valid_until)}</div>` : ""}
     </div>
     <div style="text-align:left;">
-      <div style="font-size:22px;font-weight:700;color:#1e3a5f;">${cfg.document_title}</div>
-      ${cfg.show_quote_number ? `<div style="font-size:13px;color:#374151;margin-top:6px;"><span style="color:#6b7280;">מס׳ הצעה:</span> ${quoteNumber}</div>` : ""}
-      ${cfg.show_issue_date ? `<div style="font-size:13px;color:#374151;margin-top:2px;"><span style="color:#6b7280;">תאריך הפקה:</span> ${fmtDate(issueDate)}</div>` : ""}
-      ${cfg.show_valid_until && terms?.valid_until ? `<div style="font-size:13px;color:#374151;margin-top:2px;"><span style="color:#6b7280;">בתוקף עד:</span> ${fmtDate(terms.valid_until)}</div>` : ""}
+      ${cfg.company_name ? `<div style="font-size:14px;font-weight:600;color:#374151;">${cfg.company_name}</div>` : ""}
+      ${cfg.company_introduction ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;max-width:200px;line-height:1.4;">${cfg.company_introduction}</div>` : ""}
     </div>
   </div>
 
   <!-- Client details -->
-  <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:${cfg.below_client_text ? "12px" : "24px"};">
+  <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:${cfg.below_client_text ? "12px" : "28px"};">
     <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">${L.client_details}</div>
     <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px;">${L.for_client}: ${clientName}</div>
     <div style="display:flex;gap:28px;flex-wrap:wrap;">
@@ -340,24 +333,22 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
       ${cfg.show_client_phone && clientPhone ? `<div style="font-size:13px;color:#374151;"><span style="color:#6b7280;">${L.phone}:</span> ${clientPhone}</div>` : ""}
     </div>
   </div>
-  ${cfg.below_client_text ? `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;margin-bottom:24px;padding:0 2px;">${cfg.below_client_text}</div>` : ""}
+  ${cfg.below_client_text ? `<div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;margin-bottom:28px;padding:0 2px;">${cfg.below_client_text}</div>` : ""}
 
   <!-- Products table -->
   ${
     cfg.show_products
-      ? `<div style="margin-bottom:24px;">
+      ? `<div style="margin-bottom:28px;">
     <table>
       <thead>
         <tr>
-          <th style="text-align:right;">פריט</th>
-          <th style="text-align:center;width:72px;">${L.quantity}</th>
-          <th style="text-align:center;width:108px;">${L.unit_price}</th>
-          <th style="text-align:center;width:108px;">${L.product_total}</th>
+          <th style="text-align:right;width:55%;">פריט</th>
+          <th style="text-align:center;width:10%;">${L.quantity}</th>
+          <th style="text-align:center;width:17.5%;">${L.unit_price}</th>
+          <th style="text-align:center;width:17.5%;">${L.product_total}</th>
         </tr>
       </thead>
-      <tbody style="color:#374151;font-size:14px;">
-        ${productsHtml}
-      </tbody>
+      ${productsHtml}
     </table>
   </div>`
       : ""
@@ -369,9 +360,9 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
       <div style="font-weight:700;color:#111827;margin-bottom:10px;font-size:14px;">${cfg.summary_title}</div>
       <table style="font-size:13px;color:#374151;">
         ${vatRowsHtml}
-        <tr style="border-top:2px solid #1e3a5f;">
-          <td style="padding:8px 0 0;color:#1e3a5f;font-weight:700;font-size:15px;">${L.total_including_vat}</td>
-          <td style="padding:8px 0 0;text-align:left;color:#1e3a5f;font-weight:700;font-size:15px;">${fmtILS(totalWithVat)}</td>
+        <tr style="border-top:2px solid #111827;">
+          <td style="padding:8px 0 0;color:#111827;font-weight:700;font-size:15px;">${L.total_including_vat}</td>
+          <td style="padding:8px 0 0;text-align:left;color:#111827;font-weight:700;font-size:15px;">${fmtILS(totalWithVat)}</td>
         </tr>
       </table>
     </div>
