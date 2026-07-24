@@ -216,6 +216,38 @@ router.post("/products/:id/components", async (req: Request, res: Response): Pro
   }
 });
 
+// PATCH /products/:id/components/reorder  ← must come BEFORE /:pc_id to avoid param collision
+router.patch("/products/:id/components/reorder", async (req: Request, res: Response): Promise<void> => {
+  const { order } = req.body as { order: string[] };
+
+  if (!Array.isArray(order) || order.length === 0) {
+    res.status(400).json({ error: "יש לספק מערך של מזהי רכיבים" });
+    return;
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      for (let i = 0; i < order.length; i++) {
+        await tx
+          .update(productComponentsTable)
+          .set({ sort_order: i + 1 } as Partial<typeof productComponentsTable.$inferInsert>)
+          .where(
+            and(
+              eq(productComponentsTable.id, order[i]),
+              eq(productComponentsTable.product_id, String(req.params.id)),
+              isNull(productComponentsTable.deleted_at),
+            )
+          );
+      }
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "Failed to reorder product components");
+    res.status(500).json({ error: "שגיאה בעדכון סדר הרכיבים" });
+  }
+});
+
 // PATCH /products/:id/components/:pc_id
 router.patch("/products/:id/components/:pc_id", async (req: Request, res: Response): Promise<void> => {
   const { default_quantity, default_unit_price } = req.body as {
@@ -263,38 +295,6 @@ router.patch("/products/:id/components/:pc_id", async (req: Request, res: Respon
   } catch (err) {
     logger.error({ err }, "Failed to update product component");
     res.status(500).json({ error: "שגיאה בעדכון הרכיב" });
-  }
-});
-
-// PATCH /products/:id/components/reorder
-router.patch("/products/:id/components/reorder", async (req: Request, res: Response): Promise<void> => {
-  const { order } = req.body as { order: string[] };
-
-  if (!Array.isArray(order) || order.length === 0) {
-    res.status(400).json({ error: "יש לספק מערך של מזהי רכיבים" });
-    return;
-  }
-
-  try {
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < order.length; i++) {
-        await tx
-          .update(productComponentsTable)
-          .set({ sort_order: i + 1 } as Partial<typeof productComponentsTable.$inferInsert>)
-          .where(
-            and(
-              eq(productComponentsTable.id, order[i]),
-              eq(productComponentsTable.product_id, String(req.params.id)),
-              isNull(productComponentsTable.deleted_at),
-            )
-          );
-      }
-    });
-
-    res.json({ ok: true });
-  } catch (err) {
-    logger.error({ err }, "Failed to reorder product components");
-    res.status(500).json({ error: "שגיאה בעדכון סדר הרכיבים" });
   }
 });
 

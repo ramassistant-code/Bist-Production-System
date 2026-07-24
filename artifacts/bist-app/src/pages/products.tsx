@@ -382,7 +382,8 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
   const queryClient = useQueryClient();
   const [showAddRow, setShowAddRow] = useState(false);
   const [localComponents, setLocalComponents] = useState<ProductComponentRow[]>([]);
-  const [isReordering, setIsReordering] = useState(false);
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const isEdit = !!productId;
 
@@ -410,31 +411,35 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id || !productId) return;
+    if (!over || active.id === over.id) return;
 
     const oldIdx = localComponents.findIndex(c => c.id === active.id);
     const newIdx = localComponents.findIndex(c => c.id === over.id);
     if (oldIdx === -1 || newIdx === -1) return;
 
-    const reordered = arrayMove(localComponents, oldIdx, newIdx);
-    setLocalComponents(reordered);
-    setIsReordering(true);
+    setLocalComponents(prev => arrayMove(prev, oldIdx, newIdx));
+    setOrderDirty(true);
+  }, [localComponents]);
+
+  const handleSaveOrder = useCallback(async () => {
+    if (!productId) return;
+    setIsSavingOrder(true);
     try {
       await customFetch(`/api/products/${productId}/components/reorder`, {
         method: "PATCH",
-        body: JSON.stringify({ order: reordered.map(c => c.id) }),
+        body: JSON.stringify({ order: localComponents.map(c => c.id) }),
       });
       queryClient.invalidateQueries({ queryKey: getGetProductQueryKey(productId) });
+      setOrderDirty(false);
+      toast({ title: "סדר הרכיבים נשמר" });
     } catch {
       toast({ title: "שגיאה בשמירת סדר הרכיבים", variant: "destructive" });
-      setLocalComponents(localComponents); // revert
     } finally {
-      setIsReordering(false);
+      setIsSavingOrder(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localComponents, productId]);
+  }, [localComponents, productId, queryClient, toast]);
 
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
@@ -561,12 +566,24 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                     <h3 className="font-semibold text-base">
                       רכיבים ({pw?.components?.length ?? 0})
                     </h3>
-                    {!showAddRow && (
-                      <Button size="sm" variant="outline" onClick={() => setShowAddRow(true)}>
-                        <PackagePlus className="w-4 h-4 ml-1" />
-                        שייך רכיב
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {orderDirty && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={handleSaveOrder}
+                          disabled={isSavingOrder}
+                        >
+                          {isSavingOrder ? "שומר..." : "שמור סדר רכיבים"}
+                        </Button>
+                      )}
+                      {!showAddRow && (
+                        <Button size="sm" variant="outline" onClick={() => setShowAddRow(true)}>
+                          <PackagePlus className="w-4 h-4 ml-1" />
+                          שייך רכיב
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="border rounded-lg overflow-hidden">
@@ -629,11 +646,6 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                         )}
                       </table>
                     </DndContext>
-                    {isReordering && (
-                      <div className="text-xs text-muted-foreground text-center py-1 border-t">
-                        שומר סדר...
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
