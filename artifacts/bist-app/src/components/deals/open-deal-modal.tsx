@@ -259,11 +259,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
   // ── Render ──────────────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto py-8"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       dir="rtl"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-2xl mx-4 my-auto">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">פתיחת עסקה</h2>
@@ -276,7 +276,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
           {/* ─── Section 1: פרטי לקוח / ליד ─────────────────────────────── */}
           <section>

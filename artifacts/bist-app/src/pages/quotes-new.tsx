@@ -494,7 +494,7 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" dir="rtl">
-      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col mx-4">
+      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>

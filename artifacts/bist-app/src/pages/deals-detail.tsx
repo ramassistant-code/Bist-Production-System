@@ -300,7 +300,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent dir="rtl" className="max-w-md">
+      <DialogContent dir="rtl" className="max-w-lg">
         <DialogHeader>
           <DialogTitle>הוספת תשלום</DialogTitle>
         </DialogHeader>
@@ -491,7 +491,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent dir="rtl" className="max-w-md">
+      <DialogContent dir="rtl" className="max-w-lg">
         <DialogHeader>
           <DialogTitle>עריכת עסקה {deal.deal_number}</DialogTitle>
         </DialogHeader>

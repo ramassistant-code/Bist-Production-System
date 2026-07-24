@@ -195,7 +195,7 @@ interface ComponentDetailsProps {
 function ComponentDetailsDialog({ component: c, open, onOpenChange, onEdit }: ComponentDetailsProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-lg" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             <span>{c.name}</span>
@@ -427,7 +427,7 @@ export default function Components() {
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>רכיב חדש</DialogTitle>
           </DialogHeader>
@@ -445,7 +445,7 @@ export default function Components() {
         open={!!editComponent}
         onOpenChange={(open) => !open && setEditComponent(null)}
       >
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>עריכת רכיב — {editComponent?.name}</DialogTitle>
           </DialogHeader>

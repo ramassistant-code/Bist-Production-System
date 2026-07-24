@@ -630,7 +630,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
 
       {/* Activation blockers dialog */}
       <Dialog open={activateBlockers !== null} onOpenChange={(o) => !o && setActivateBlockers(null)}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="max-w-xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>לא ניתן להפעיל — {activateBlockers?.name}</DialogTitle>
           </DialogHeader>
