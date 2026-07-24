@@ -178,12 +178,12 @@ export default function QuotesDetail() {
 
 
   const ver = data?.currentVersion;
-  const isApprovedAndLocked = !!ver?.id && ver?.status === "approved" && !!ver?.locked_at;
+  const isApproved = !!ver?.id && ver?.status === "approved";
 
   const { data: dealCheck } = useQuery<{ exists: boolean; deal_id?: string }>({
     queryKey: ["deal-check", ver?.id],
     queryFn: () => customFetch<{ exists: boolean; deal_id?: string }>(`/api/deals/check-version/${ver!.id}`),
-    enabled: isApprovedAndLocked,
+    enabled: isApproved,
     staleTime: 0,
   });
 
@@ -269,8 +269,8 @@ export default function QuotesDetail() {
   const isDraft = vStatus === "draft" && !isLocked;
   const partyName = party?.business_name || party?.contact_name || quote.customer_name || quote.lead_name || "—";
 
-  const canOpenDeal = isApprovedAndLocked && !dealCheck?.exists;
-  const dealAlreadyExists = isApprovedAndLocked && dealCheck?.exists;
+  const canOpenDeal = isApproved && !dealCheck?.exists;
+  const dealAlreadyExists = isApproved && dealCheck?.exists;
 
   return (
     <>
@@ -300,7 +300,7 @@ export default function QuotesDetail() {
                 variant="outline"
                 className="text-green-700 border-green-200 hover:bg-green-50"
                 onClick={() => statusMutation.mutate("approved")}
-                disabled={statusMutation.isPending || vStatus !== "sent"}
+                disabled={statusMutation.isPending || ["approved", "rejected", "cancelled"].includes(vStatus)}
               >
                 <CheckCircle className="w-3.5 h-3.5 ml-1" />הצעת מחיר נחתמה
               </Button>
