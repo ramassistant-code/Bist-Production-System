@@ -4,8 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { X } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogTitle, DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -230,13 +231,26 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-3xl p-0 gap-0 [&>button:last-child]:hidden" dir="rtl">
+
+        {/* ── Header קבוע ── */}
+        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border shrink-0">
+          <DialogTitle className="text-lg font-semibold leading-none">
             {isEdit ? `עריכת עסקה — ${deal!.deal_number}` : "עסקה חדשה"}
           </DialogTitle>
-        </DialogHeader>
+          <DialogClose asChild>
+            <button
+              onClick={onClose}
+              className="rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">סגור</span>
+            </button>
+          </DialogClose>
+        </div>
 
+        {/* ── גוף גלילה ── */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-5">
 
           {/* ─── מקושרים ──────────────────────────────────────────── */}
@@ -442,16 +456,23 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
             </>
           )}
 
-          <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
-              ביטול
-            </Button>
-            <Button type="submit" disabled={isBusy}>
-              {isBusy ? "שומר..." : isEdit ? "שמור שינויים" : "צור עסקה"}
-            </Button>
-          </DialogFooter>
-
         </form>
+        </div>
+
+        {/* ── Footer קבוע ── */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
+          <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>
+            ביטול
+          </Button>
+          <Button
+            type="submit"
+            disabled={isBusy}
+            onClick={handleSubmit((v) => mutation.mutate(v))}
+          >
+            {isBusy ? "שומר..." : isEdit ? "שמור שינויים" : "צור עסקה"}
+          </Button>
+        </div>
+
       </DialogContent>
     </Dialog>
   );
