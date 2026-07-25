@@ -1,9 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { appUsersTable } from "@workspace/db/schema";
-import { eq, isNull, and, asc } from "drizzle-orm";
+import { eq, isNull, and, asc, sql } from "drizzle-orm";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 
@@ -74,6 +75,99 @@ router.get("/users", async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     logger.error({ err }, "Failed to list users");
     res.status(500).json({ error: "שגיאה בטעינת המשתמשים" });
+  }
+});
+
+// POST /admin/users — create a new app_user
+router.post("/admin/users", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) { res.status(401).json({ error: "לא מורשה" }); return; }
+
+    const { full_name, email, phone, role, is_active } = req.body as {
+      full_name?: string; email?: string; phone?: string; role?: string; is_active?: boolean;
+    };
+
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "כתובת אימייל לא תקינה" }); return;
+    }
+
+    const [created] = await db.insert(appUsersTable).values({
+      id: crypto.randomUUID(),
+      full_name: full_name?.trim() || null,
+      email: email.trim().toLowerCase(),
+      phone: phone?.trim() || null,
+      role: role || null,
+      is_active: is_active !== false,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }).returning();
+
+    if (!created) { res.status(500).json({ error: "שגיאה ביצירת משתמש" }); return; }
+
+    void notifySync({ action: "salesperson_upserted", id: created.id });
+    res.status(201).json(created);
+  } catch (err) {
+    logger.error({ err }, "Failed to create user");
+    res.status(500).json({ error: "שגיאת שרת" });
+  }
+});
+
+// PATCH /admin/users/:id — update an app_user
+router.patch("/admin/users/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) { res.status(401).json({ error: "לא מורשה" }); return; }
+
+    const id = String(req.params["id"]);
+    const { full_name, email, phone, role, is_active } = req.body as {
+      full_name?: string; email?: string; phone?: string; role?: string; is_active?: boolean;
+    };
+
+    const patch: Record<string, unknown> = { updated_at: new Date() };
+    if (full_name !== undefined) patch["full_name"] = full_name?.trim() || null;
+    if (email !== undefined) {
+      if (!email.includes("@")) { res.status(400).json({ error: "כתובת אימייל לא תקינה" }); return; }
+      patch["email"] = email.trim().toLowerCase();
+    }
+    if (phone !== undefined) patch["phone"] = phone?.trim() || null;
+    if (role !== undefined) patch["role"] = role || null;
+    if (is_active !== undefined) patch["is_active"] = is_active;
+
+    const [updated] = await db.update(appUsersTable)
+      .set(patch)
+      .where(and(eq(appUsersTable.id, id), isNull(appUsersTable.deleted_at)))
+      .returning();
+
+    if (!updated) { res.status(404).json({ error: "משתמש לא נמצא" }); return; }
+
+    void notifySync({ action: "salesperson_upserted", id: updated.id });
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err }, "Failed to update user");
+    res.status(500).json({ error: "שגיאת שרת" });
+  }
+});
+
+// DELETE /admin/users/:id — soft-delete an app_user
+router.delete("/admin/users/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) { res.status(401).json({ error: "לא מורשה" }); return; }
+
+    const id = String(req.params["id"]);
+
+    const [deleted] = await db.update(appUsersTable)
+      .set({ deleted_at: new Date(), is_active: false, updated_at: new Date() })
+      .where(and(eq(appUsersTable.id, id), isNull(appUsersTable.deleted_at)))
+      .returning();
+
+    if (!deleted) { res.status(404).json({ error: "משתמש לא נמצא" }); return; }
+
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "Failed to delete user");
+    res.status(500).json({ error: "שגיאת שרת" });
   }
 });
 

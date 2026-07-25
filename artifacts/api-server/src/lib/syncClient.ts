@@ -5,6 +5,7 @@ const SYNC_ENV = process.env.SYNC_ENV ?? "test";
 type SyncPayload =
   | { action: "customer_upserted"; id: string }
   | { action: "lead_upserted"; id: string }
+  | { action: "salesperson_upserted"; id: string }
   | { action: "deal_created" | "deal_updated"; id: string; customerId?: string; leadId?: string };
 
 /** Notify the sync service. Never throws — a sync hiccup must not break the user's op. */
