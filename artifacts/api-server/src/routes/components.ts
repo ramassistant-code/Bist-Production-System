@@ -7,6 +7,7 @@ import {
 } from "@workspace/db/schema";
 import { isNull, asc, and, ilike, eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 
@@ -52,7 +53,9 @@ router.post("/components", async (req: Request, res: Response): Promise<void> =>
       .insert(componentsTable)
       .values(parsed.data as unknown as typeof componentsTable.$inferInsert)
       .returning();
-    res.status(201).json(rows[0] ?? null);
+    const component = rows[0] ?? null;
+    res.status(201).json(component);
+    if (component) void notifySync({ entity: "component_operation", id: component.id });
   } catch (err) {
     logger.error({ err }, "Failed to create component");
     res.status(500).json({ error: "שגיאה ביצירת הרכיב" });
@@ -97,6 +100,7 @@ router.patch("/components/:id", async (req: Request, res: Response): Promise<voi
       return;
     }
     res.json(component);
+    void notifySync({ entity: "component_operation", id: component.id });
   } catch (err) {
     logger.error({ err }, "Failed to update component");
     res.status(500).json({ error: "שגיאה בעדכון הרכיב" });

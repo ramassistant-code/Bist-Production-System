@@ -9,6 +9,7 @@ import {
 } from "@workspace/db/schema";
 import { isNull, asc, eq, sql, ilike, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 
@@ -54,7 +55,9 @@ router.post("/products", async (req: Request, res: Response): Promise<void> => {
       .insert(productsTable)
       .values(parsed.data as unknown as typeof productsTable.$inferInsert)
       .returning();
-    res.status(201).json(rows[0] ?? null);
+    const product = rows[0] ?? null;
+    res.status(201).json(product);
+    if (product) void notifySync({ entity: "product", id: product.id });
   } catch (err) {
     logger.error({ err }, "Failed to create product");
     res.status(500).json({ error: "שגיאה ביצירת המוצר" });
@@ -138,6 +141,7 @@ router.patch("/products/:id", async (req: Request, res: Response): Promise<void>
       return;
     }
     res.json(product);
+    void notifySync({ entity: "product", id: product.id });
   } catch (err) {
     logger.error({ err }, "Failed to update product");
     res.status(500).json({ error: "שגיאה בעדכון המוצר" });
@@ -209,7 +213,9 @@ router.post("/products/:id/components", async (req: Request, res: Response): Pro
       .leftJoin(componentsTable, eq(productComponentsTable.component_id, componentsTable.id))
       .where(eq(productComponentsTable.id, inserted!.id));
 
-    res.status(201).json(fullRows[0] ?? inserted);
+    const result = fullRows[0] ?? inserted;
+    res.status(201).json(result);
+    if (result) void notifySync({ entity: "deal_product", id: result.id });
   } catch (err) {
     logger.error({ err }, "Failed to add product component");
     res.status(500).json({ error: "שגיאה בהוספת הרכיב למוצר" });
@@ -291,7 +297,9 @@ router.patch("/products/:id/components/:pc_id", async (req: Request, res: Respon
       .where(eq(productComponentsTable.id, String(req.params.pc_id)))
       .returning();
 
-    res.json(rows[0]);
+    const pc = rows[0];
+    res.json(pc);
+    if (pc) void notifySync({ entity: "deal_product", id: pc.id });
   } catch (err) {
     logger.error({ err }, "Failed to update product component");
     res.status(500).json({ error: "שגיאה בעדכון הרכיב" });
