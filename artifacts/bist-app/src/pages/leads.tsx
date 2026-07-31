@@ -241,7 +241,7 @@ function LeadFormSupabase({ lead, onSuccess, onCancel }: LeadFormSupabaseProps) 
   const isLoading = mutation.isPending;
 
   return (
-    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-4" dir="rtl">
+    <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-5 pt-2" dir="rtl">
 
       {/* שם */}
       <div className="space-y-1">

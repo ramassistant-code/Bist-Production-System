@@ -109,7 +109,7 @@ function ComponentForm({ defaultValues, onSubmit, isPending, submitLabel }: Comp
   const deliverable = watch("deliverable");
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2">
       <div>
         <Label htmlFor="name">שם הרכיב *</Label>
         <Input id="name" {...register("name")} className="mt-1" dir="rtl" />
@@ -267,12 +267,13 @@ export default function Components() {
   const allComponents = components ?? [];
   const uniqueCategories = Array.from(new Set(allComponents.map((c) => c.category).filter(Boolean))) as string[];
 
+  const searchLower = search.toLowerCase();
   const filtered = allComponents.filter(
     (c) =>
       (!search ||
-        c.name.includes(search) ||
-        (c.category ?? "").includes(search) ||
-        (c.component_number ?? "").includes(search)) &&
+        c.name.toLowerCase().includes(searchLower) ||
+        (c.category ?? "").toLowerCase().includes(searchLower) ||
+        (c.component_number ?? "").toLowerCase().includes(searchLower)) &&
       (!filterCategory || c.category === filterCategory)
   );
 

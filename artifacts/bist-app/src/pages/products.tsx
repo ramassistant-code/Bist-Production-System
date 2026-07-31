@@ -122,7 +122,7 @@ function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel }: 
   const isActive = watch("is_active");
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2">
       <div>
         <Label htmlFor="name">שם המוצר *</Label>
         <Input id="name" {...register("name")} className="mt-1" dir="rtl" />
@@ -668,9 +668,12 @@ export default function Products() {
   const uniqueCategories = Array.from(new Set(allProducts.map((p) => p.category).filter(Boolean))) as string[];
   const uniqueDeliverables = Array.from(new Set(allProducts.map((p) => p.deliverable_type).filter(Boolean))) as string[];
 
+  const searchLower = search.toLowerCase();
   const filtered = allProducts.filter(
     (p) =>
-      (!search || p.name.includes(search) || (p.category ?? "").includes(search)) &&
+      (!search ||
+        p.name.toLowerCase().includes(searchLower) ||
+        (p.category ?? "").toLowerCase().includes(searchLower)) &&
       (!filterCategory || p.category === filterCategory) &&
       (!filterDeliverable || p.deliverable_type === filterDeliverable)
   );

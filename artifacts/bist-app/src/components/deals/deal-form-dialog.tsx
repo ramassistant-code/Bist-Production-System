@@ -251,7 +251,7 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
         {/* ── גוף גלילה ── */}
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-5">
+        <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-6 pt-1">
 
           {/* ─── מקושרים ──────────────────────────────────────────── */}
           <div>

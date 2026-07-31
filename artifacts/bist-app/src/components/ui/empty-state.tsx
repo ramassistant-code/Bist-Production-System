@@ -10,7 +10,7 @@ export function EmptyState({
   description = "לא נמצאו נתונים עבור עמוד זה עדיין." 
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[400px] border-2 border-dashed border-border rounded-xl bg-card/50">
+    <div className="w-full flex flex-col items-center justify-center h-full min-h-[400px] border-2 border-dashed border-border rounded-xl bg-card/50">
       <div className="p-4 bg-muted rounded-full mb-4">
         <FileText className="w-8 h-8 text-muted-foreground" />
       </div>

@@ -54,68 +54,41 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
   try {
     const filter   = (req.query["filter"]   as string | undefined) ?? "pending";
     const category = (req.query["category"] as string | undefined) ?? "";
+    const showAll  = filter === "all";
 
+    // Build WHERE clause fragments based on JS-side filter values
+    // to avoid unsupported ($param = 'literal') syntax in Postgres
     const rows = await db.execute(sql`
+      WITH ranked AS (
+        SELECT
+          customer_wa_id,
+          customer_name,
+          message_text,
+          received_at,
+          review_status,
+          ROW_NUMBER() OVER (PARTITION BY customer_wa_id ORDER BY received_at DESC) AS rn
+        FROM whatsapp_messages
+        WHERE
+          ${showAll ? sql`TRUE` : sql`review_status = 'pending'`}
+          ${category ? sql`AND category = ${category}` : sql`AND TRUE`}
+      )
       SELECT
         customer_wa_id,
-        MAX(customer_name)                                                          AS customer_name,
-        MAX(message_text) KEEP (DENSE_RANK LAST ORDER BY received_at)              AS last_message,
-        MAX(received_at)                                                            AS last_at,
-        COUNT(*) FILTER (WHERE review_status = 'pending')::int                     AS pending_count,
-        COUNT(*)::int                                                               AS total_count
-      FROM whatsapp_messages
-      WHERE
-        (${filter} = 'all' OR review_status = 'pending')
-        AND (${category} = '' OR category = ${category})
+        MAX(customer_name)                                                AS customer_name,
+        MAX(message_text) FILTER (WHERE rn = 1)                          AS last_message,
+        MAX(received_at)                                                  AS last_at,
+        COUNT(*) FILTER (WHERE review_status = 'pending')::int            AS pending_count,
+        COUNT(*)::int                                                     AS total_count
+      FROM ranked
       GROUP BY customer_wa_id
-      HAVING (${filter} = 'all' OR COUNT(*) FILTER (WHERE review_status = 'pending') > 0)
+      ${showAll ? sql`` : sql`HAVING COUNT(*) FILTER (WHERE review_status = 'pending') > 0`}
       ORDER BY MAX(received_at) DESC
     `);
+
     res.json(rows.rows);
   } catch (err) {
-    // Fallback: some Postgres versions don't support KEEP … try simpler subquery
-    logger.warn({ err }, "whatsapp conversations KEEP fallback triggered");
-    try {
-      const filter   = (req.query["filter"]   as string | undefined) ?? "pending";
-      const category = (req.query["category"] as string | undefined) ?? "";
-
-      const rows = await db.execute(sql`
-        WITH ranked AS (
-          SELECT *,
-            ROW_NUMBER() OVER (PARTITION BY customer_wa_id ORDER BY received_at DESC) AS rn
-          FROM whatsapp_messages
-          WHERE
-            (${filter} = 'all' OR review_status = 'pending')
-            AND (${category} = '' OR category = ${category})
-        ),
-        last_msg AS (
-          SELECT customer_wa_id, message_text AS last_message
-          FROM ranked WHERE rn = 1
-        ),
-        agg AS (
-          SELECT
-            customer_wa_id,
-            MAX(customer_name)                                                   AS customer_name,
-            MAX(received_at)                                                     AS last_at,
-            COUNT(*) FILTER (WHERE review_status = 'pending')::int               AS pending_count,
-            COUNT(*)::int                                                         AS total_count
-          FROM whatsapp_messages
-          WHERE
-            (${filter} = 'all' OR review_status = 'pending')
-            AND (${category} = '' OR category = ${category})
-          GROUP BY customer_wa_id
-          HAVING (${filter} = 'all' OR COUNT(*) FILTER (WHERE review_status = 'pending') > 0)
-        )
-        SELECT a.*, l.last_message
-        FROM agg a
-        JOIN last_msg l ON l.customer_wa_id = a.customer_wa_id
-        ORDER BY a.last_at DESC
-      `);
-      res.json(rows.rows);
-    } catch (err2) {
-      logger.error({ err: err2 }, "whatsapp conversations fallback failed");
-      res.status(500).json({ error: "שגיאה בטעינת שיחות" });
-    }
+    logger.error({ err }, "whatsapp conversations failed");
+    res.status(500).json({ error: "שגיאה בטעינת שיחות" });
   }
 });
 
