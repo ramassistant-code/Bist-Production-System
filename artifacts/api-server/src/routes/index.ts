@@ -13,6 +13,7 @@ import pdfTemplatesRouter from "./pdf-templates";
 import quoteVersionsRouter from "./quote-versions";
 import mondayRouter from "./monday";
 import lookupsRouter from "./lookups";
+import whatsappRouter from "./whatsapp";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(pdfTemplatesRouter);
 router.use(quoteVersionsRouter);
 router.use(mondayRouter);
 router.use(lookupsRouter);
+router.use(whatsappRouter);
 
 export default router;

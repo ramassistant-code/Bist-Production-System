@@ -16,6 +16,8 @@ import QuotesDetail from "@/pages/quotes-detail";
 import Deals from "@/pages/deals";
 import DealsDetail from "@/pages/deals-detail";
 import Production from "@/pages/production";
+import WhatsApp from "@/pages/whatsapp";
+import WhatsAppAnalytics from "@/pages/whatsapp-analytics";
 import Tasks from "@/pages/tasks";
 import Settings from "@/pages/settings";
 import QuotePdfTemplate from "@/pages/quote-pdf-template";
@@ -69,7 +71,8 @@ function Router() {
       <Route path="/quotes" component={Quotes} />
       <Route path="/deals/:id" component={DealsDetail} />
       <Route path="/deals" component={Deals} />
-      <Route path="/production" component={Production} />
+      <Route path="/production/analytics" component={WhatsAppAnalytics} />
+      <Route path="/production" component={WhatsApp} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/settings/quote-pdf-template" component={QuotePdfTemplate} />
       <Route path="/settings/monday/runs/:id" component={MondayRunDetail} />
