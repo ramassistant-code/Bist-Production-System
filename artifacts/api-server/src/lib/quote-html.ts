@@ -356,7 +356,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
   }
 
   <!-- Totals + Notes + Signature — kept together on the same page -->
-  <div style="break-inside:avoid;page-break-inside:avoid;">
+  <div style="break-inside:avoid;page-break-inside:avoid;padding-top:48px;">
 
     <!-- Totals -->
     <div style="display:flex;justify-content:flex-start;margin-bottom:24px;">
