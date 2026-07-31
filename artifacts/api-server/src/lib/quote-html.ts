@@ -242,8 +242,8 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
           : "";
 
         return `
-          <tbody style="page-break-inside:avoid;">
-            <tr style="border-top:1px solid #e5e7eb;">
+          <tbody>
+            <tr style="border-top:1px solid #e5e7eb;break-after:avoid;page-break-after:avoid;">
               <td style="padding:20px 12px 18px;font-weight:700;font-size:14px;color:#111827;width:55%;">${item.product_name_snapshot ?? "—"}</td>
               <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:10%;font-size:14px;">${item.quantity ?? 1}</td>
               <td style="padding:20px 12px 18px;text-align:center;color:#374151;width:17.5%;font-size:14px;">${fmtILS(item.unit_price)}</td>
