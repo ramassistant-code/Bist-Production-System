@@ -189,10 +189,9 @@ interface ComponentDetailsProps {
   component: Component;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEdit: () => void;
 }
 
-function ComponentDetailsDialog({ component: c, open, onOpenChange, onEdit }: ComponentDetailsProps) {
+function ComponentDetailsDialog({ component: c, open, onOpenChange }: ComponentDetailsProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" dir="rtl">
@@ -230,12 +229,6 @@ function ComponentDetailsDialog({ component: c, open, onOpenChange, onEdit }: Co
           )}
         </div>
 
-        <DialogFooter className="flex-row-reverse gap-2 mt-4">
-          <Button onClick={onEdit} variant="outline">
-            <Pencil className="w-4 h-4 ml-1" />
-            עריכה
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -455,10 +448,6 @@ export default function Components() {
           component={detailsComponent}
           open={!!detailsComponent}
           onOpenChange={(open) => !open && setDetailsComponent(null)}
-          onEdit={() => {
-            setEditComponent(detailsComponent);
-            setDetailsComponent(null);
-          }}
         />
       )}
     </Shell>

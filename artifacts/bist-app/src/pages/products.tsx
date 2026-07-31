@@ -108,9 +108,10 @@ interface ProductFieldsFormProps {
   onSubmit: (values: ProductFormValues) => void;
   isPending: boolean;
   submitLabel: string;
+  viewOnly?: boolean;
 }
 
-function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel }: ProductFieldsFormProps) {
+function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel, viewOnly }: ProductFieldsFormProps) {
   const {
     register,
     handleSubmit,
@@ -174,11 +175,13 @@ function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel }: 
         <Label htmlFor="is_active">מוצר פעיל</Label>
       </div>
 
-      <div className="pt-1">
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? "שומר..." : submitLabel}
-        </Button>
-      </div>
+      {!viewOnly && (
+        <div className="pt-1">
+          <Button type="submit" disabled={isPending} className="w-full">
+            {isPending ? "שומר..." : submitLabel}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
@@ -189,9 +192,10 @@ interface SortableComponentRowProps {
   pc: ProductComponentRow;
   onRemove: (id: string) => void;
   isRemoving: boolean;
+  viewOnly?: boolean;
 }
 
-function SortableComponentRow({ pc, onRemove, isRemoving }: SortableComponentRowProps) {
+function SortableComponentRow({ pc, onRemove, isRemoving, viewOnly }: SortableComponentRowProps) {
   const {
     attributes,
     listeners,
@@ -210,14 +214,16 @@ function SortableComponentRow({ pc, onRemove, isRemoving }: SortableComponentRow
   return (
     <tr ref={setNodeRef} style={style} className="border-t hover:bg-muted/20">
       <td className="py-2 px-2 text-center w-8">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none p-1 rounded"
-          aria-label="גרור לשינוי סדר"
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
+        {!viewOnly && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none p-1 rounded"
+            aria-label="גרור לשינוי סדר"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        )}
       </td>
       <td className="py-2 px-3">
         <div className="font-medium">{pc.component_name ?? "—"}</div>
@@ -229,15 +235,17 @@ function SortableComponentRow({ pc, onRemove, isRemoving }: SortableComponentRow
       <td className="py-2 px-3 text-center">{formatCurrency(pc.default_unit_price)}</td>
       <td className="py-2 px-3 text-center font-medium">{formatCurrency(pc.total_cost)}</td>
       <td className="py-2 px-3 text-center">
-        <Button
-          size="icon"
-          variant="ghost"
-          className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-          onClick={() => onRemove(pc.id)}
-          disabled={isRemoving}
-        >
-          <Trash2 className="w-3 h-3" />
-        </Button>
+        {!viewOnly && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+            onClick={() => onRemove(pc.id)}
+            disabled={isRemoving}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
       </td>
     </tr>
   );
@@ -375,9 +383,10 @@ interface ProductModalProps {
   onOpenChange: (open: boolean) => void;
   /** called after a new product is saved, with the new product's ID */
   onCreated?: (id: string) => void;
+  viewOnly?: boolean;
 }
 
-function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModalProps) {
+function ProductModal({ productId, open, onOpenChange, onCreated, viewOnly }: ProductModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddRow, setShowAddRow] = useState(false);
@@ -493,7 +502,9 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
     );
   }
 
-  const title = isEdit
+  const title = viewOnly
+    ? `פרטי מוצר${pw ? ` — ${pw.name}` : ""}`
+    : isEdit
     ? `עריכת מוצר${pw ? ` — ${pw.name}` : ""}`
     : "מוצר חדש";
 
@@ -525,6 +536,7 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
               onSubmit={handleSubmit}
               isPending={isEdit ? updateMutation.isPending : createMutation.isPending}
               submitLabel={isEdit ? "שמור שינויים" : "צור מוצר והמשך לרכיבים"}
+              viewOnly={viewOnly}
             />
 
             {/* ---- components section — only in edit mode ---- */}
@@ -559,7 +571,7 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                     <h3 className="font-semibold text-base">
                       רכיבים ({pw?.components?.length ?? 0})
                     </h3>
-                    {!showAddRow && (
+                    {!viewOnly && !showAddRow && (
                       <Button size="sm" variant="outline" onClick={() => setShowAddRow(true)}>
                         <PackagePlus className="w-4 h-4 ml-1" />
                         שייך רכיב
@@ -595,9 +607,10 @@ function ProductModal({ productId, open, onOpenChange, onCreated }: ProductModal
                                 pc={pc}
                                 onRemove={handleRemoveComponent}
                                 isRemoving={removeMutation.isPending}
+                                viewOnly={viewOnly}
                               />
                             ))}
-                            {showAddRow && (
+                            {!viewOnly && showAddRow && (
                               <AddComponentRow
                                 productId={productId!}
                                 onAdded={() => {
@@ -653,8 +666,9 @@ export default function Products() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterDeliverable, setFilterDeliverable] = useState("");
 
-  // Single modal state: null = closed, "" = create mode, "uuid" = edit mode
+  // Single modal state: null = closed, "" = create mode, "uuid" = edit/view mode
   const [modalProductId, setModalProductId] = useState<string | null>(null);
+  const [modalViewOnly, setModalViewOnly] = useState(false);
   const modalOpen = modalProductId !== null;
 
   const queryParams = {
@@ -683,11 +697,18 @@ export default function Products() {
   }
 
   function openEdit(id: string) {
+    setModalViewOnly(false);
+    setModalProductId(id);
+  }
+
+  function openView(id: string) {
+    setModalViewOnly(true);
     setModalProductId(id);
   }
 
   function closeModal() {
     setModalProductId(null);
+    setModalViewOnly(false);
   }
 
   return (
@@ -793,7 +814,11 @@ export default function Products() {
                           {p.is_active !== false ? "פעיל" : "לא פעיל"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4" />
+                      <td className="py-3 px-4">
+                        <Button size="icon" variant="ghost" className="w-8 h-8" onClick={(e) => { e.stopPropagation(); openView(p.id); }} title="פרטים">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -808,6 +833,7 @@ export default function Products() {
         productId={modalProductId === "" ? null : modalProductId}
         open={modalOpen}
         onOpenChange={(open) => !open && closeModal()}
+        viewOnly={modalViewOnly}
         onCreated={(newId) => {
           // transition from create to edit mode to show component section
           setModalProductId(newId);

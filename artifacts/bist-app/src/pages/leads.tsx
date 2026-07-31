@@ -770,23 +770,6 @@ export default function Leads() {
             </DialogTitle>
           </DialogHeader>
           {detailsLead && <LeadDetails lead={detailsLead} />}
-          <DialogFooter className="flex-row-reverse justify-between sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => { setDetailsLead(null); setEditLead(detailsLead); }}
-            >
-              <Pencil className="w-3.5 h-3.5 ml-1" />
-              עריכה
-            </Button>
-            <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={() => setDeleteLead(detailsLead)}
-            >
-              <Trash2 className="w-3.5 h-3.5 ml-1" />
-              מחיקה
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
