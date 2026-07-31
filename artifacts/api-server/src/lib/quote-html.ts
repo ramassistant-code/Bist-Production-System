@@ -355,39 +355,44 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
       : ""
   }
 
-  <!-- Totals -->
-  <div style="display:flex;justify-content:flex-start;margin-bottom:24px;">
-    <div style="min-width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
-      <div style="font-weight:700;color:#111827;margin-bottom:10px;font-size:14px;">${cfg.summary_title}</div>
-      <table style="font-size:13px;color:#374151;">
-        ${vatRowsHtml}
-        <tr style="border-top:2px solid #111827;">
-          <td style="padding:8px 0 0;color:#111827;font-weight:700;font-size:15px;">${L.total_including_vat}</td>
-          <td style="padding:8px 0 0;text-align:left;color:#111827;font-weight:700;font-size:15px;">${fmtILS(totalWithVat)}</td>
-        </tr>
-      </table>
+  <!-- Totals + Notes + Signature — kept together on the same page -->
+  <div style="break-inside:avoid;page-break-inside:avoid;">
+
+    <!-- Totals -->
+    <div style="display:flex;justify-content:flex-start;margin-bottom:24px;">
+      <div style="min-width:280px;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
+        <div style="font-weight:700;color:#111827;margin-bottom:10px;font-size:14px;">${cfg.summary_title}</div>
+        <table style="font-size:13px;color:#374151;">
+          ${vatRowsHtml}
+          <tr style="border-top:2px solid #111827;">
+            <td style="padding:8px 0 0;color:#111827;font-weight:700;font-size:15px;">${L.total_including_vat}</td>
+            <td style="padding:8px 0 0;text-align:left;color:#111827;font-weight:700;font-size:15px;">${fmtILS(totalWithVat)}</td>
+          </tr>
+        </table>
+      </div>
     </div>
+
+    <!-- Notes -->
+    ${
+      cfg.show_quote_general_notes && terms?.payment_terms
+        ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">${L.general_notes}</div><div style="font-size:13px;color:#374151;background:#f9fafb;border-radius:6px;padding:10px 12px;border:1px solid #e5e7eb;">${terms.payment_terms}</div></div>`
+        : ""
+    }
+    ${
+      cfg.show_customer_notes && notes?.customer_notes
+        ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">${L.customer_notes}</div><div style="font-size:13px;color:#374151;background:#fef9f0;border-radius:6px;padding:10px 12px;border:1px solid #fde68a;">${notes.customer_notes}</div></div>`
+        : ""
+    }
+    ${
+      cfg.bottom_notes
+        ? `<div style="margin-bottom:16px;margin-top:8px;"><div style="font-size:13px;color:#374151;line-height:1.7;white-space:pre-wrap;padding:12px 14px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;">${cfg.bottom_notes}</div></div>`
+        : ""
+    }
+
+    <!-- Signature -->
+    ${sigHtml}
+
   </div>
-
-  <!-- Notes -->
-  ${
-    cfg.show_quote_general_notes && terms?.payment_terms
-      ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">${L.general_notes}</div><div style="font-size:13px;color:#374151;background:#f9fafb;border-radius:6px;padding:10px 12px;border:1px solid #e5e7eb;">${terms.payment_terms}</div></div>`
-      : ""
-  }
-  ${
-    cfg.show_customer_notes && notes?.customer_notes
-      ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">${L.customer_notes}</div><div style="font-size:13px;color:#374151;background:#fef9f0;border-radius:6px;padding:10px 12px;border:1px solid #fde68a;">${notes.customer_notes}</div></div>`
-      : ""
-  }
-  ${
-    cfg.bottom_notes
-      ? `<div style="margin-bottom:16px;margin-top:8px;"><div style="font-size:13px;color:#374151;line-height:1.7;white-space:pre-wrap;padding:12px 14px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;">${cfg.bottom_notes}</div></div>`
-      : ""
-  }
-
-  <!-- Signature -->
-  ${sigHtml}
 
 </div>
 </body>
