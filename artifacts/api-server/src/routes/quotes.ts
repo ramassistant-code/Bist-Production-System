@@ -260,7 +260,7 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
       const newLeadNum = await db.execute(sql`
         SELECT COALESCE(MAX(
           CAST(REGEXP_REPLACE(lead_number, '[^0-9]', '', 'g') AS BIGINT)
-        ), 0) + 1 AS next_num FROM leads WHERE deleted_at IS NULL AND lead_number ~ '^L-[0-9]+'
+        ), 0) + 1 AS next_num FROM leads WHERE lead_number ~ '^L-[0-9]+'
       `);
       const nn = (newLeadNum.rows[0] as Record<string, unknown>)?.["next_num"] ?? 1;
       const leadNumber = `L-${String(nn).padStart(6, "0")}`;
@@ -702,7 +702,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
     } else if (party_type === "new") {
       const newLeadNum = await db.execute(sql`
         SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(lead_number,'[^0-9]','','g') AS BIGINT)),0)+1 AS n
-        FROM leads WHERE deleted_at IS NULL AND lead_number ~ '^L-[0-9]+'
+        FROM leads WHERE lead_number ~ '^L-[0-9]+'
       `);
       const nn = (newLeadNum.rows[0] as Record<string, unknown>)?.["n"] ?? 1;
       const [createdLead] = await db.insert(leadsTable).values({
