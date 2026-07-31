@@ -176,144 +176,183 @@ router.patch("/whatsapp/messages/:id/review", async (req: Request, res: Response
   }
 });
 
+// ── Levenshtein similarity (JS, no DB extension needed) ──────────────────────
+function levenshteinSim(a: string, b: string): number {
+  if (!a && !b) return 1;
+  if (!a || !b) return 0;
+  const s1 = a.slice(0, 400);
+  const s2 = b.slice(0, 400);
+  if (s1 === s2) return 1;
+  const m = s1.length, n = s2.length;
+  const dp: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      dp[j] = s1[i - 1] === s2[j - 1]
+        ? prev
+        : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = temp;
+    }
+  }
+  return 1 - dp[n] / Math.max(m, n);
+}
+
+function matchScore(proposed: string | null, corrected: string | null): number {
+  const c = corrected?.trim() ?? "";
+  const p = proposed?.trim() ?? "";
+  if (!c) return 1.0;           // editor kept AI reply as-is
+  if (!p) return 0.0;
+  return levenshteinSim(p, c);
+}
+
+function avg(arr: number[]): number | null {
+  if (!arr.length) return null;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function round(v: number | null, decimals = 2): number | null {
+  if (v == null) return null;
+  const f = 10 ** decimals;
+  return Math.round(v * f) / f;
+}
+
 // ── GET /whatsapp/analytics ──────────────────────────────────────────────────
 router.get("/whatsapp/analytics", async (req: Request, res: Response): Promise<void> => {
   try {
     const days = Math.min(Number(req.query["days"] ?? 30), 365);
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-    const [kpi, byCategory, scoreDist, byAction, byDay] = await Promise.all([
-      // KPI + needs-attention
-      db.execute(sql`
-        SELECT
-          COUNT(*)::int                                                           AS total_reviewed,
-          ROUND(AVG(editor_score)::numeric,1)::float                             AS avg_score,
-          ROUND(100.0 * COUNT(*) FILTER (
-            WHERE editor_corrected_reply IS NULL OR TRIM(editor_corrected_reply)='' OR editor_corrected_reply = proposed_reply
-          ) / NULLIF(COUNT(*),0), 1)::float                                      AS acceptance_rate,
-          ROUND(AVG(
-            CASE
-              WHEN editor_corrected_reply IS NULL OR TRIM(editor_corrected_reply)='' THEN 1.0
-              WHEN proposed_reply IS NULL OR proposed_reply = '' THEN 0.0
-              ELSE 1.0 - CAST(
-                levenshtein(
-                  LEFT(proposed_reply,255),
-                  LEFT(editor_corrected_reply,255)
-                ) AS float
-              ) / NULLIF(GREATEST(LENGTH(proposed_reply), LENGTH(editor_corrected_reply)),0)
-            END
-          )::numeric,3)::float                                                   AS avg_match
-        FROM whatsapp_messages
-        WHERE review_status='reviewed' AND received_at >= ${since}
-      `),
-
-      // Per-category
-      db.execute(sql`
-        SELECT
-          COALESCE(category,'ללא קטגוריה')                                       AS category,
-          COUNT(*)::int                                                           AS cnt,
-          ROUND(AVG(editor_score)::numeric,2)::float                             AS avg_score,
-          ROUND(AVG(ai_confidence)::numeric,1)::float                            AS avg_confidence,
-          ROUND(100.0 * COUNT(*) FILTER (
-            WHERE editor_corrected_reply IS NULL OR TRIM(editor_corrected_reply)='' OR editor_corrected_reply = proposed_reply
-          ) / NULLIF(COUNT(*),0), 1)::float                                      AS acceptance_rate,
-          ROUND(AVG(
-            CASE
-              WHEN editor_corrected_reply IS NULL OR TRIM(editor_corrected_reply)='' THEN 1.0
-              WHEN proposed_reply IS NULL OR proposed_reply = '' THEN 0.0
-              ELSE 1.0 - CAST(
-                levenshtein(LEFT(proposed_reply,255),LEFT(editor_corrected_reply,255)) AS float
-              ) / NULLIF(GREATEST(LENGTH(proposed_reply),LENGTH(editor_corrected_reply)),0)
-            END
-          )::numeric,3)::float                                                   AS avg_match
-        FROM whatsapp_messages
-        WHERE review_status='reviewed' AND received_at >= ${since}
-        GROUP BY category
-        ORDER BY avg_score ASC NULLS LAST
-      `),
-
-      // Score distribution
-      db.execute(sql`
-        SELECT editor_score::int AS score, COUNT(*)::int AS cnt
-        FROM whatsapp_messages
-        WHERE review_status='reviewed' AND editor_score IS NOT NULL AND received_at >= ${since}
-        GROUP BY editor_score
-        ORDER BY editor_score
-      `),
-
-      // By suggested_action
-      db.execute(sql`
-        SELECT
-          COALESCE(suggested_action,'ללא')  AS action,
-          COUNT(*)::int                     AS cnt,
-          ROUND(AVG(editor_score)::numeric,2)::float AS avg_score
-        FROM whatsapp_messages
-        WHERE review_status='reviewed' AND received_at >= ${since}
-        GROUP BY suggested_action
-      `),
-
-      // Trend by day
-      db.execute(sql`
-        SELECT
-          DATE(received_at)::text               AS day,
-          COUNT(*)::int                          AS cnt,
-          ROUND(AVG(editor_score)::numeric,2)::float AS avg_score
-        FROM whatsapp_messages
-        WHERE review_status='reviewed' AND received_at >= ${since}
-        GROUP BY DATE(received_at)
-        ORDER BY day
-      `),
-    ]);
-
-    // Confidence calibration — bucket manually
-    const confRows = await db.execute(sql`
+    // Fetch all reviewed rows in one query; aggregate in JS
+    const raw = await db.execute(sql`
       SELECT
-        CASE
-          WHEN ai_confidence BETWEEN 0  AND 20  THEN '0–20'
-          WHEN ai_confidence BETWEEN 21 AND 40  THEN '21–40'
-          WHEN ai_confidence BETWEEN 41 AND 60  THEN '41–60'
-          WHEN ai_confidence BETWEEN 61 AND 80  THEN '61–80'
-          WHEN ai_confidence BETWEEN 81 AND 100 THEN '81–100'
-          ELSE 'ללא'
-        END                                          AS bucket,
-        ROUND(AVG(editor_score)::numeric,2)::float   AS avg_score,
-        COUNT(*)::int                                AS cnt
-      FROM whatsapp_messages
-      WHERE review_status='reviewed' AND ai_confidence IS NOT NULL AND received_at >= ${since}
-      GROUP BY bucket
-      ORDER BY MIN(ai_confidence)
-    `);
-
-    // Needs attention — 10 rows with lowest match score
-    const attentionRows = await db.execute(sql`
-      SELECT
-        id, customer_name, category,
+        id, customer_name, category, subcategory, suggested_action,
+        ai_confidence, editor_score,
         proposed_reply, editor_corrected_reply,
-        CASE
-          WHEN editor_corrected_reply IS NULL OR TRIM(editor_corrected_reply)='' THEN 1.0
-          WHEN proposed_reply IS NULL OR proposed_reply = '' THEN 0.0
-          ELSE 1.0 - CAST(
-            levenshtein(LEFT(proposed_reply,255),LEFT(editor_corrected_reply,255)) AS float
-          ) / NULLIF(GREATEST(LENGTH(proposed_reply),LENGTH(editor_corrected_reply)),0)
-        END AS match_score
+        DATE(received_at)::text AS day
       FROM whatsapp_messages
-      WHERE review_status='reviewed'
-        AND editor_corrected_reply IS NOT NULL
-        AND TRIM(editor_corrected_reply) != ''
-        AND received_at >= ${since}
-      ORDER BY match_score ASC
-      LIMIT 10
+      WHERE review_status = 'reviewed' AND received_at >= ${since}
     `);
 
-    res.json({
-      kpi:          kpi.rows[0]         ?? {},
-      by_category:  byCategory.rows     ?? [],
-      score_dist:   scoreDist.rows      ?? [],
-      by_action:    byAction.rows       ?? [],
-      by_day:       byDay.rows          ?? [],
-      conf_calib:   confRows.rows       ?? [],
-      needs_attention: attentionRows.rows ?? [],
-    });
+    type Row = {
+      id: number;
+      customer_name: string | null;
+      category: string | null;
+      suggested_action: string | null;
+      ai_confidence: number | null;
+      editor_score: number | null;
+      proposed_reply: string | null;
+      editor_corrected_reply: string | null;
+      day: string | null;
+      _match: number;
+    };
+
+    const rows: Row[] = (raw.rows as Omit<Row, "_match">[]).map((r) => ({
+      ...r,
+      _match: matchScore(r.proposed_reply, r.editor_corrected_reply),
+    }));
+
+    // ── KPI ────────────────────────────────────────────────────────────────
+    const matches   = rows.map((r) => r._match);
+    const accepted  = rows.filter((r) => r._match >= 0.9).length;
+    const scores    = rows.map((r) => r.editor_score).filter((s): s is number => s != null);
+    const kpi = {
+      total_reviewed:  rows.length,
+      avg_score:       round(avg(scores), 1),
+      acceptance_rate: round(rows.length ? (accepted / rows.length) * 100 : null, 1),
+      avg_match:       round(avg(matches), 3),
+    };
+
+    // ── Per-category ───────────────────────────────────────────────────────
+    const catMap = new Map<string, Row[]>();
+    for (const r of rows) {
+      const k = r.category ?? "ללא קטגוריה";
+      if (!catMap.has(k)) catMap.set(k, []);
+      catMap.get(k)!.push(r);
+    }
+    const by_category = [...catMap.entries()]
+      .map(([category, rs]) => {
+        const catScores = rs.map((r) => r.editor_score).filter((s): s is number => s != null);
+        const catConfs  = rs.map((r) => r.ai_confidence).filter((c): c is number => c != null);
+        const catAcc    = rs.filter((r) => r._match >= 0.9).length;
+        return {
+          category,
+          cnt:             rs.length,
+          avg_score:       round(avg(catScores), 2),
+          avg_confidence:  round(avg(catConfs), 1),
+          acceptance_rate: round(rs.length ? (catAcc / rs.length) * 100 : null, 1),
+          avg_match:       round(avg(rs.map((r) => r._match)), 3),
+        };
+      })
+      .sort((a, b) => (a.avg_score ?? 99) - (b.avg_score ?? 99));
+
+    // ── Score distribution ─────────────────────────────────────────────────
+    const score_dist = [1, 2, 3, 4, 5].map((s) => ({
+      score: s,
+      cnt: rows.filter((r) => r.editor_score === s).length,
+    }));
+
+    // ── By suggested_action ────────────────────────────────────────────────
+    const actionMap = new Map<string, Row[]>();
+    for (const r of rows) {
+      const k = r.suggested_action ?? "ללא";
+      if (!actionMap.has(k)) actionMap.set(k, []);
+      actionMap.get(k)!.push(r);
+    }
+    const by_action = [...actionMap.entries()].map(([action, rs]) => ({
+      action,
+      cnt:       rs.length,
+      avg_score: round(avg(rs.map((r) => r.editor_score).filter((s): s is number => s != null)), 2),
+    }));
+
+    // ── Trend by day ───────────────────────────────────────────────────────
+    const dayMap = new Map<string, Row[]>();
+    for (const r of rows) {
+      const k = r.day ?? "ללא";
+      if (!dayMap.has(k)) dayMap.set(k, []);
+      dayMap.get(k)!.push(r);
+    }
+    const by_day = [...dayMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, rs]) => ({
+        day,
+        cnt:       rs.length,
+        avg_score: round(avg(rs.map((r) => r.editor_score).filter((s): s is number => s != null)), 2),
+      }));
+
+    // ── Confidence calibration ─────────────────────────────────────────────
+    const confBuckets = [
+      { label: "0–20",   min: 0,  max: 20  },
+      { label: "21–40",  min: 21, max: 40  },
+      { label: "41–60",  min: 41, max: 60  },
+      { label: "61–80",  min: 61, max: 80  },
+      { label: "81–100", min: 81, max: 100 },
+    ];
+    const conf_calib = confBuckets.map(({ label, min, max }) => {
+      const rs = rows.filter((r) => r.ai_confidence != null && r.ai_confidence >= min && r.ai_confidence <= max);
+      return {
+        bucket:    label,
+        cnt:       rs.length,
+        avg_score: round(avg(rs.map((r) => r.editor_score).filter((s): s is number => s != null)), 2),
+      };
+    }).filter((b) => b.cnt > 0);
+
+    // ── Needs attention ────────────────────────────────────────────────────
+    const needs_attention = rows
+      .filter((r) => (r.editor_corrected_reply?.trim() ?? "") !== "")
+      .sort((a, b) => a._match - b._match)
+      .slice(0, 10)
+      .map((r) => ({
+        id:                    r.id,
+        customer_name:         r.customer_name,
+        category:              r.category,
+        proposed_reply:        r.proposed_reply,
+        editor_corrected_reply: r.editor_corrected_reply,
+        match_score:           round(r._match, 3),
+      }));
+
+    res.json({ kpi, by_category, score_dist, by_action, by_day, conf_calib, needs_attention });
   } catch (err) {
     logger.error({ err }, "whatsapp/analytics failed");
     res.status(500).json({ error: "שגיאה בטעינת אנליטיקה" });
