@@ -171,6 +171,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
   function validate(): boolean {
     const e: Record<string, string> = {};
 
+    // A deal must always be linked to a customer or a resolvable lead
+    if (!quote.customer_id && !quote.lead_id) {
+      e.party = "הצעה זו אינה מקושרת ללקוח או ליד — לא ניתן לפתוח עסקה. יש לעדכן את ההצעה תחילה.";
+    }
+
     if (isLead && !leadName.trim()) e.leadName = "שם הוא שדה חובה";
     if (!salespersonId) e.salesperson = "יש לבחור איש מכירות";
 
@@ -277,6 +282,13 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* ─── Guard: no party linked ──────────────────────────────────── */}
+          {!quote.customer_id && !quote.lead_id && (
+            <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-700">
+              ⚠️ הצעה זו אינה מקושרת ללקוח או ליד. יש לעדכן את ההצעה לפני פתיחת עסקה.
+            </div>
+          )}
 
           {/* ─── Section 1: פרטי לקוח / ליד ─────────────────────────────── */}
           <section>

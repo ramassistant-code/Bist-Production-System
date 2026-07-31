@@ -1128,7 +1128,11 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       if (calc.discount > calc.effectiveSubtotal) errs.push("ההנחה הכוללת לא יכולה להיות גבוהה מסה״כ סל המוצרים");
     }
     if (step === 2) {
-      if (state.validUntil && new Date(state.validUntil) < new Date()) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
+      if (state.validUntil) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (new Date(state.validUntil) < today) errs.push("תאריך תוקף ההצעה לא יכול להיות בעבר");
+      }
     }
     return errs;
   }

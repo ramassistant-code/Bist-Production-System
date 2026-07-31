@@ -196,9 +196,10 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
                   <div style="background:#f8f9fa;border-radius:6px;padding:10px 14px;">
                     ${sortedComps.map((c) => `
                       <div style="padding:5px 0;">
-                        <span style="font-size:12px;color:#4b5563;font-weight:500;">${c.name}</span>
-                        ${cfg.show_component_description && c.description ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.description}</div>` : ""}
-                        ${cfg.show_component_customer_notes && c.customer_note ? `<div style="font-size:11px;color:#92400e;margin-top:2px;">💬 ${c.customer_note}</div>` : ""}
+                        <span style="font-size:12px;color:#111827;font-weight:700;">${c.quantity} ×</span>
+                        <span style="font-size:12px;color:#4b5563;font-weight:500;margin-right:4px;">${c.name}</span>
+                        ${cfg.show_component_description && c.description ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.description}</div>` : ""}
+                        ${cfg.show_component_customer_notes && c.customer_note ? `<div style="font-size:12px;color:#1e40af;margin-top:2px;">💬 ${c.customer_note}</div>` : ""}
                       </div>
                     `).join("")}
                   </div>
@@ -214,7 +215,7 @@ function generatePreviewHtml(cfg: PdfTemplateConfiguration): string {
                 <td style="padding:20px 12px 18px;text-align:center;font-weight:700;font-size:14px;color:#111827;width:17.5%;">₪${fmt(p.total_price)}</td>
               </tr>
               ${cfg.show_product_description && p.description ? `<tr><td colspan="4" style="padding:0 12px 12px;color:#4b5563;font-size:13px;line-height:1.45;">${p.description}</td></tr>` : ""}
-              ${cfg.show_product_customer_notes && p.customer_note ? `<tr><td colspan="4" style="padding:0 12px 12px;color:#92400e;background:#fef9f0;font-size:13px;">💬 ${p.customer_note}</td></tr>` : ""}
+              ${cfg.show_product_customer_notes && p.customer_note ? `<tr><td colspan="4" style="padding:0 12px 12px;color:#1e40af;background:#eff6ff;font-size:13px;">💬 ${p.customer_note}</td></tr>` : ""}
               ${compBlock}
             </tbody>`;
         })

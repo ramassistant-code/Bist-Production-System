@@ -226,12 +226,13 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
                 <div style="background-color:#f8f9fa;border-radius:6px;padding:10px 14px;">
                   ${sortedComponents.map((c) => `
                     <div style="padding:5px 0;${sortedComponents.indexOf(c) > 0 ? "margin-top:3px;" : ""}">
-                      <span style="font-size:12px;color:#4b5563;font-weight:500;">${c.component_name_snapshot ?? "—"}</span>
+                      <span style="font-size:12px;color:#111827;font-weight:700;">${c.quantity ?? 1} ×</span>
+                      <span style="font-size:12px;color:#4b5563;font-weight:500;margin-right:4px;">${c.component_name_snapshot ?? "—"}</span>
                       ${cfg.show_component_description && c.component_description_snapshot
-                        ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.component_description_snapshot}</div>`
+                        ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;line-height:1.45;">${c.component_description_snapshot}</div>`
                         : ""}
                       ${cfg.show_component_customer_notes && c.customer_note
-                        ? `<div style="font-size:11px;color:#92400e;margin-top:2px;">💬 ${c.customer_note}</div>`
+                        ? `<div style="font-size:12px;color:#1e40af;margin-top:2px;">💬 ${c.customer_note}</div>`
                         : ""}
                     </div>
                   `).join("")}
@@ -255,7 +256,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
               : ""}
             ${cfg.show_product_customer_notes && item.customer_note
               ? `<tr>
-                  <td colspan="4" style="padding:0 12px 12px;color:#92400e;background-color:#fef9f0;font-size:13px;">💬 ${item.customer_note}</td>
+                  <td colspan="4" style="padding:0 12px 12px;color:#1e40af;background-color:#eff6ff;font-size:13px;">💬 ${item.customer_note}</td>
                 </tr>`
               : ""}
             ${compBlockHtml}
@@ -277,10 +278,10 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
     <div style="margin-top:32px;border-top:2px solid #e5e7eb;padding-top:20px;">
       <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:16px;">${L.signature_title}</div>
       <div style="display:flex;gap:24px;">
-        <div style="flex:1;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">${L.full_name}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        <div style="flex:1;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">${L.id_or_company_number}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        <div style="flex:1;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">${L.signature}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>` : ""}
+        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.full_name}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
+        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.id_or_company_number}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
+        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.signature}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
+        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>` : ""}
       </div>
     </div>
   `
@@ -326,7 +327,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
 
   <!-- Client details -->
   <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:${cfg.below_client_text ? "12px" : "28px"};">
-    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">${L.client_details}</div>
+    <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">${L.client_details}</div>
     <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px;">${L.for_client}: ${clientName}</div>
     <div style="display:flex;gap:28px;flex-wrap:wrap;">
       ${cfg.show_client_email && clientEmail ? `<div style="font-size:13px;color:#374151;"><span style="color:#6b7280;">${L.email}:</span> ${clientEmail}</div>` : ""}

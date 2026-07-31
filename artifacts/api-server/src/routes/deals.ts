@@ -798,6 +798,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       quantity: number;
       component_name_snapshot: string;
       component_description_snapshot?: string;
+      internal_note?: string | null;
     }
     interface SnapshotItem {
       line_id: string;
@@ -828,7 +829,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             status: "בתהליך",
             quantity: String(totalQty),
             source_key: creditSourceKey,
-            salesperson_note: operation_notes?.trim() || null,
+            salesperson_note: comp.internal_note?.trim() || null,
           })
           .onConflictDoNothing();
       }
