@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, PackagePlus, X, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, PackagePlus, X, GripVertical, Eye } from "lucide-react";
 import {
   DndContext,
   closestCenter,
