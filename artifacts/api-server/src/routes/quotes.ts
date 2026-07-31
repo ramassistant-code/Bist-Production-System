@@ -11,6 +11,7 @@ import {
 } from "@workspace/db/schema";
 import { isNull, eq, sql, and, desc, asc, or, ilike } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 
@@ -272,6 +273,8 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
         lead_created_at: new Date(),
       }).returning({ id: leadsTable.id });
       leadId = createdLead?.id ?? null;
+      // Sync newly created lead to Monday
+      if (leadId) void notifySync({ action: "lead_upserted", id: leadId });
     }
 
     if (!customerId && !leadId) {

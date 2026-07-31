@@ -556,10 +556,6 @@ export default function Customers() {
                 : `${customers.length} לקוחות`
               : ""}
           </p>
-          <Button onClick={() => setCreateOpen(true)} className="shrink-0">
-            <Plus className="w-4 h-4 ml-1" />
-            לקוח חדש
-          </Button>
         </div>
 
         {/* Content */}
@@ -587,7 +583,7 @@ export default function Customers() {
             <div className="flex items-center justify-center h-full">
               <EmptyState
                 title="אין לקוחות להצגה"
-                description="לחצו על 'לקוח חדש' להוספת הלקוח הראשון."
+                description="לא קיימים לקוחות במערכת."
               />
             </div>
           )}
@@ -670,23 +666,6 @@ export default function Customers() {
                             title="פרטים"
                           >
                             <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditCustomer(customer)}
-                            title="עריכה"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setDeleteCustomer(customer)}
-                            title="מחיקה"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>

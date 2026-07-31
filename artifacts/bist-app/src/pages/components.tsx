@@ -352,10 +352,6 @@ export default function Components() {
             ))}
           </select>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="w-4 h-4 ml-1" />
-          רכיב חדש
-        </Button>
       </div>
 
       {isLoading ? (
@@ -363,7 +359,7 @@ export default function Components() {
       ) : !filtered.length ? (
         <EmptyState
           title={search ? "לא נמצאו רכיבים תואמים" : "אין רכיבים להצגה"}
-          description={search ? "נסה חיפוש אחר" : "לחץ על 'רכיב חדש' להוספת רכיב ראשון"}
+          description={search ? "נסה חיפוש אחר" : "לא קיימים רכיבים במערכת."}
         />
       ) : (
         <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
@@ -404,15 +400,6 @@ export default function Components() {
                         title="פרטים"
                       >
                         <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8"
-                        onClick={() => setEditComponent(c)}
-                        title="עריכה"
-                      >
-                        <Pencil className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>

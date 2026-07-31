@@ -628,10 +628,6 @@ export default function Leads() {
               ? `${showingCount} לידים${hasMore ? ` (עמוד ${page + 1})` : ""}`
               : ""}
           </p>
-          <Button onClick={() => setCreateOpen(true)} className="shrink-0">
-            <Plus className="w-4 h-4 ml-1" />
-            ליד חדש
-          </Button>
         </div>
 
         {/* Content */}
@@ -655,7 +651,7 @@ export default function Leads() {
             <div className="flex items-center justify-center h-full">
               <EmptyState
                 title={apiSearch ? "לא נמצאו לידים תואמים" : "אין לידים להצגה"}
-                description={apiSearch ? "נסו חיפוש אחר" : "לחצו על 'ליד חדש' להוספת הליד הראשון."}
+                description={apiSearch ? "נסו חיפוש אחר" : "לא קיימים לידים במערכת."}
               />
             </div>
           )}
@@ -709,18 +705,6 @@ export default function Leads() {
                         <div className="flex items-center gap-1 justify-end">
                           <Button size="sm" variant="ghost" onClick={() => setDetailsLead(lead)} title="פרטים">
                             <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditLead(lead)} title="עריכה">
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setDeleteLead(lead)}
-                            title="מחיקה"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>

@@ -741,10 +741,6 @@ export default function Products() {
               {!isLoading && !!filtered.length && (
                 <span className="text-sm text-muted-foreground">{filtered.length} מוצרים</span>
               )}
-              <Button onClick={openCreate}>
-                <Plus className="w-4 h-4 ml-1" />
-                מוצר חדש
-              </Button>
             </div>
           </div>
         </div>
@@ -764,7 +760,7 @@ export default function Products() {
             <div className="flex items-center justify-center h-full">
               <EmptyState
                 title={search ? "לא נמצאו מוצרים תואמים" : "אין מוצרים להצגה"}
-                description={search ? "נסה חיפוש אחר" : "לחץ על 'מוצר חדש' להוספת מוצר ראשון"}
+                description={search ? "נסה חיפוש אחר" : "לא קיימים מוצרים במערכת."}
               />
             </div>
           )}
@@ -786,8 +782,7 @@ export default function Products() {
                   {filtered.map((p) => (
                     <tr
                       key={p.id}
-                      className="border-t hover:bg-muted/20 transition-colors cursor-pointer"
-                      onClick={() => openEdit(p.id)}
+                      className="border-t hover:bg-muted/20 transition-colors"
                     >
                       <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{p.product_number}</td>
                       <td className="py-3 px-4 font-medium">{p.name}</td>
@@ -798,11 +793,7 @@ export default function Products() {
                           {p.is_active !== false ? "פעיל" : "לא פעיל"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                        <Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => openEdit(p.id)} title="עריכה ורכיבים">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                      </td>
+                      <td className="py-3 px-4" />
                     </tr>
                   ))}
                 </tbody>

@@ -379,6 +379,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     }
   }
 
+  let newlyCreatedCustomerId: string | null = null;
+
   try {
     const result = await db.transaction(async (tx) => {
 
@@ -566,6 +568,9 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             }
           }
 
+          // Mark as newly created so we can sync after the transaction
+          newlyCreatedCustomerId = resolvedCustomerId;
+
           // Link lead → customer
           await tx
             .update(leadsTable)
@@ -614,6 +619,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
               })
               .returning({ id: customersTable.id });
             resolvedCustomerId = inserted[0]!.id;
+            // Mark as newly created so we can sync after the transaction
+            newlyCreatedCustomerId = resolvedCustomerId;
           }
           // byPhone.length > 1: ambiguous — do not auto-merge
         }
@@ -851,6 +858,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
     }
 
     void notifySync({ action: "deal_created", id: result.dealId });
+    if (newlyCreatedCustomerId) void notifySync({ action: "customer_upserted", id: newlyCreatedCustomerId });
     res.status(result.alreadyExists ? 200 : 201).json(result);
 
   } catch (err) {

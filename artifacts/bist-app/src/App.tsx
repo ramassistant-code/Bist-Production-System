@@ -58,7 +58,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/">{() => { window.location.replace("/leads"); return null; }}</Route>
       <Route path="/leads" component={Leads} />
       <Route path="/customers" component={Customers} />
       <Route path="/products" component={Products} />

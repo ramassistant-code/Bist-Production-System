@@ -1,9 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle } from "lucide-react";
+import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { name: "דשבורד", href: "/", icon: LayoutDashboard },
   { name: "לידים", href: "/leads", icon: Target },
   { name: "לקוחות", href: "/customers", icon: Users },
   { name: "מוצרים", href: "/products", icon: Box },
