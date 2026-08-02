@@ -6,6 +6,7 @@ import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
@@ -267,8 +268,14 @@ export default function QuotesDetail() {
   const isDraft = vStatus === "draft" && !isLocked;
   const partyName = party?.business_name || party?.contact_name || quote.customer_name || quote.lead_name || "—";
 
-  const canOpenDeal = dealCheck !== undefined && !dealCheck?.exists;
   const dealAlreadyExists = !!dealCheck?.exists;
+  const versionApprovedAndLocked = vStatus === "approved" && isLocked;
+  const canOpenDeal = dealCheck !== undefined && !dealAlreadyExists && versionApprovedAndLocked;
+  const dealDisabledReason = dealAlreadyExists
+    ? null
+    : !versionApprovedAndLocked
+      ? "ניתן לפתוח עסקה רק מגרסת הצעת מחיר מאושרת ונעולה"
+      : null;
 
   return (
     <>
@@ -314,15 +321,28 @@ export default function QuotesDetail() {
                   <Handshake className="w-3.5 h-3.5 ml-1" />צפה בעסקה
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant={canOpenDeal ? "default" : "outline"}
-                  className={canOpenDeal ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-                  disabled={!canOpenDeal}
-                  onClick={() => canOpenDeal && setShowOpenDealModal(true)}
-                >
-                  <Handshake className="w-3.5 h-3.5 ml-1" />התקבל תשלום - פתיחת עסקה
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={!canOpenDeal ? 0 : undefined} className="inline-flex">
+                        <Button
+                          size="sm"
+                          variant={canOpenDeal ? "default" : "outline"}
+                          className={canOpenDeal ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                          disabled={!canOpenDeal}
+                          onClick={() => canOpenDeal && setShowOpenDealModal(true)}
+                        >
+                          <Handshake className="w-3.5 h-3.5 ml-1" />התקבל תשלום - פתיחת עסקה
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {dealDisabledReason && (
+                      <TooltipContent side="bottom">
+                        <p>{dealDisabledReason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               )}
 
               {/* 3. פתח הצעת מחיר - PDF */}
