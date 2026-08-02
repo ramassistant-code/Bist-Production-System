@@ -52,8 +52,7 @@ async function generateCustomerNumber(tx: DbOrTx = db): Promise<string> {
       CAST(REGEXP_REPLACE(customer_number, '[^0-9]', '', 'g') AS BIGINT)
     ), 0) + 1 AS n
     FROM customers
-    WHERE deleted_at IS NULL
-      AND customer_number ~ '^C-[0-9]+'
+    WHERE customer_number ~ '^C-[0-9]+'
   `);
   const n = (result.rows[0] as Record<string, unknown>)?.["n"] ?? 1;
   return `C-${String(n).padStart(6, "0")}`;

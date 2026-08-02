@@ -268,7 +268,10 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
       dir="rtl"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]">
+      <div
+        className="bg-card rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">פתיחת עסקה</h2>
