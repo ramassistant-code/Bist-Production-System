@@ -21,6 +21,7 @@ export const paymentsTable = pgTable("payments", {
   payment_method: text("payment_method"),
   payment_purpose: text("payment_purpose"),
   amount_paid: numeric("amount_paid").notNull().default("0"),
+  amount_paid_including_vat: numeric("amount_paid_including_vat").notNull().default("0"),
   installments_count: integer("installments_count"),
   commission_percent: numeric("commission_percent"),
   commission_amount: numeric("commission_amount"),

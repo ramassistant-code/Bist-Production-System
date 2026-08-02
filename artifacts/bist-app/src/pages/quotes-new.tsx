@@ -118,8 +118,8 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     original_unit_price: parseFloat(product.consumer_price ?? "0") || 0,
     manual_price_override: false,
     price_override_reason: "",
-    customer_note: "",
-    internal_note: product.quote_notes_default ?? "",
+    customer_note: product.quote_notes_default ?? "",
+    internal_note: "",
     components: components.map(c => ({ ...c, customer_note: c.customer_note ?? "", internal_note: c.internal_note ?? "" })),
     components_expanded: false,
   };
@@ -481,7 +481,7 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 
   const displayed = activeProducts.filter(
     (p) =>
-      (!search || p.name.includes(search) || (p.category ?? "").includes(search) || (p.deliverable_type ?? "").includes(search)) &&
+      (!search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.category ?? "").toLowerCase().includes(search.toLowerCase()) || (p.deliverable_type ?? "").toLowerCase().includes(search.toLowerCase())) &&
       (!filterCategory || p.category === filterCategory) &&
       (!filterDeliverable || p.deliverable_type === filterDeliverable)
   );
@@ -693,7 +693,12 @@ function BasketRow({
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה להצעת מחיר</Label>
+          <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+          <Textarea value={item.customer_note} rows={2}
+            onChange={(e) => setField("customer_note", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
           <Textarea value={item.internal_note} rows={2}
             onChange={(e) => setField("internal_note", e.target.value)} />
         </div>

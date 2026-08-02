@@ -84,7 +84,8 @@ interface PaymentRow {
   payment_date: string | null;
   payment_method: string | null;
   payment_purpose: string | null;
-  amount_paid: string;
+  amount_paid: string;                   // ex-VAT (for Monday sync)
+  amount_paid_including_vat: string;     // inclusive (for display)
   status: string;
   installments_count: number | null;
   invoice_name: string | null;
@@ -310,7 +311,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground/70">
-                סכום <span className="text-destructive">*</span>
+                סכום (כולל מע"מ) <span className="text-destructive">*</span>
               </label>
               <input
                 type="number"
@@ -717,19 +718,40 @@ export default function DealsDetail() {
           </div>
 
           {/* KPI strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
+          {(() => {
+            const remainingIncVat = Math.max(0,
+              Number(deal.total_amount_including_vat ?? 0) - Number(deal.amount_paid_including_vat ?? 0)
+            );
+            const kpis: Array<{ label: string; value: string; sub?: string }> = [
               { label: "לקוח", value: customerDisplayName },
-              { label: "סכום עסקה", value: formatILS(deal.total_amount) },
-              { label: "שולם", value: formatILS(deal.paid_amount) },
-              { label: "יתרה", value: formatILS(deal.remaining_amount) },
-            ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-border p-3 bg-card">
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="font-semibold text-foreground mt-0.5 truncate">{value}</p>
+              {
+                label: 'סכום עסקה',
+                value: formatILS(deal.total_amount_including_vat),
+                sub: `ללא מע"מ: ${formatILS(deal.total_amount)}`,
+              },
+              {
+                label: 'שולם',
+                value: formatILS(deal.amount_paid_including_vat),
+                sub: `ללא מע"מ: ${formatILS(deal.paid_amount)}`,
+              },
+              {
+                label: 'יתרה',
+                value: formatILS(remainingIncVat),
+                sub: `ללא מע"מ: ${formatILS(deal.remaining_amount)}`,
+              },
+            ];
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {kpis.map(({ label, value, sub }) => (
+                  <div key={label} className="rounded-lg border border-border p-3 bg-card">
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="font-semibold text-foreground mt-0.5 truncate">{value}</p>
+                    {sub && <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">{sub}</p>}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
 
           {/* ── Payments section ── */}
           <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -776,7 +798,7 @@ export default function DealsDetail() {
                       <span className="text-xs text-muted-foreground">
                         {p.payment_date ? formatDate(p.payment_date) : "—"}
                       </span>
-                      <span className="font-semibold text-foreground">{formatILS(p.amount_paid)}</span>
+                      <span className="font-semibold text-foreground">{formatILS(p.amount_paid_including_vat ?? p.amount_paid)}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_STYLE[p.status] ?? "bg-muted text-muted-foreground"}`}>
                         {p.status}
                       </span>

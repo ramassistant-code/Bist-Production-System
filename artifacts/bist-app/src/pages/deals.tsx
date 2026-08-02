@@ -15,7 +15,8 @@ interface DealRow {
   id: string;
   deal_number: string;
   customer_name: string | null;
-  total_amount: string | null;
+  total_amount: string | null;              // ex-VAT (for Monday)
+  total_amount_including_vat: string | null; // inclusive (for display)
   execution_status: string;
   payment_status: string | null;
   source_quote_version_id: string | null;
@@ -235,7 +236,7 @@ export default function Deals() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-foreground/70 whitespace-nowrap font-medium">
-                          {formatILS(deal.total_amount)}
+                          {formatILS(deal.total_amount_including_vat ?? deal.total_amount)}
                         </td>
                         <td className="px-4 py-3">
                           <Badge

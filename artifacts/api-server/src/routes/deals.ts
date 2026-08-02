@@ -86,6 +86,51 @@ function isPgUniqueViolation(err: unknown): boolean {
   return pgErrCode(err) === "23505";
 }
 
+// ── refreshDealPaymentTotals ──────────────────────────────────────────────────
+// Recomputes paid_amount, amount_paid_including_vat, remaining_amount, and
+// payment_status on the deal from the current set of non-deleted payments.
+
+async function refreshDealPaymentTotals(dealId: string, tx: DbOrTx = db): Promise<void> {
+  const sumResult = await tx.execute(sql`
+    SELECT
+      COALESCE(SUM(amount_paid), 0)               AS paid_ex_vat,
+      COALESCE(SUM(amount_paid_including_vat), 0) AS paid_inc_vat
+    FROM payments
+    WHERE deal_id = ${dealId}
+      AND deleted_at IS NULL
+  `);
+
+  const sumRow = sumResult.rows[0] as { paid_ex_vat: string; paid_inc_vat: string };
+  const paidExVat  = Math.round(Number(sumRow.paid_ex_vat ?? 0)  * 100) / 100;
+  const paidIncVat = Math.round(Number(sumRow.paid_inc_vat ?? 0) * 100) / 100;
+
+  const dealResult = await tx
+    .select({ total_amount: dealsTable.total_amount })
+    .from(dealsTable)
+    .where(eq(dealsTable.id, dealId))
+    .limit(1);
+
+  const totalExVat  = Number(dealResult[0]?.total_amount ?? 0);
+  const remaining   = Math.max(0, Math.round((totalExVat - paidExVat) * 100) / 100);
+
+  const payStatus = paidExVat <= 0
+    ? "ממתינה לתשלום"
+    : remaining <= 0.01
+      ? "שולמה במלואה"
+      : "תשלום חלקי";
+
+  // remaining_amount is a DB-generated column (total_amount - paid_amount); not set here
+  await tx
+    .update(dealsTable)
+    .set({
+      paid_amount:               String(paidExVat),
+      amount_paid_including_vat: String(paidIncVat),
+      payment_status:            payStatus,
+      updated_at:                new Date(),
+    })
+    .where(eq(dealsTable.id, dealId));
+}
+
 // ── GET /deals ────────────────────────────────────────────────────────────────
 
 router.get("/deals", async (req: Request, res: Response): Promise<void> => {
@@ -634,9 +679,21 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         }
       }
 
-      // ── Step 5: Amount validation ───────────────────────────────────────────
+      // ── Step 5: Amount validation + ex-VAT computation ─────────────────────
       const totalsSnap = (version.totals_snapshot ?? {}) as Record<string, number>;
       const total_amount_including_vat = totalsSnap["total_with_vat"] ?? 0;
+      const vat_rate = totalsSnap["vat_rate"] ?? 18;
+      const vat_divisor = 1 + vat_rate / 100;
+
+      // ex-VAT total: prefer snapshot field, fallback to division
+      const total_amount_ex_vat = totalsSnap["subtotal_after_discount"] != null
+        ? totalsSnap["subtotal_after_discount"]
+        : Math.round((total_amount_including_vat / vat_divisor) * 100) / 100;
+
+      // ex-VAT initial payment (user entered inclusive)
+      const paid_amount_ex_vat = amount_paid_including_vat > 0
+        ? Math.round((amount_paid_including_vat / vat_divisor) * 100) / 100
+        : 0;
 
       if (amount_paid_including_vat > total_amount_including_vat) {
         throw new DealError(
@@ -652,6 +709,12 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       // ── Step 7: INSERT deal — trigger fills snapshots ───────────────────────
       let newDeal: { id: string; deal_number: string } | undefined;
       try {
+        const initialPayStatus = paid_amount_ex_vat >= total_amount_ex_vat - 0.01 && amount_paid_including_vat > 0
+          ? "שולמה במלואה"
+          : amount_paid_including_vat > 0
+            ? "תשלום חלקי"
+            : "ממתינה לתשלום";
+
         const inserted = await tx
           .insert(dealsTable)
           .values({
@@ -661,9 +724,12 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             lead_id: resolvedLeadId,
             source_quote_version_id,
             execution_status: "פתוחה",
-            total_amount: String(total_amount_including_vat),
+            // ex-VAT amounts (for Monday sync)
+            total_amount: String(total_amount_ex_vat),
+            paid_amount: String(paid_amount_ex_vat),
+            // remaining_amount is a DB-generated column (total_amount - paid_amount); not set here
+            // VAT-inclusive amounts (for display / customer-facing)
             total_amount_including_vat: String(total_amount_including_vat),
-            paid_amount: String(amount_paid_including_vat),
             amount_paid_including_vat: String(amount_paid_including_vat),
             payment_type,
             installments_count: payment_type === "credit_card" ? installments_count : null,
@@ -672,7 +738,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             invoice_email: payment_type !== "credit_card" ? invoice_email : null,
             coordination_tasks_requested,
             special_notes: operation_notes?.trim() || null,
-            payment_status: "ממתינה לתשלום",
+            payment_status: initialPayStatus,
             purchase_date: new Date().toISOString().split("T")[0],
           })
           .returning({ id: dealsTable.id, deal_number: dealsTable.deal_number });
@@ -765,7 +831,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
           payment_date: new Date().toISOString().split("T")[0],
           payment_method: paymentMethod,
           payment_purpose: "לקוח חדש",
-          amount_paid: String(amount_paid_including_vat),
+          amount_paid: String(paid_amount_ex_vat),               // ex-VAT for Monday
+          amount_paid_including_vat: String(amount_paid_including_vat), // inclusive for display
           installments_count: payment_type === "credit_card" ? installments_count : null,
           invoice_name: payment_type !== "credit_card" ? invoice_name : null,
           invoice_tax_id: payment_type !== "credit_card" ? invoice_id_number : null,
@@ -935,6 +1002,7 @@ router.get("/deals/:id/payments", async (req: Request, res: Response): Promise<v
         payment_method: paymentsTable.payment_method,
         payment_purpose: paymentsTable.payment_purpose,
         amount_paid: paymentsTable.amount_paid,
+        amount_paid_including_vat: paymentsTable.amount_paid_including_vat,
         status: paymentsTable.status,
         installments_count: paymentsTable.installments_count,
         invoice_name: paymentsTable.invoice_name,
@@ -1041,6 +1109,7 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
         id: dealsTable.id,
         execution_status: dealsTable.execution_status,
         customer_id: dealsTable.customer_id,
+        totals_snapshot: dealsTable.totals_snapshot,
       })
       .from(dealsTable)
       .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.id, id)))
@@ -1057,6 +1126,13 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
       return;
     }
 
+    // Derive ex-VAT from the amount entered (inclusive) using deal's vat_rate
+    const dealTotals = (deal.totals_snapshot ?? {}) as Record<string, number>;
+    const dealVatRate = dealTotals["vat_rate"] ?? 18;
+    const dealVatDivisor = 1 + dealVatRate / 100;
+    const amount_inc_vat = amount; // user entered inclusive
+    const amount_ex_vat  = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
+
     const PAYMENT_METHOD_MAP: Record<string, string> = {
       cash: "מזומן",
       credit_card: "אשראי",
@@ -1072,7 +1148,8 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
         payment_date,
         payment_method: PAYMENT_METHOD_MAP[payment_type],
         payment_purpose,
-        amount_paid: String(amount),
+        amount_paid: String(amount_ex_vat),               // ex-VAT for Monday sync
+        amount_paid_including_vat: String(amount_inc_vat), // inclusive for display
         installments_count: payment_type === "credit_card" ? installments_count : null,
         invoice_name: payment_type !== "credit_card" ? invoice_name : null,
         invoice_tax_id: payment_type !== "credit_card" ? invoice_id_number : null,
@@ -1083,9 +1160,14 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
         id: paymentsTable.id,
         payment_number: paymentsTable.payment_number,
         amount_paid: paymentsTable.amount_paid,
+        amount_paid_including_vat: paymentsTable.amount_paid_including_vat,
         payment_method: paymentsTable.payment_method,
         status: paymentsTable.status,
       });
+
+    // Refresh deal totals to reflect new payment
+    await refreshDealPaymentTotals(id);
+    void notifySync({ action: "deal_updated", id });
 
     res.status(201).json({ success: true, payment: inserted[0] });
   } catch (err) {

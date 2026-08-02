@@ -269,7 +269,6 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
         name: body.new_party_name ?? "ליד חדש",
         phone: body.new_party_phone ?? null,
         email: body.new_party_email ?? null,
-        status: "ליד חדש",
         lead_created_at: new Date(),
       }).returning({ id: leadsTable.id });
       leadId = createdLead?.id ?? null;
@@ -710,10 +709,10 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
         name: new_party_name ?? "ליד חדש",
         phone: new_party_phone ?? null,
         email: new_party_email ?? null,
-        status: "ליד חדש",
         lead_created_at: new Date(),
       }).returning({ id: leadsTable.id });
       newLeadId = createdLead?.id ?? null;
+      if (newLeadId) void notifySync({ action: "lead_upserted", id: newLeadId });
       partySnapshot = {
         party_type: "lead", source_id: newLeadId ?? "",
         business_name: new_party_name ?? "", contact_name: new_party_name ?? "",
