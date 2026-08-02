@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
-import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound } from "lucide-react";
+import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound, ShieldCheck } from "lucide-react";
 
 interface AppUser {
   id: string;
@@ -425,6 +425,17 @@ export default function Settings() {
                 <div>
                   <div className="text-sm font-semibold text-foreground">סנכרון Monday</div>
                   <div className="text-xs text-muted-foreground">יעדים, מיפויים וריצות</div>
+                </div>
+              </a>
+            </Link>
+            <Link href="/settings/vat-audit">
+              <a className="flex items-center gap-3 bg-card border border-border hover:border-amber-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
+                <div className="w-10 h-10 rounded-lg bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center transition-colors">
+                  <ShieldCheck className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">ביקורת מיגרציית מע״מ</div>
+                  <div className="text-xs text-muted-foreground">בדיקת עסקאות לאחר המיגרציה</div>
                 </div>
               </a>
             </Link>

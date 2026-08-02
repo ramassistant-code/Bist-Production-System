@@ -23,6 +23,7 @@ import Settings from "@/pages/settings";
 import QuotePdfTemplate from "@/pages/quote-pdf-template";
 import MondaySettings from "@/pages/monday-settings";
 import MondayRunDetail from "@/pages/monday-run-detail";
+import VatAudit from "@/pages/vat-audit";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/settings/quote-pdf-template" component={QuotePdfTemplate} />
       <Route path="/settings/monday/runs/:id" component={MondayRunDetail} />
       <Route path="/settings/monday" component={MondaySettings} />
+      <Route path="/settings/vat-audit" component={VatAudit} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
