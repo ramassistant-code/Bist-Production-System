@@ -473,6 +473,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
           dealId: existing.id,
           deal_number: existing.deal_number,
           customerId: existing.customer_id,
+          paidAmountExVat: 0,
         };
       }
 
@@ -763,6 +764,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
               dealId: concurrent[0].id,
               deal_number: concurrent[0].deal_number,
               customerId: concurrent[0].customer_id,
+              paidAmountExVat: 0,
             };
           }
         }
@@ -808,6 +810,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         dealId: newDeal.id,
         deal_number: newDeal.deal_number,
         customerId: resolvedCustomerId,
+        paidAmountExVat: paid_amount_ex_vat,
       };
     });
 
@@ -831,7 +834,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
           payment_date: new Date().toISOString().split("T")[0],
           payment_method: paymentMethod,
           payment_purpose: "לקוח חדש",
-          amount_paid: String(paid_amount_ex_vat),               // ex-VAT for Monday
+          amount_paid: String(result.paidAmountExVat ?? 0),      // ex-VAT for Monday
           amount_paid_including_vat: String(amount_paid_including_vat), // inclusive for display
           installments_count: payment_type === "credit_card" ? installments_count : null,
           invoice_name: payment_type !== "credit_card" ? invoice_name : null,
@@ -1179,6 +1182,129 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
     }
     logger.error({ err }, "POST /deals/:id/payments error");
     res.status(500).json({ error: "שגיאה בהוספת תשלום" });
+  }
+});
+
+// ── DELETE /deals/:id/payments/:paymentId ────────────────────────────────────
+// Soft-deletes a payment and refreshes the deal's payment totals.
+
+router.delete("/deals/:id/payments/:paymentId", async (req: Request, res: Response): Promise<void> => {
+  const dealId    = String(req.params["id"]);
+  const paymentId = String(req.params["paymentId"]);
+
+  try {
+    // Verify the deal exists and is not deleted
+    const dealRows = await db
+      .select({ id: dealsTable.id, execution_status: dealsTable.execution_status })
+      .from(dealsTable)
+      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.id, dealId)))
+      .limit(1);
+
+    if (dealRows.length === 0) {
+      res.status(404).json({ error: "עסקה לא נמצאה" });
+      return;
+    }
+
+    // Soft-delete the payment (must belong to this deal and not already deleted)
+    const updated = await db
+      .update(paymentsTable)
+      .set({ deleted_at: new Date(), updated_at: new Date() })
+      .where(
+        and(
+          eq(paymentsTable.id, paymentId),
+          eq(paymentsTable.deal_id, dealId),
+          isNull(paymentsTable.deleted_at),
+        )
+      )
+      .returning({ id: paymentsTable.id });
+
+    if (updated.length === 0) {
+      res.status(404).json({ error: "תשלום לא נמצא" });
+      return;
+    }
+
+    // Recompute deal totals from remaining non-deleted payments
+    await refreshDealPaymentTotals(dealId);
+    void notifySync({ action: "deal_updated", id: dealId });
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "DELETE /deals/:id/payments/:paymentId error");
+    res.status(500).json({ error: "שגיאה במחיקת התשלום" });
+  }
+});
+
+// ── PATCH /deals/:id/payments/:paymentId ─────────────────────────────────────
+// Corrects a payment amount (inc-VAT); re-derives ex-VAT and refreshes totals.
+
+router.patch("/deals/:id/payments/:paymentId", async (req: Request, res: Response): Promise<void> => {
+  const dealId    = String(req.params["id"]);
+  const paymentId = String(req.params["paymentId"]);
+  const body = req.body as { amount_paid?: number | string };
+
+  const newAmountIncVat = Number(body.amount_paid ?? 0);
+  if (isNaN(newAmountIncVat) || newAmountIncVat <= 0) {
+    res.status(400).json({ error: "יש להזין סכום תקין גדול מאפס" });
+    return;
+  }
+
+  try {
+    // Verify deal exists and is not cancelled
+    const dealRows = await db
+      .select({
+        id: dealsTable.id,
+        execution_status: dealsTable.execution_status,
+        totals_snapshot: dealsTable.totals_snapshot,
+      })
+      .from(dealsTable)
+      .where(and(isNull(dealsTable.deleted_at), eq(dealsTable.id, dealId)))
+      .limit(1);
+
+    if (dealRows.length === 0) {
+      res.status(404).json({ error: "עסקה לא נמצאה" });
+      return;
+    }
+
+    const deal = dealRows[0];
+    if (deal.execution_status === "בוטלה") {
+      res.status(400).json({ error: "לא ניתן לערוך תשלום בעסקה שבוטלה" });
+      return;
+    }
+
+    // Derive ex-VAT from updated inclusive amount using deal's VAT rate
+    const dealTotals    = (deal.totals_snapshot ?? {}) as Record<string, number>;
+    const vatRate       = dealTotals["vat_rate"] ?? 18;
+    const vatDivisor    = 1 + vatRate / 100;
+    const newAmountExVat = Math.round((newAmountIncVat / vatDivisor) * 100) / 100;
+
+    const updated = await db
+      .update(paymentsTable)
+      .set({
+        amount_paid:               String(newAmountExVat),
+        amount_paid_including_vat: String(newAmountIncVat),
+        updated_at:                new Date(),
+      })
+      .where(
+        and(
+          eq(paymentsTable.id, paymentId),
+          eq(paymentsTable.deal_id, dealId),
+          isNull(paymentsTable.deleted_at),
+        )
+      )
+      .returning({ id: paymentsTable.id });
+
+    if (updated.length === 0) {
+      res.status(404).json({ error: "תשלום לא נמצא" });
+      return;
+    }
+
+    await refreshDealPaymentTotals(dealId);
+    void notifySync({ action: "deal_updated", id: dealId });
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "PATCH /deals/:id/payments/:paymentId error");
+    res.status(500).json({ error: "שגיאה בעדכון התשלום" });
   }
 });
 

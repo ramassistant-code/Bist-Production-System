@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
-import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw, Settings2 } from "lucide-react";
+import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw, Settings2, Trash2 } from "lucide-react";
 import DealFormDialog, { type DealEditable } from "@/components/deals/deal-form-dialog";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -573,6 +573,7 @@ export default function DealsDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [fullEditOpen, setFullEditOpen] = useState(false);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
   const { data: deal, isLoading, isError } = useQuery<DealDetail>({
     queryKey: ["deal", id],
@@ -612,6 +613,21 @@ export default function DealsDetail() {
       }),
     onSuccess: () => void refetchMonday(),
     onError: (e) => toast({ title: "שגיאה", description: (e as Error).message, variant: "destructive" }),
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (paymentId: string) =>
+      customFetch(`/api/deals/${id}/payments/${paymentId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast({ title: "התשלום נמחק" });
+      setDeletePaymentId(null);
+      void refetchPayments();
+      queryClient.invalidateQueries({ queryKey: ["deal", id] });
+    },
+    onError: (err: Error & { data?: { error?: string } }) => {
+      toast({ title: err?.data?.error ?? "שגיאה במחיקת התשלום", variant: "destructive" });
+      setDeletePaymentId(null);
+    },
   });
 
   const payments = paymentsData?.payments ?? [];
@@ -780,7 +796,7 @@ export default function DealsDetail() {
             ) : (
               <div className="divide-y divide-border/50">
                 {payments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/50/50">
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/50">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs text-muted-foreground font-mono shrink-0">{p.payment_number}</span>
                       <div className="flex items-center gap-1.5 text-muted-foreground shrink-0">
@@ -802,6 +818,16 @@ export default function DealsDetail() {
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAYMENT_STATUS_STYLE[p.status] ?? "bg-muted text-muted-foreground"}`}>
                         {p.status}
                       </span>
+                      {deal.execution_status !== "בוטלה" && (
+                        <button
+                          type="button"
+                          title="מחק תשלום"
+                          onClick={() => setDeletePaymentId(p.id)}
+                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1207,6 +1233,34 @@ export default function DealsDetail() {
           }}
         />
       )}
+
+      {/* Delete payment confirmation dialog */}
+      <Dialog open={!!deletePaymentId} onOpenChange={(v) => !v && setDeletePaymentId(null)}>
+        <DialogContent dir="rtl" className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>מחיקת תשלום</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            האם למחוק את התשלום? פעולה זו תעדכן את יתרת העסקה בהתאם.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeletePaymentId(null)}
+              disabled={deletePaymentMutation.isPending}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deletePaymentMutation.isPending}
+              onClick={() => deletePaymentId && deletePaymentMutation.mutate(deletePaymentId)}
+            >
+              {deletePaymentMutation.isPending ? "מוחק..." : "מחק תשלום"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
