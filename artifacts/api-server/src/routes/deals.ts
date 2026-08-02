@@ -44,6 +44,9 @@ async function generateDealNumber(tx: DbOrTx = db): Promise<string> {
 }
 
 async function generateCustomerNumber(tx: DbOrTx = db): Promise<string> {
+  // Advisory lock serialises concurrent number generation within the same transaction.
+  // Two transactions reading MAX simultaneously would otherwise produce the same number.
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('customer_number_gen'))`);
   const result = await tx.execute(sql`
     SELECT COALESCE(MAX(
       CAST(REGEXP_REPLACE(customer_number, '[^0-9]', '', 'g') AS BIGINT)
