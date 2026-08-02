@@ -56,9 +56,16 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
     const category = (req.query["category"] as string | undefined) ?? "";
     const showAll  = filter === "all";
 
-    // Build WHERE clause fragments based on JS-side filter values
-    // to avoid unsupported ($param = 'literal') syntax in Postgres
-    const rows = await db.execute(sql`
+    // Build query using sql.raw() to avoid nested sql-template issues in Drizzle
+    const pendingStatuses = `review_status IN ('pending', 'unprocessed')`;
+    const whereFilter = showAll ? `TRUE` : pendingStatuses;
+    const havingClause = showAll ? `` : `HAVING COUNT(*) FILTER (WHERE ${pendingStatuses}) > 0`;
+
+    // category comes from our own DB enum via /whatsapp/categories — safe to inline after sanitizing
+    const safeCat = category.replace(/'/g, "''");
+    const categoryFilter = safeCat ? `AND category = '${safeCat}'` : ``;
+
+    const rows = await db.execute(sql.raw(`
       WITH ranked AS (
         SELECT
           COALESCE(customer_wa_id, customer_name)  AS conv_id,
@@ -72,23 +79,21 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
             ORDER BY received_at DESC
           ) AS rn
         FROM whatsapp_messages
-        WHERE
-          ${showAll ? sql`TRUE` : sql`review_status IN ('pending', 'unprocessed')`}
-          ${category ? sql`AND category = ${category}` : sql`AND TRUE`}
+        WHERE ${whereFilter} ${categoryFilter}
       )
       SELECT
-        MAX(customer_wa_id)                                                                     AS customer_wa_id,
+        MAX(customer_wa_id)                                                          AS customer_wa_id,
         conv_id,
-        MAX(customer_name)                                                                      AS customer_name,
-        MAX(message_text) FILTER (WHERE rn = 1)                                                AS last_message,
-        MAX(received_at)                                                                        AS last_at,
-        COUNT(*) FILTER (WHERE review_status IN ('pending', 'unprocessed'))::int               AS pending_count,
-        COUNT(*)::int                                                                           AS total_count
+        MAX(customer_name)                                                           AS customer_name,
+        MAX(message_text) FILTER (WHERE rn = 1)                                     AS last_message,
+        MAX(received_at)                                                             AS last_at,
+        COUNT(*) FILTER (WHERE ${pendingStatuses})::int                             AS pending_count,
+        COUNT(*)::int                                                                AS total_count
       FROM ranked
       GROUP BY conv_id
-      ${showAll ? sql`` : sql`HAVING COUNT(*) FILTER (WHERE review_status IN ('pending', 'unprocessed')) > 0`}
+      ${havingClause}
       ORDER BY MAX(received_at) DESC
-    `);
+    `));
 
     res.json(rows.rows);
   } catch (err) {
