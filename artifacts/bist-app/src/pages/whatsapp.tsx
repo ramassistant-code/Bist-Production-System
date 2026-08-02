@@ -13,7 +13,8 @@ import {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Conversation {
-  customer_wa_id: string;
+  conv_id: string;
+  customer_wa_id: string | null;
   customer_name: string | null;
   last_message: string | null;
   last_at: string | null;
@@ -24,7 +25,7 @@ interface Conversation {
 interface WaMessage {
   id: number;
   received_at: string;
-  customer_wa_id: string;
+  customer_wa_id: string | null;
   customer_name: string | null;
   message_type: string | null;
   message_text: string | null;
@@ -342,7 +343,7 @@ function MessageBubble({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }
 
 export default function WhatsApp() {
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [filter, setFilter] = useState<"pending" | "all">("all");
   const [category, setCategory] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -380,7 +381,7 @@ export default function WhatsApp() {
   // Auto-select first conversation
   useEffect(() => {
     if (conversations.length > 0 && !selectedId) {
-      setSelectedId(conversations[0].customer_wa_id);
+      setSelectedId(conversations[0].conv_id);
     }
   }, [conversations, selectedId]);
 
@@ -390,7 +391,7 @@ export default function WhatsApp() {
     qc.invalidateQueries({ queryKey: ["wa-messages", selectedId] });
   }, [qc, selectedId]);
 
-  const selectedConv = conversations.find((c) => c.customer_wa_id === selectedId);
+  const selectedConv = conversations.find((c) => c.conv_id === selectedId);
 
   return (
     <Shell title="וואטסאפ עורך" noPadding>
@@ -470,17 +471,17 @@ export default function WhatsApp() {
             ) : (
               conversations.map((conv) => (
                 <button
-                  key={conv.customer_wa_id}
-                  onClick={() => setSelectedId(conv.customer_wa_id)}
+                  key={conv.conv_id}
+                  onClick={() => setSelectedId(conv.conv_id)}
                   className={cn(
                     "w-full text-right px-4 py-3.5 border-b border-zinc-800 hover:bg-zinc-800 transition-colors",
-                    selectedId === conv.customer_wa_id ? "bg-blue-950/60 border-r-2 border-r-blue-500" : ""
+                    selectedId === conv.conv_id ? "bg-blue-950/60 border-r-2 border-r-blue-500" : ""
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-zinc-100 truncate">
-                        {conv.customer_name || conv.customer_wa_id}
+                        {conv.customer_name || conv.conv_id}
                       </div>
                       <div className="text-xs text-zinc-500 truncate mt-0.5">
                         {conv.last_message ?? "הודעת מדיה"}

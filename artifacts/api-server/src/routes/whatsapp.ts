@@ -11,8 +11,8 @@ router.get("/whatsapp/stats", async (_req: Request, res: Response): Promise<void
     const [counters, avgScore] = await Promise.all([
       db.execute(sql`
         SELECT
-          COUNT(*) FILTER (WHERE review_status = 'pending')::int  AS pending,
-          COUNT(*) FILTER (WHERE review_status = 'reviewed')::int AS reviewed
+          COUNT(*) FILTER (WHERE review_status IN ('pending', 'unprocessed'))::int AS pending,
+          COUNT(*) FILTER (WHERE review_status = 'reviewed')::int                  AS reviewed
         FROM whatsapp_messages
       `),
       db.execute(sql`
@@ -61,27 +61,32 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
     const rows = await db.execute(sql`
       WITH ranked AS (
         SELECT
+          COALESCE(customer_wa_id, customer_name)  AS conv_id,
           customer_wa_id,
           customer_name,
           message_text,
           received_at,
           review_status,
-          ROW_NUMBER() OVER (PARTITION BY customer_wa_id ORDER BY received_at DESC) AS rn
+          ROW_NUMBER() OVER (
+            PARTITION BY COALESCE(customer_wa_id, customer_name)
+            ORDER BY received_at DESC
+          ) AS rn
         FROM whatsapp_messages
         WHERE
-          ${showAll ? sql`TRUE` : sql`review_status = 'pending'`}
+          ${showAll ? sql`TRUE` : sql`review_status IN ('pending', 'unprocessed')`}
           ${category ? sql`AND category = ${category}` : sql`AND TRUE`}
       )
       SELECT
-        customer_wa_id,
-        MAX(customer_name)                                                AS customer_name,
-        MAX(message_text) FILTER (WHERE rn = 1)                          AS last_message,
-        MAX(received_at)                                                  AS last_at,
-        COUNT(*) FILTER (WHERE review_status = 'pending')::int            AS pending_count,
-        COUNT(*)::int                                                     AS total_count
+        MAX(customer_wa_id)                                                                     AS customer_wa_id,
+        conv_id,
+        MAX(customer_name)                                                                      AS customer_name,
+        MAX(message_text) FILTER (WHERE rn = 1)                                                AS last_message,
+        MAX(received_at)                                                                        AS last_at,
+        COUNT(*) FILTER (WHERE review_status IN ('pending', 'unprocessed'))::int               AS pending_count,
+        COUNT(*)::int                                                                           AS total_count
       FROM ranked
-      GROUP BY customer_wa_id
-      ${showAll ? sql`` : sql`HAVING COUNT(*) FILTER (WHERE review_status = 'pending') > 0`}
+      GROUP BY conv_id
+      ${showAll ? sql`` : sql`HAVING COUNT(*) FILTER (WHERE review_status IN ('pending', 'unprocessed')) > 0`}
       ORDER BY MAX(received_at) DESC
     `);
 
@@ -92,7 +97,7 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
   }
 });
 
-// ── GET /whatsapp/conversations/:customer_wa_id ──────────────────────────────
+// ── GET /whatsapp/conversations/:conv_id ─────────────────────────────────────
 router.get("/whatsapp/conversations/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -105,7 +110,7 @@ router.get("/whatsapp/conversations/:id", async (req: Request, res: Response): P
         editor_score, editor_corrected_reply, editor_notes,
         review_status, reviewed_at
       FROM whatsapp_messages
-      WHERE customer_wa_id = ${id}
+      WHERE COALESCE(customer_wa_id, customer_name) = ${id}
       ORDER BY received_at ASC
     `);
     res.json(rows.rows);
