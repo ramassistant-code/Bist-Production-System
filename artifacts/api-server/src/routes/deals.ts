@@ -796,6 +796,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             quote_id: version.quote_id,
             customer_id: resolvedCustomerId,
             lead_id: resolvedLeadId,
+            salesperson_id: salesperson_user_id ?? null,
             source_quote_version_id,
             execution_status: "פתוחה",
             // ex-VAT amounts (for Monday sync)
