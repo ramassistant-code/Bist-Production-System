@@ -117,7 +117,7 @@ async function refreshDealPaymentTotals(dealId: string, tx: DbOrTx = db): Promis
 
   const payStatus = paidExVat <= 0
     ? "ממתינה לתשלום"
-    : remaining <= 0.01
+    : totalExVat > 0 && remaining <= 0.01
       ? "שולמה במלואה"
       : "תשלום חלקי";
 
@@ -758,8 +758,10 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       // ── Step 5: Amount validation + ex-VAT computation ─────────────────────
       const totalsSnap = (version.totals_snapshot ?? {}) as Record<string, number>;
       const total_amount_including_vat = totalsSnap["total_with_vat"] ?? 0;
-      const vat_rate = totalsSnap["vat_rate"] ?? 18;
-      const vat_divisor = 1 + vat_rate / 100;
+      const vat_rate_raw = totalsSnap["vat_rate"] ?? 18;
+      // vat_rate may be stored as decimal (0.18) or percent (18); normalise to decimal
+      const vat_rate_decimal = vat_rate_raw > 1 ? vat_rate_raw / 100 : vat_rate_raw;
+      const vat_divisor = 1 + vat_rate_decimal;
 
       // ex-VAT total: prefer snapshot field, fallback to division
       const total_amount_ex_vat = totalsSnap["subtotal_after_discount"] != null
@@ -809,7 +811,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             total_amount_including_vat: String(total_amount_including_vat),
             amount_paid_including_vat: String(amount_paid_including_vat),
             payment_type,
-            installments_count: payment_type === "credit_card" ? installments_count : null,
+            installments_count: payment_type === "credit_card" ? installments_count : 1,
             invoice_name: payment_type !== "credit_card" ? invoice_name : null,
             invoice_id_number: payment_type !== "credit_card" ? invoice_id_number : null,
             invoice_email: payment_type !== "credit_card" ? invoice_email : null,
@@ -1195,6 +1197,7 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
         id: dealsTable.id,
         execution_status: dealsTable.execution_status,
         customer_id: dealsTable.customer_id,
+        salesperson_id: dealsTable.salesperson_id,
         totals_snapshot: dealsTable.totals_snapshot,
       })
       .from(dealsTable)
@@ -1214,8 +1217,10 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
 
     // Derive ex-VAT from the amount entered (inclusive) using deal's vat_rate
     const dealTotals = (deal.totals_snapshot ?? {}) as Record<string, number>;
-    const dealVatRate = dealTotals["vat_rate"] ?? 18;
-    const dealVatDivisor = 1 + dealVatRate / 100;
+    const dealVatRateRaw = dealTotals["vat_rate"] ?? 18;
+    // vat_rate may be stored as decimal (0.18) or percent (18); normalise to decimal
+    const dealVatRateDecimal = dealVatRateRaw > 1 ? dealVatRateRaw / 100 : dealVatRateRaw;
+    const dealVatDivisor = 1 + dealVatRateDecimal;
     const amount_inc_vat = amount; // user entered inclusive
     const amount_ex_vat  = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
 
@@ -1230,13 +1235,14 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
       .values({
         deal_id: id,
         customer_id: deal.customer_id ?? undefined,
+        salesperson_id: deal.salesperson_id ?? undefined,
         status: "התקבל",
         payment_date,
         payment_method: PAYMENT_METHOD_MAP[payment_type],
         payment_purpose,
         amount_paid: String(amount_ex_vat),               // ex-VAT for Monday sync
         amount_paid_including_vat: String(amount_inc_vat), // inclusive for display
-        installments_count: payment_type === "credit_card" ? installments_count : null,
+        installments_count: payment_type === "credit_card" ? installments_count : 1,
         invoice_name: payment_type !== "credit_card" ? invoice_name : null,
         invoice_tax_id: payment_type !== "credit_card" ? invoice_id_number : null,
         invoice_email: payment_type !== "credit_card" ? invoice_email : null,

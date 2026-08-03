@@ -279,7 +279,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
           payment_type: paymentType,
           payment_purpose: paymentPurpose,
           payment_date: paymentDate,
-          installments_count: paymentType === "credit_card" ? Number(installments) : null,
+          installments_count: paymentType === "credit_card" ? Number(installments) : 1,
           invoice_name: paymentType !== "credit_card" ? invoiceName : null,
           invoice_id_number: paymentType !== "credit_card" ? invoiceIdNumber : null,
           invoice_email: paymentType !== "credit_card" ? invoiceEmail : null,
