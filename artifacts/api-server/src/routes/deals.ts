@@ -929,6 +929,11 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
           source_key: paymentSourceKey,
         })
         .onConflictDoNothing();
+
+      // Refresh deal totals from payments table (ensures amount_paid_including_vat
+      // is always the correct VAT-inclusive sum, even if a snapshot trigger ran
+      // between the deal INSERT and now).
+      await refreshDealPaymentTotals(result.dealId);
     }
 
     // ── Step 9b: Persist billing info back to customer ───────────────────────
@@ -1030,7 +1035,14 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(500).json({ success: false, code: "INTERNAL_ERROR", error: "שגיאה פנימית ביצירת העסקה" });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errDetail = (err as Record<string, unknown>)?.detail ?? undefined;
+    res.status(500).json({
+      success: false,
+      code: "INTERNAL_ERROR",
+      error: "שגיאה פנימית ביצירת העסקה",
+      ...(process.env.NODE_ENV !== "production" ? { debug: errMsg, detail: errDetail } : {}),
+    });
   }
 });
 

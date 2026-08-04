@@ -717,8 +717,22 @@ export default function DealsDetail() {
 
           {/* KPI strip */}
           {(() => {
+            // Derive VAT rate from snapshot (stored as decimal 0.18 or percent 18)
+            const totSnap = (deal.totals_snapshot ?? {}) as Record<string, number>;
+            const vatRateRaw = totSnap["vat_rate"] ?? 0.18;
+            const vatRateDecimal = vatRateRaw > 1 ? vatRateRaw / 100 : vatRateRaw;
+
+            const paidExVat = Number(deal.paid_amount ?? 0);
+            const paidIncVatStored = Number(deal.amount_paid_including_vat ?? 0);
+            // Guard: if stored inclusive ≤ ex-VAT (data written before migration or
+            // overwritten by a trigger), recompute from ex-VAT × (1 + vat_rate).
+            const paidIncVat = paidIncVatStored > paidExVat + 0.005
+              ? paidIncVatStored
+              : Math.round(paidExVat * (1 + vatRateDecimal) * 100) / 100;
+
+            const totalIncVat = Number(deal.total_amount_including_vat ?? 0);
             const remainingIncVat = Math.max(0,
-              Number(deal.total_amount_including_vat ?? 0) - Number(deal.amount_paid_including_vat ?? 0)
+              Math.round((totalIncVat - paidIncVat) * 100) / 100
             );
             const kpis: Array<{ label: string; value: string; sub?: string }> = [
               { label: "לקוח", value: customerDisplayName },
@@ -729,7 +743,7 @@ export default function DealsDetail() {
               },
               {
                 label: 'שולם',
-                value: formatILS(deal.amount_paid_including_vat),
+                value: formatILS(paidIncVat),
                 sub: `ללא מע"מ: ${formatILS(deal.paid_amount)}`,
               },
               {
