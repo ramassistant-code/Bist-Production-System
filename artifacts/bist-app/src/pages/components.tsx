@@ -283,9 +283,6 @@ export default function Components() {
             <option value="inactive">לא פעילים</option>
           </select>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-1 self-start sm:self-auto">
-          + רכיב חדש
-        </Button>
       </div>
 
       {isLoading ? (
