@@ -94,6 +94,7 @@ router.get("/products/:id", async (req: Request, res: Response): Promise<void> =
         component_number: componentsTable.component_number,
         component_deliverable: componentsTable.deliverable,
         component_internal_notes: componentsTable.internal_notes,
+        component_quote_description_default: componentsTable.quote_description_default,
         component_quote_notes_default: componentsTable.quote_notes_default,
       })
       .from(productComponentsTable)
@@ -208,6 +209,7 @@ router.post("/products/:id/components", async (req: Request, res: Response): Pro
         component_name: componentsTable.name,
         component_number: componentsTable.component_number,
         component_deliverable: componentsTable.deliverable,
+        component_quote_description_default: componentsTable.quote_description_default,
       })
       .from(productComponentsTable)
       .leftJoin(componentsTable, eq(productComponentsTable.component_id, componentsTable.id))

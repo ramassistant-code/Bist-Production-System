@@ -728,14 +728,14 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
     setLoadingProductId(product.id);
     try {
       // Fetch product with its components
-      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string; component_internal_notes?: string | null; component_quote_notes_default?: string | null; sort_order?: number | null };
+      type ProdComp = { component_id: string; component_name: string; default_quantity: string; total_cost: string; component_deliverable: string; component_internal_notes?: string | null; component_quote_description_default?: string | null; component_quote_notes_default?: string | null; sort_order?: number | null };
       const productWithComponents = await customFetch<{ components?: ProdComp[] }>(`/api/products/${product.id}`);
       const comps = (productWithComponents.components ?? [] as ProdComp[])
         .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999))
         .map((c: ProdComp) => ({
           component_id: c.component_id,
           component_name_snapshot: c.component_name ?? "",
-          component_description_snapshot: c.component_deliverable ?? "",
+          component_description_snapshot: c.component_quote_description_default ?? "",
           quantity: parseFloat(c.default_quantity ?? "1") || 1,
           unit_cost_snapshot: parseFloat(c.total_cost ?? "0") || 0,
           customer_note: c.component_quote_notes_default ?? "",
