@@ -70,8 +70,8 @@ const productFormSchema = z.object({
   category: z.string().nullable().optional(),
   deliverable_type: z.string().nullable().optional(),
   consumer_price: z.string().nullable().optional(),
-  product_explanation: z.string().nullable().optional(),
-  sales_notes: z.string().nullable().optional(),
+  quote_description_default: z.string().nullable().optional(),
+  quote_notes_default: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
 });
 
@@ -83,8 +83,8 @@ function toFormValues(p?: Product | ProductWithComponents): ProductFormValues {
     category: p?.category ?? "",
     deliverable_type: p?.deliverable_type ?? "",
     consumer_price: p?.consumer_price ?? "",
-    product_explanation: p?.product_explanation ?? "",
-    sales_notes: p?.sales_notes ?? "",
+    quote_description_default: p?.quote_description_default ?? "",
+    quote_notes_default: p?.quote_notes_default ?? "",
     is_active: p?.is_active ?? true,
   };
 }
@@ -95,8 +95,8 @@ function sanitize(v: ProductFormValues): Record<string, unknown> {
     category: v.category?.trim() || null,
     deliverable_type: v.deliverable_type?.trim() || null,
     consumer_price: v.consumer_price?.trim() || null,
-    product_explanation: v.product_explanation?.trim() || null,
-    sales_notes: v.sales_notes?.trim() || null,
+    quote_description_default: v.quote_description_default?.trim() || null,
+    quote_notes_default: v.quote_notes_default?.trim() || null,
     is_active: v.is_active ?? true,
   };
 }
@@ -155,13 +155,13 @@ function ProductFieldsForm({ defaultValues, onSubmit, isPending, submitLabel, vi
       </div>
 
       <div>
-        <Label htmlFor="product_explanation">תיאור המוצר</Label>
-        <Textarea id="product_explanation" {...register("product_explanation")} className="mt-1" dir="rtl" rows={3} />
+        <Label htmlFor="quote_description_default">תאור מוצר להצעת מחיר</Label>
+        <Textarea id="quote_description_default" {...register("quote_description_default")} className="mt-1" dir="rtl" rows={3} />
       </div>
 
       <div>
-        <Label htmlFor="sales_notes">הערות פנימיות</Label>
-        <Textarea id="sales_notes" {...register("sales_notes")} className="mt-1" dir="rtl" rows={2} />
+        <Label htmlFor="quote_notes_default">הערות להצעת מחיר</Label>
+        <Textarea id="quote_notes_default" {...register("quote_notes_default")} className="mt-1" dir="rtl" rows={2} />
       </div>
 
       <div className="flex items-center gap-2">
@@ -232,8 +232,6 @@ function SortableComponentRow({ pc, onRemove, isRemoving, viewOnly }: SortableCo
         )}
       </td>
       <td className="py-2 px-3 text-center">{pc.default_quantity ?? "1"}</td>
-      <td className="py-2 px-3 text-center">{formatCurrency(pc.default_unit_price)}</td>
-      <td className="py-2 px-3 text-center font-medium">{formatCurrency(pc.total_cost)}</td>
       <td className="py-2 px-3 text-center">
         {!viewOnly && (
           <Button
@@ -307,7 +305,7 @@ function AddComponentRow({ productId, onAdded, onCancel }: AddComponentRowProps)
 
   return (
     <tr className="border-t bg-blue-50/50">
-      <td className="py-2 px-3" colSpan={4}>
+      <td className="py-2 px-3" colSpan={3}>
         <div className="flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[180px]">
             <Label className="text-xs mb-1 block">רכיב</Label>
@@ -546,23 +544,11 @@ function ProductModal({ productId, open, onOpenChange, onCreated, viewOnly }: Pr
 
                 <div>
                   {/* summary row */}
-                  {pw && pw.consumer_price && pw.calculated_cost && (
+                  {pw && pw.consumer_price && (
                     <div className="flex gap-6 text-sm mb-4 bg-muted/30 rounded-lg px-4 py-2">
                       <div>
                         <span className="text-muted-foreground">מחיר מכירה: </span>
                         <span className="font-semibold">{formatCurrency(pw.consumer_price)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">עלות מחושבת: </span>
-                        <span className="font-semibold">{formatCurrency(pw.calculated_cost)}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">רווח גולמי: </span>
-                        <span className="font-semibold text-green-700">
-                          {formatCurrency(
-                            String(parseFloat(pw.consumer_price) - parseFloat(pw.calculated_cost))
-                          )}
-                        </span>
                       </div>
                     </div>
                   )}
@@ -587,8 +573,6 @@ function ProductModal({ productId, open, onOpenChange, onCreated, viewOnly }: Pr
                             <th className="py-2 px-2 w-8" />
                             <th className="text-right py-2 px-3 font-medium">רכיב</th>
                             <th className="text-center py-2 px-3 font-medium w-20">כמות</th>
-                            <th className="text-center py-2 px-3 font-medium w-28">עלות ליחידה</th>
-                            <th className="text-center py-2 px-3 font-medium w-24">סה״כ</th>
                             <th className="py-2 px-3 w-10" />
                           </tr>
                         </thead>
@@ -596,7 +580,7 @@ function ProductModal({ productId, open, onOpenChange, onCreated, viewOnly }: Pr
                           <tbody>
                             {(!localComponents.length && !showAddRow) && (
                               <tr>
-                                <td colSpan={6} className="py-6 text-center text-muted-foreground text-sm">
+                                <td colSpan={4} className="py-6 text-center text-muted-foreground text-sm">
                                   טרם שויכו רכיבים למוצר זה — לחץ על "שייך רכיב"
                                 </td>
                               </tr>
@@ -624,20 +608,6 @@ function ProductModal({ productId, open, onOpenChange, onCreated, viewOnly }: Pr
                             )}
                           </tbody>
                         </SortableContext>
-                        {pw?.calculated_cost && parseFloat(pw.calculated_cost) > 0 && (
-                          <tfoot className="bg-muted/30 border-t">
-                            <tr>
-                              <td />
-                              <td colSpan={3} className="py-2 px-3 text-right font-semibold">
-                                סה״כ עלות:
-                              </td>
-                              <td className="py-2 px-3 text-center font-bold">
-                                {formatCurrency(pw.calculated_cost)}
-                              </td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        )}
                       </table>
                     </DndContext>
                   </div>

@@ -34,6 +34,8 @@ const PRODUCT_EDITABLE_FIELDS = {
   consumer_price: true,
   product_explanation: true,
   sales_notes: true,
+  quote_description_default: true,
+  quote_notes_default: true,
   is_active: true,
 } as const;
 
