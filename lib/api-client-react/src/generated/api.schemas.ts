@@ -278,6 +278,8 @@ export interface Component {
   deliverable?: string | null;
   internal_notes?: string | null;
   cost?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
   created_at: string;
   updated_at: string;
@@ -286,19 +288,15 @@ export interface Component {
 
 export interface CreateComponentBody {
   name: string;
-  category?: string | null;
-  deliverable?: string | null;
-  internal_notes?: string | null;
-  cost?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
 }
 
 export interface UpdateComponentBody {
   name?: string;
-  category?: string | null;
-  deliverable?: string | null;
-  internal_notes?: string | null;
-  cost?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
 }
 

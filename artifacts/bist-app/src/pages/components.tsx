@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 
 import { Shell } from "@/components/layout/shell";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -29,27 +29,12 @@ import {
 } from "@workspace/api-client-react";
 import type { Component } from "@workspace/api-client-react";
 
-// ---------- helpers ----------
-
-function formatCurrency(val: string | null | undefined): string {
-  if (!val) return "—";
-  const n = parseFloat(val);
-  if (isNaN(n)) return "—";
-  return `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
-
-function empty(val: string | null | undefined): string {
-  return val?.trim() ? val.trim() : "—";
-}
-
 // ---------- component form ----------
 
 const componentFormSchema = z.object({
   name: z.string().min(1, "שם הרכיב הוא שדה חובה"),
-  category: z.string().nullable().optional(),
-  deliverable: z.string().nullable().optional(),
-  internal_notes: z.string().nullable().optional(),
-  cost: z.string().nullable().optional(),
+  quote_description_default: z.string().nullable().optional(),
+  quote_notes_default: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
 });
 
@@ -58,10 +43,8 @@ type ComponentFormValues = z.infer<typeof componentFormSchema>;
 function toFormValues(c?: Component): ComponentFormValues {
   return {
     name: c?.name ?? "",
-    category: c?.category ?? "",
-    deliverable: c?.deliverable ?? "",
-    internal_notes: c?.internal_notes ?? "",
-    cost: c?.cost ?? "",
+    quote_description_default: c?.quote_description_default ?? "",
+    quote_notes_default: c?.quote_notes_default ?? "",
     is_active: c?.is_active ?? true,
   };
 }
@@ -69,10 +52,8 @@ function toFormValues(c?: Component): ComponentFormValues {
 function sanitize(v: ComponentFormValues): Record<string, unknown> {
   return {
     name: v.name,
-    category: v.category?.trim() || null,
-    deliverable: v.deliverable?.trim() || null,
-    internal_notes: v.internal_notes?.trim() || null,
-    cost: v.cost?.trim() || null,
+    quote_description_default: v.quote_description_default?.trim() || null,
+    quote_notes_default: v.quote_notes_default?.trim() || null,
     is_active: v.is_active ?? true,
   };
 }
@@ -84,19 +65,10 @@ interface ComponentFormProps {
   onSubmit: (values: ComponentFormValues) => void;
   isPending: boolean;
   submitLabel: string;
+  viewOnly?: boolean;
 }
 
-const DELIVERABLE_OPTIONS = [
-  { value: "", label: "— בחר יחידה —" },
-  { value: "יחידה", label: "יחידה" },
-  { value: "שעה", label: "שעה" },
-  { value: "דקה", label: "דקה" },
-  { value: "יום", label: "יום" },
-  { value: "פרויקט", label: "פרויקט" },
-  { value: "אחוז", label: "אחוז" },
-];
-
-function ComponentForm({ defaultValues, onSubmit, isPending, submitLabel }: ComponentFormProps) {
+function ComponentForm({ defaultValues, onSubmit, isPending, submitLabel, viewOnly }: ComponentFormProps) {
   const {
     register,
     handleSubmit,
@@ -106,79 +78,65 @@ function ComponentForm({ defaultValues, onSubmit, isPending, submitLabel }: Comp
   } = useForm<ComponentFormValues>({ resolver: zodResolver(componentFormSchema), defaultValues });
 
   const isActive = watch("is_active");
-  const deliverable = watch("deliverable");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2">
       <div>
         <Label htmlFor="name">שם הרכיב *</Label>
-        <Input id="name" {...register("name")} className="mt-1" dir="rtl" />
+        <Input
+          id="name"
+          {...register("name")}
+          className="mt-1"
+          dir="rtl"
+          readOnly={viewOnly}
+        />
         {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="category">קטגוריה</Label>
-          <Input id="category" {...register("category")} className="mt-1" dir="rtl" />
-        </div>
-        <div>
-          <Label htmlFor="deliverable">יחידת חישוב</Label>
-          <select
-            id="deliverable"
-            className="w-full mt-1 border rounded-md px-3 py-2 text-sm bg-background"
-            dir="rtl"
-            value={deliverable ?? ""}
-            onChange={(e) => setValue("deliverable", e.target.value)}
-          >
-            {DELIVERABLE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <div>
-        <Label htmlFor="cost">עלות ליחידה (₪)</Label>
-        <Input
-          id="cost"
-          {...register("cost")}
-          className="mt-1 text-left"
-          dir="ltr"
-          placeholder="0"
-          type="number"
-          step="0.01"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="internal_notes">הערות פנימיות</Label>
+        <Label htmlFor="quote_description_default">תיאור רכיב ברמת הצעת מחיר</Label>
         <Textarea
-          id="internal_notes"
-          {...register("internal_notes")}
+          id="quote_description_default"
+          {...register("quote_description_default")}
           className="mt-1"
           dir="rtl"
           rows={3}
+          readOnly={viewOnly}
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is_active"
-          checked={isActive ?? true}
-          onChange={(e) => setValue("is_active", e.target.checked)}
-          className="w-4 h-4"
+      <div>
+        <Label htmlFor="quote_notes_default">הערות לרכיב ברמת הצעת מחיר</Label>
+        <Textarea
+          id="quote_notes_default"
+          {...register("quote_notes_default")}
+          className="mt-1"
+          dir="rtl"
+          rows={3}
+          readOnly={viewOnly}
         />
-        <Label htmlFor="is_active">רכיב פעיל</Label>
       </div>
 
-      <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "שומר..." : submitLabel}
-        </Button>
-      </DialogFooter>
+      {!viewOnly && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_active"
+            checked={isActive ?? true}
+            onChange={(e) => setValue("is_active", e.target.checked)}
+            className="w-4 h-4"
+          />
+          <Label htmlFor="is_active">רכיב פעיל</Label>
+        </div>
+      )}
+
+      {!viewOnly && (
+        <DialogFooter className="gap-2 flex-row-reverse sm:flex-row-reverse">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "שומר..." : submitLabel}
+          </Button>
+        </DialogFooter>
+      )}
     </form>
   );
 }
@@ -206,29 +164,24 @@ function ComponentDetailsDialog({ component: c, open, onOpenChange }: ComponentD
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
-          <div className="grid grid-cols-2 gap-3">
+          {c.quote_description_default && (
             <div>
-              <span className="text-muted-foreground">קטגוריה: </span>
-              <span className="font-medium">{empty(c.category)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">יחידת חישוב: </span>
-              <span className="font-medium">{empty(c.deliverable)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">עלות ליחידה: </span>
-              <span className="font-medium">{formatCurrency(c.cost)}</span>
-            </div>
-          </div>
-
-          {c.internal_notes && (
-            <div>
-              <p className="text-muted-foreground text-xs mb-1">הערות פנימיות</p>
-              <p>{c.internal_notes}</p>
+              <p className="text-muted-foreground text-xs mb-1">תיאור רכיב ברמת הצעת מחיר</p>
+              <p>{c.quote_description_default}</p>
             </div>
           )}
-        </div>
 
+          {c.quote_notes_default && (
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">הערות לרכיב ברמת הצעת מחיר</p>
+              <p>{c.quote_notes_default}</p>
+            </div>
+          )}
+
+          {!c.quote_description_default && !c.quote_notes_default && (
+            <p className="text-muted-foreground text-xs">אין תיאור או הערות לרכיב זה.</p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -242,7 +195,6 @@ export default function Components() {
 
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
-  const [filterCategory, setFilterCategory] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editComponent, setEditComponent] = useState<Component | null>(null);
@@ -258,16 +210,13 @@ export default function Components() {
   const updateMutation = useUpdateComponent();
 
   const allComponents = components ?? [];
-  const uniqueCategories = Array.from(new Set(allComponents.map((c) => c.category).filter(Boolean))) as string[];
 
   const searchLower = search.toLowerCase();
   const filtered = allComponents.filter(
     (c) =>
-      (!search ||
-        c.name.toLowerCase().includes(searchLower) ||
-        (c.category ?? "").toLowerCase().includes(searchLower) ||
-        (c.component_number ?? "").toLowerCase().includes(searchLower)) &&
-      (!filterCategory || c.category === filterCategory)
+      !search ||
+      c.name.toLowerCase().includes(searchLower) ||
+      (c.component_number ?? "").toLowerCase().includes(searchLower)
   );
 
   function handleCreate(values: ComponentFormValues) {
@@ -317,7 +266,7 @@ export default function Components() {
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2 flex-wrap">
           <Input
-            placeholder="חיפוש לפי שם, מספר או קטגוריה..."
+            placeholder="חיפוש לפי שם או מספר..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-72"
@@ -333,18 +282,10 @@ export default function Components() {
             <option value="active">פעילים בלבד</option>
             <option value="inactive">לא פעילים</option>
           </select>
-          <select
-            className="border rounded-md px-3 py-2 text-sm bg-background"
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            dir="rtl"
-          >
-            <option value="">כל הקטגוריות</option>
-            {uniqueCategories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
         </div>
+        <Button onClick={() => setCreateOpen(true)} className="gap-1 self-start sm:self-auto">
+          + רכיב חדש
+        </Button>
       </div>
 
       {isLoading ? (
@@ -361,9 +302,7 @@ export default function Components() {
               <tr>
                 <th className="text-right py-3 px-4 font-semibold">מספר</th>
                 <th className="text-right py-3 px-4 font-semibold">שם הרכיב</th>
-                <th className="text-right py-3 px-4 font-semibold">קטגוריה</th>
-                <th className="text-right py-3 px-4 font-semibold">יחידת חישוב</th>
-                <th className="text-right py-3 px-4 font-semibold">עלות</th>
+                <th className="text-right py-3 px-4 font-semibold">תיאור להצעת מחיר</th>
                 <th className="text-right py-3 px-4 font-semibold">סטטוס</th>
                 <th className="py-3 px-4 w-20" />
               </tr>
@@ -375,9 +314,9 @@ export default function Components() {
                     {c.component_number}
                   </td>
                   <td className="py-3 px-4 font-medium">{c.name}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{empty(c.category)}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{empty(c.deliverable)}</td>
-                  <td className="py-3 px-4">{formatCurrency(c.cost)}</td>
+                  <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">
+                    {c.quote_description_default ?? "—"}
+                  </td>
                   <td className="py-3 px-4">
                     <Badge variant={c.is_active !== false ? "default" : "secondary"}>
                       {c.is_active !== false ? "פעיל" : "לא פעיל"}

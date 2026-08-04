@@ -27,10 +27,8 @@ export const componentsTable = pgTable("components", {
 
 const COMPONENT_EDITABLE_FIELDS = {
   name: true,
-  category: true,
-  deliverable: true,
-  internal_notes: true,
-  cost: true,
+  quote_description_default: true,
+  quote_notes_default: true,
   is_active: true,
 } as const;
 
@@ -38,14 +36,12 @@ export const insertComponentSchema = createInsertSchema(componentsTable)
   .pick(COMPONENT_EDITABLE_FIELDS)
   .extend({
     name: z.string().min(1, "שם הרכיב הוא שדה חובה"),
-    cost: z.string().nullable().optional(),
   });
 
 export const updateComponentSchema = createUpdateSchema(componentsTable)
   .pick(COMPONENT_EDITABLE_FIELDS)
   .extend({
     name: z.string().min(1, "שם הרכיב הוא שדה חובה").optional(),
-    cost: z.string().nullable().optional(),
   });
 
 export type Component = typeof componentsTable.$inferSelect;
