@@ -227,8 +227,8 @@ function SortableComponentRow({ pc, onRemove, isRemoving, viewOnly }: SortableCo
       </td>
       <td className="py-2 px-3">
         <div className="font-medium">{pc.component_name ?? "—"}</div>
-        {pc.component_deliverable && (
-          <div className="text-xs text-muted-foreground">{pc.component_deliverable}</div>
+        {pc.component_quote_description_default && (
+          <div className="text-xs text-muted-foreground">{pc.component_quote_description_default}</div>
         )}
       </td>
       <td className="py-2 px-3 text-center">{pc.default_quantity ?? "1"}</td>
