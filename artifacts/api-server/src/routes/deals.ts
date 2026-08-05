@@ -811,7 +811,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             total_amount_including_vat: String(total_amount_including_vat),
             amount_paid_including_vat: String(amount_paid_including_vat),
             payment_type,
-            installments_count: payment_type === "credit_card" ? installments_count : 1,
+            installments_count: payment_type === "credit_card" ? installments_count : null,
             invoice_name: payment_type !== "credit_card" ? invoice_name : null,
             invoice_id_number: payment_type !== "credit_card" ? invoice_id_number : null,
             invoice_email: payment_type !== "credit_card" ? invoice_email : null,
