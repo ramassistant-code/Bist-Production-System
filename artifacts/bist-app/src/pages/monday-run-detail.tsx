@@ -227,7 +227,7 @@ function SummaryTab({ run }: { run: RunDetail }) {
       </div>
 
       {run.error_message && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="bg-destructive/10 border border-red-200 rounded-xl p-4">
           <p className="text-sm font-semibold text-red-800 mb-1">שגיאה{run.error_code ? ` (${run.error_code})` : ""}</p>
           <p className="text-sm text-red-700">{run.error_message}</p>
         </div>
@@ -270,7 +270,7 @@ function StepsTab({ runId, authedFetch }: { runId: string; authedFetch: ReturnTy
           </div>
           {expanded.has(s.id) && (
             <div className="border-t border-border px-4 py-3 space-y-2 bg-muted/20">
-              {s.error && <p className="text-xs text-red-700 bg-red-50 rounded px-2 py-1">{s.error}</p>}
+              {s.error && <p className="text-xs text-red-700 bg-destructive/10 rounded px-2 py-1">{s.error}</p>}
               <div className="flex gap-4 text-xs text-muted-foreground">
                 <span>סה״כ: {s.total_records ?? "—"}</span>
                 <span>עובדו: {s.processed_count ?? "—"}</span>
@@ -361,7 +361,7 @@ function ItemsTab({ runId, authedFetch }: { runId: string; authedFetch: ReturnTy
                   {expanded.has(item.id) && (
                     <tr key={`${item.id}-expanded`}>
                       <td colSpan={7} className="px-4 py-3 bg-muted/20 border-t border-border/50">
-                        {item.error && <p className="text-xs text-red-700 bg-red-50 rounded px-2 py-1 mb-2">{item.error}</p>}
+                        {item.error && <p className="text-xs text-red-700 bg-destructive/10 rounded px-2 py-1 mb-2">{item.error}</p>}
                         <div className="flex flex-wrap gap-4">
                           <JsonViewer data={item.request_payload} label="בקשה" />
                           <JsonViewer data={item.response_payload} label="תגובה" />
@@ -498,7 +498,7 @@ function ExecutionDataTab({ run }: { run: RunDetail }) {
       {!!run.error_details && (
         <div>
           <h3 className="text-sm font-semibold text-foreground/70 mb-2">פרטי שגיאה</h3>
-          <pre className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs font-mono text-red-800 overflow-auto max-h-64">
+          <pre className="bg-destructive/10 border border-red-200 rounded-xl p-4 text-xs font-mono text-red-800 overflow-auto max-h-64">
             {JSON.stringify(safe(run.error_details), null, 2)}
           </pre>
         </div>
@@ -597,7 +597,7 @@ export default function MondayRunDetail() {
             </button>
           )}
           {ACTIVE_STATUSES.includes(run.status) && (
-            <button disabled={actionMutation.isPending} onClick={() => { if (confirm("לבטל ריצה זו?")) actionMutation.mutate("cancel"); }} className="flex items-center gap-1.5 border border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium rounded-lg px-3 py-2 transition-colors">
+            <button disabled={actionMutation.isPending} onClick={() => { if (confirm("לבטל ריצה זו?")) actionMutation.mutate("cancel"); }} className="flex items-center gap-1.5 border border-red-300 hover:bg-red-500/10 text-red-600 text-sm font-medium rounded-lg px-3 py-2 transition-colors">
               בטל ריצה
             </button>
           )}

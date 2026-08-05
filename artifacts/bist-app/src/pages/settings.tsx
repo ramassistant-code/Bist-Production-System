@@ -252,7 +252,7 @@ function SetPasswordDialog({ user, onClose, authedFetch }: {
 
           {success ? (
             <div className="space-y-3">
-              <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <p className="text-sm text-green-700 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
                 הסיסמה הוגדרה בהצלחה.
               </p>
             </div>
@@ -409,7 +409,7 @@ export default function Settings() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Link href="/settings/quote-pdf-template">
               <a className="flex items-center gap-3 bg-card border border-border hover:border-blue-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
-                <div className="w-10 h-10 rounded-lg bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 flex items-center justify-center transition-colors">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
@@ -420,7 +420,7 @@ export default function Settings() {
             </Link>
             <Link href="/settings/monday">
               <a className="flex items-center gap-3 bg-card border border-border hover:border-indigo-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-indigo-500/10 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
                   <RefreshCw className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
@@ -431,7 +431,7 @@ export default function Settings() {
             </Link>
             <Link href="/settings/vat-audit">
               <a className="flex items-center gap-3 bg-card border border-border hover:border-amber-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
-                <div className="w-10 h-10 rounded-lg bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 flex items-center justify-center transition-colors">
                   <ShieldCheck className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>

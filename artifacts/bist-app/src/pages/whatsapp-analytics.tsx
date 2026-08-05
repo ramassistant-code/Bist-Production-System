@@ -63,7 +63,7 @@ function scoreColor(v: number | null) {
 
 function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 flex-1 min-w-[140px]">
+    <div className="bg-card border border-border rounded-xl p-5 flex-1 min-w-[140px]">
       <div className="text-xs text-gray-500 mb-1">{label}</div>
       <div className="text-2xl font-bold text-gray-900">{value}</div>
       {sub && <div className="text-xs text-gray-400 mt-0.5">{sub}</div>}
@@ -117,7 +117,7 @@ export default function WhatsAppAnalytics() {
                 "px-3 py-1 rounded-lg border transition-colors",
                 days === d
                   ? "bg-gray-900 text-white border-gray-900"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  : "border-border text-muted-foreground hover:bg-muted"
               )}
             >
               {d} ימים
@@ -163,9 +163,9 @@ export default function WhatsAppAnalytics() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
               לפי קטגוריה (ממוין לפי ממוצע דירוג — הגרוע ביותר ראשון)
             </h2>
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
                     {["קטגוריה", "כמות", "ממוצע דירוג", "ביטחון AI", "שיעור קבלה", "דמיון ממוצע"].map((h) => (
                       <th key={h} className="px-4 py-2.5 text-right font-medium text-gray-600 text-xs">
@@ -176,7 +176,7 @@ export default function WhatsAppAnalytics() {
                 </thead>
                 <tbody>
                   {data.by_category.map((row, i) => (
-                    <tr key={row.category} className={cn("border-b border-gray-100", i % 2 === 1 ? "bg-gray-50/50" : "")}>
+                    <tr key={row.category} className={cn("border-b border-border", i % 2 === 1 ? "bg-muted/50" : "")}>
                       <td className="px-4 py-2.5 font-medium text-gray-800">{row.category}</td>
                       <td className="px-4 py-2.5 text-gray-600">{row.cnt}</td>
                       <td className="px-4 py-2.5">
@@ -207,7 +207,7 @@ export default function WhatsAppAnalytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* 3. Score distribution */}
-            <section className="bg-white border border-gray-200 rounded-xl p-5">
+            <section className="bg-card border border-border rounded-xl p-5">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
                 התפלגות דירוגים
               </h2>
@@ -227,7 +227,7 @@ export default function WhatsAppAnalytics() {
             </section>
 
             {/* 4. By suggested_action */}
-            <section className="bg-white border border-gray-200 rounded-xl p-5">
+            <section className="bg-card border border-border rounded-xl p-5">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
                 לפי פעולה מוצעת
               </h2>
@@ -254,7 +254,7 @@ export default function WhatsAppAnalytics() {
           </div>
 
           {/* ── 5. Confidence calibration ────────────────────────────────────── */}
-          <section className="bg-white border border-gray-200 rounded-xl p-5">
+          <section className="bg-card border border-border rounded-xl p-5">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
               כיול ביטחון AI — האם ביטחון גבוה = דירוג גבוה?
             </h2>
@@ -274,7 +274,7 @@ export default function WhatsAppAnalytics() {
           </section>
 
           {/* ── 6. Trend over time ───────────────────────────────────────────── */}
-          <section className="bg-white border border-gray-200 rounded-xl p-5">
+          <section className="bg-card border border-border rounded-xl p-5">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
               מגמה לאורך זמן
             </h2>
@@ -303,7 +303,7 @@ export default function WhatsAppAnalytics() {
             </h2>
             <div className="space-y-3">
               {data.needs_attention.map((row) => (
-                <div key={row.id} className="bg-white border border-gray-200 rounded-xl p-4 grid grid-cols-2 gap-4">
+                <div key={row.id} className="bg-card border border-border rounded-xl p-4 grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-xs text-gray-400 mb-1">
                       {row.customer_name ?? "לא ידוע"} · {row.category ?? "ללא קטגוריה"} ·{" "}
@@ -312,20 +312,20 @@ export default function WhatsAppAnalytics() {
                       </span>
                     </div>
                     <div className="text-xs font-medium text-gray-500 mb-1">תשובת AI:</div>
-                    <div className="text-sm text-gray-700 bg-blue-50 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
+                    <div className="text-sm text-foreground/70 bg-primary/10 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
                       {row.proposed_reply ?? "—"}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs font-medium text-gray-500 mb-1 mt-5">תשובת העורך:</div>
-                    <div className="text-sm text-gray-700 bg-amber-50 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
+                    <div className="text-sm text-foreground/70 bg-amber-500/10 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
                       {row.editor_corrected_reply ?? "—"}
                     </div>
                   </div>
                 </div>
               ))}
               {data.needs_attention.length === 0 && (
-                <div className="text-sm text-gray-400 text-center py-8 bg-white border border-gray-200 rounded-xl">
+                <div className="text-sm text-muted-foreground text-center py-8 bg-card border border-border rounded-xl">
                   אין נתונים להצגה
                 </div>
               )}

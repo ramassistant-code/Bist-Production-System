@@ -135,12 +135,12 @@ export default function VatAudit() {
               </div>
 
               {data.edge_case_count === 0 ? (
-                <p className="text-sm text-muted-foreground bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <p className="text-sm text-muted-foreground bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
                   לא נמצאו עסקאות עם בעיה זו — המיגרציה הצליחה עבור כל הרשומות.
                 </p>
               ) : (
                 <div className="rounded-xl border border-amber-200 overflow-hidden">
-                  <div className="bg-amber-50 px-4 py-2 text-xs text-amber-700 border-b border-amber-200">
+                  <div className="bg-amber-500/10 px-4 py-2 text-xs text-amber-700 border-b border-amber-500/20">
                     עסקאות אלו יש לתקן ידנית — לא ניתן לחשב סכום מהנתונים הקיימים
                   </div>
                   <div className="overflow-x-auto">

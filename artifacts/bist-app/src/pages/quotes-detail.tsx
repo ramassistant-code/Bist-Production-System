@@ -303,7 +303,7 @@ export default function QuotesDetail() {
               <Button
                 size="sm"
                 variant="outline"
-                className="text-green-700 border-green-200 hover:bg-green-50"
+                className="text-green-700 border-green-200 hover:bg-green-500/10"
                 onClick={() => statusMutation.mutate("approved")}
                 disabled={statusMutation.isPending || ["approved", "rejected", "cancelled"].includes(vStatus)}
               >
@@ -315,7 +315,7 @@ export default function QuotesDetail() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-green-700 border-green-200 hover:bg-green-50"
+                  className="text-green-700 border-green-200 hover:bg-green-500/10"
                   onClick={() => navigate(`/deals/${dealCheck.deal_id}`)}
                 >
                   <Handshake className="w-3.5 h-3.5 ml-1" />צפה בעסקה
@@ -361,7 +361,7 @@ export default function QuotesDetail() {
                       pdfMutation.mutate(verData.id);
                     }
                   }}
-                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                  className="text-blue-700 border-blue-200 hover:bg-blue-500/10"
                 >
                   <FileDown className="w-3.5 h-3.5 ml-1" />
                   {pdfMutation.isPending ? "מייצר PDF..." : "פתח הצעת מחיר - PDF"}
@@ -391,7 +391,7 @@ export default function QuotesDetail() {
           </div>
 
           {isLocked && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-50 border border-yellow-100 rounded-lg px-4 py-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2">
               <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />
               גרסה זו נעולה לעריכה. כדי לשנות — יש ליצור גרסה חדשה.
             </div>
@@ -531,7 +531,7 @@ export default function QuotesDetail() {
                   {notes.customer_notes && (
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-muted-foreground">הערות ללקוח (מוצגות ללקוח)</p>
-                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-blue-50 rounded p-2">{notes.customer_notes}</p>
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-primary/10 rounded p-2">{notes.customer_notes}</p>
                     </div>
                   )}
                   {notes.operation_notes && (

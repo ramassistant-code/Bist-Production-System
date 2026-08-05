@@ -288,7 +288,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* ─── Guard: no party linked ──────────────────────────────────── */}
           {!quote.customer_id && !quote.lead_id && (
-            <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div className="bg-destructive/10 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-700">
               ⚠️ הצעה זו אינה מקושרת ללקוח או ליד. יש לעדכן את ההצעה לפני פתיחת עסקה.
             </div>
           )}
@@ -598,7 +598,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* Submit error */}
           {submitError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div className="bg-destructive/10 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
               {submitError}
             </div>
           )}

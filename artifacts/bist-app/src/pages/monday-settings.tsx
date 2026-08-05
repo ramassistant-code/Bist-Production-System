@@ -460,15 +460,15 @@ function TargetForm({
       </label>
 
       {blockers.length > 0 && (
-        <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-2 space-y-1">
-          <p className="text-xs font-semibold text-yellow-800">בדיקת מוכנות מקומית — חסמים שנמצאו:</p>
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 space-y-1">
+          <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">בדיקת מוכנות מקומית — חסמים שנמצאו:</p>
           {blockers.map((b, i) => (
             <p key={i} className="text-xs text-yellow-700 flex items-start gap-1.5"><AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />{b}</p>
           ))}
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-xs text-red-600 bg-destructive/10 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-2 justify-end pt-1">
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted/50 transition-colors">ביטול</button>
         <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
@@ -591,7 +591,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
                         disabled={actionMutation.isPending}
                         className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${t.is_active ? "bg-green-500" : "bg-muted-foreground/30"}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform duration-200 ${t.is_active ? "translate-x-4" : "translate-x-0"}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-background shadow ring-0 transition-transform duration-200 ${t.is_active ? "translate-x-4" : "translate-x-0"}`} />
                       </button>
                       <TargetStatusBadge status={status} />
                     </div>
@@ -637,7 +637,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
           <div className="space-y-2 py-2">
             <p className="text-sm text-muted-foreground">בדיקת מוכנות מקומית מצאה את הבעיות הבאות:</p>
             {activateBlockers?.blockers.map((b, i) => (
-              <div key={i} className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <div key={i} className="flex items-start gap-2 bg-destructive/10 border border-red-200 rounded-lg px-3 py-2">
                 <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-800">{b}</p>
               </div>
@@ -806,14 +806,14 @@ function MappingForm({
       </div>
 
       {warnings.length > 0 && (
-        <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-2 space-y-1">
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 space-y-1">
           {warnings.map((w, i) => (
-            <p key={i} className="text-xs text-yellow-800 flex items-start gap-1.5"><AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />{w}</p>
+            <p key={i} className="text-xs text-yellow-800 dark:text-yellow-300 flex items-start gap-1.5"><AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />{w}</p>
           ))}
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-xs text-red-600 bg-destructive/10 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-2 justify-end pt-1">
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted/50 transition-colors">ביטול</button>
         <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
@@ -1292,9 +1292,9 @@ function ValidateTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
           {(["error", "warning", "ok"] as const).map((level) =>
             byLevel[level].map((r, i) => (
               <div key={`${level}-${i}`} className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
-                level === "error" ? "border-red-200 bg-red-50" :
-                level === "warning" ? "border-yellow-200 bg-yellow-50" :
-                "border-green-200 bg-green-50"
+                level === "error" ? "border-red-200 bg-destructive/10" :
+                level === "warning" ? "border-yellow-500/30 bg-yellow-500/10" :
+                "border-green-500/30 bg-green-500/10"
               }`}>
                 <ResultIcon level={level} />
                 <div className="flex-1 min-w-0">
@@ -1308,7 +1308,7 @@ function ValidateTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
         </div>
       )}
       {!isLoading && results.length === 0 && (
-        <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-4">
+        <div className="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-4">
           <CheckCircle className="w-5 h-5 text-green-600" />
           <p className="text-sm text-green-800 font-medium">הגדרות Monday תקינות</p>
         </div>

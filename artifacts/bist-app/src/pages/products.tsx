@@ -237,7 +237,7 @@ function SortableComponentRow({ pc, onRemove, isRemoving, viewOnly }: SortableCo
           <Button
             size="icon"
             variant="ghost"
-            className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+            className="w-7 h-7 text-red-500 hover:text-red-700 hover:bg-red-500/10"
             onClick={() => onRemove(pc.id)}
             disabled={isRemoving}
           >
@@ -304,7 +304,7 @@ function AddComponentRow({ productId, onAdded, onCancel }: AddComponentRowProps)
   }
 
   return (
-    <tr className="border-t bg-blue-50/50">
+    <tr className="border-t bg-primary/10">
       <td className="py-2 px-3" colSpan={3}>
         <div className="flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[180px]">

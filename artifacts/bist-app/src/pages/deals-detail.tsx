@@ -1099,7 +1099,7 @@ export default function DealsDetail() {
                       <p className="text-xs font-medium text-muted-foreground">
                         הערות ללקוח
                       </p>
-                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-blue-50 rounded p-2">
+                      <p className="text-sm text-foreground/70 whitespace-pre-line bg-primary/10 rounded p-2">
                         {notes.customer_notes}
                       </p>
                     </div>
