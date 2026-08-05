@@ -368,7 +368,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
             <select
               value={paymentPurpose}
               onChange={(e) => setPaymentPurpose(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
             >
               <option value="גבייה">גבייה</option>
               <option value="לקוח חדש">לקוח חדש</option>
@@ -396,8 +396,8 @@ function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProp
 
           {/* Cash / bank transfer — invoice details */}
           {paymentType && paymentType !== "credit_card" && (
-            <div className="space-y-3 bg-blue-50 rounded-lg p-3">
-              <p className="text-xs text-blue-700 font-medium">פרטי חשבונית</p>
+            <div className="space-y-3 bg-muted/40 rounded-lg p-3">
+              <p className="text-xs text-primary font-medium">פרטי חשבונית</p>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground/70">
                   שם על החשבונית <span className="text-destructive">*</span>
@@ -504,7 +504,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
             <select
               value={execStatus}
               onChange={(e) => setExecStatus(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
             >
               {EXECUTION_STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -523,7 +523,7 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
             <select
               value={payStatus}
               onChange={(e) => setPayStatus(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
             >
               <option value="">— ללא סטטוס תשלום —</option>
               {PAYMENT_STATUSES.map((s) => (
