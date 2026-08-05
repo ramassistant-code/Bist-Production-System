@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
 import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound, ShieldCheck } from "lucide-react";
+import versionInfo from "@/version.json";
 
 interface AppUser {
   id: string;
@@ -519,6 +520,11 @@ export default function Settings() {
             </div>
           )}
         </section>
+
+        {/* Version */}
+        <p className="text-xs text-muted-foreground/40 text-center pb-2">
+          גרסה {versionInfo.version} · בנייה {versionInfo.build} · {versionInfo.builtAt}
+        </p>
       </div>
 
       {/* Dialogs */}

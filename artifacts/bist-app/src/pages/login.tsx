@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
+import versionInfo from "@/version.json";
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -73,6 +74,10 @@ export default function Login() {
             {loading ? "מתחבר..." : "התחברות"}
           </button>
         </form>
+
+        <p className="text-center text-xs text-muted-foreground/50 pt-2">
+          גרסה {versionInfo.version}
+        </p>
       </div>
     </div>
   );
