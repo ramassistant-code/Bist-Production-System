@@ -400,7 +400,7 @@ export default function Settings() {
   };
 
   return (
-    <Shell title="הגדרות">
+    <Shell title="הגדרות" badge={`גרסה ${versionInfo.version}`}>
       <div className="p-6 space-y-6 overflow-auto h-full">
 
         {/* Quick links */}
@@ -521,10 +521,6 @@ export default function Settings() {
           )}
         </section>
 
-        {/* Version */}
-        <p className="text-xs text-muted-foreground/40 text-center pb-2">
-          גרסה {versionInfo.version} · בנייה {versionInfo.build} · {versionInfo.builtAt}
-        </p>
       </div>
 
       {/* Dialogs */}
