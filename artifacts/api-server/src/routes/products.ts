@@ -167,7 +167,7 @@ router.post("/products/:id/components", async (req: Request, res: Response): Pro
     const compRows = await db
       .select({ cost: componentsTable.cost })
       .from(componentsTable)
-      .where(eq(componentsTable.id, component_id));
+      .where(and(eq(componentsTable.id, component_id), isNull(componentsTable.deleted_at)));
 
     const comp = compRows[0];
     if (!comp) {

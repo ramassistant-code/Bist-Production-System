@@ -598,7 +598,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
         const leadRows = await tx
           .select()
           .from(leadsTable)
-          .where(eq(leadsTable.id, snapLeadId))
+          .where(and(isNull(leadsTable.deleted_at), eq(leadsTable.id, snapLeadId)))
           .limit(1);
 
         if (leadRows.length === 0) {

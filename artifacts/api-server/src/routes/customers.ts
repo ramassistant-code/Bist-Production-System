@@ -165,10 +165,10 @@ router.delete("/customers/:id", async (req: Request, res: Response): Promise<voi
         .where(sql`${quotesTable.customer_id} = ${id} AND ${quotesTable.deleted_at} IS NULL`)
         .limit(1),
       db.select({ id: paymentsTable.id }).from(paymentsTable)
-        .where(eq(paymentsTable.customer_id, id))
+        .where(and(eq(paymentsTable.customer_id, id), isNull(paymentsTable.deleted_at)))
         .limit(1),
       db.select({ id: creditsTable.id }).from(creditsTable)
-        .where(eq(creditsTable.customer_id, id))
+        .where(and(eq(creditsTable.customer_id, id), isNull(creditsTable.deleted_at)))
         .limit(1),
     ]);
 

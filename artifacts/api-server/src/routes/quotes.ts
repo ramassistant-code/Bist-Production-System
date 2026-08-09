@@ -287,7 +287,7 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
     // 3. Build party_snapshot
     let partySnapshot: PartySnapshot;
     if (customerId) {
-      const c = await db.select().from(customersTable).where(eq(customersTable.id, customerId)).limit(1);
+      const c = await db.select().from(customersTable).where(and(eq(customersTable.id, customerId), isNull(customersTable.deleted_at))).limit(1);
       const customer = c[0];
       partySnapshot = {
         party_type: "customer",
@@ -300,7 +300,7 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
         tax_id: customer?.tax_id ?? null,
       };
     } else {
-      const l = await db.select().from(leadsTable).where(eq(leadsTable.id, leadId!)).limit(1);
+      const l = await db.select().from(leadsTable).where(and(eq(leadsTable.id, leadId!), isNull(leadsTable.deleted_at))).limit(1);
       const lead = l[0];
       partySnapshot = {
         party_type: "lead",
@@ -655,7 +655,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
       newLeadId = sourceQuote.lead_id;
       if (refresh_party) {
         if (newCustomerId) {
-          const c = await db.select().from(customersTable).where(eq(customersTable.id, newCustomerId)).limit(1);
+          const c = await db.select().from(customersTable).where(and(eq(customersTable.id, newCustomerId), isNull(customersTable.deleted_at))).limit(1);
           if (c[0]) {
             partySnapshot = {
               party_type: "customer", source_id: newCustomerId,
@@ -665,7 +665,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
             };
           }
         } else if (newLeadId) {
-          const l = await db.select().from(leadsTable).where(eq(leadsTable.id, newLeadId)).limit(1);
+          const l = await db.select().from(leadsTable).where(and(eq(leadsTable.id, newLeadId), isNull(leadsTable.deleted_at))).limit(1);
           if (l[0]) {
             partySnapshot = {
               party_type: "lead", source_id: newLeadId,
@@ -678,7 +678,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
       }
     } else if (party_type === "customer" && party_id) {
       newCustomerId = party_id;
-      const c = await db.select().from(customersTable).where(eq(customersTable.id, party_id)).limit(1);
+      const c = await db.select().from(customersTable).where(and(eq(customersTable.id, party_id), isNull(customersTable.deleted_at))).limit(1);
       if (c[0]) {
         partySnapshot = {
           party_type: "customer", source_id: party_id,
@@ -689,7 +689,7 @@ router.post("/quotes/:id/duplicate", async (req: Request, res: Response): Promis
       }
     } else if (party_type === "lead" && party_id) {
       newLeadId = party_id;
-      const l = await db.select().from(leadsTable).where(eq(leadsTable.id, party_id)).limit(1);
+      const l = await db.select().from(leadsTable).where(and(eq(leadsTable.id, party_id), isNull(leadsTable.deleted_at))).limit(1);
       if (l[0]) {
         partySnapshot = {
           party_type: "lead", source_id: party_id,
