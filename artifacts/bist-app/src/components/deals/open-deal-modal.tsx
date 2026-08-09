@@ -273,18 +273,18 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-lg font-bold text-foreground">פתיחת עסקה</h2>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">פתיחת עסקה</h2>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-muted-foreground transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground opacity-80 hover:bg-accent hover:opacity-100 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             aria-label="סגור"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
           {/* ─── Guard: no party linked ──────────────────────────────────── */}
           {!quote.customer_id && !quote.lead_id && (

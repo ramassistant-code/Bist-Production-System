@@ -234,14 +234,14 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
       <DialogContent className="max-w-3xl p-0 gap-0 [&>button:last-child]:hidden" dir="rtl">
 
         {/* ── Header קבוע ── */}
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border shrink-0">
-          <DialogTitle className="text-lg font-semibold leading-none">
+        <div className="flex items-center justify-between gap-4 px-6 py-5 border-b border-border shrink-0">
+          <DialogTitle className="text-xl font-bold leading-tight tracking-tight">
             {isEdit ? `עריכת עסקה — ${deal!.deal_number}` : "עסקה חדשה"}
           </DialogTitle>
           <DialogClose asChild>
             <button
               onClick={onClose}
-              className="rounded-sm opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground opacity-80 hover:bg-accent hover:opacity-100 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">סגור</span>
@@ -250,7 +250,7 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
         </div>
 
         {/* ── גוף גלילה ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="space-y-6 pt-1">
 
           {/* ─── מקושרים ──────────────────────────────────────────── */}
