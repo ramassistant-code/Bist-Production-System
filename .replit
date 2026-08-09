@@ -24,6 +24,8 @@ timeoutMs = 20000
 [userenv.shared]
 SYNC_SERVICE_URL = "https://syncdbandmonday-production.up.railway.app"
 SYNC_ENV = "test"
+INVOICE_NOTIFY_ENABLED = "true"
+INVOICE_WEBHOOK_URL = "https://rambist.app.n8n.cloud/webhook/invoice-details/development"
 
 [nix]
 channel = "stable-25_05"

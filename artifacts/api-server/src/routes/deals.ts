@@ -19,6 +19,7 @@ import {
 } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { notifySync } from "../lib/syncClient";
+import { sendInvoiceWebhook } from "../lib/invoiceWebhook";
 
 const router: IRouter = Router();
 
@@ -1019,6 +1020,22 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
 
     void notifySync({ action: "deal_created", id: result.dealId });
     if (newlyCreatedCustomerId) void notifySync({ action: "customer_upserted", id: newlyCreatedCustomerId });
+
+    // ── Invoice WhatsApp notification (fire-and-forget) ──────────────────────
+    // Sent only for new deals (not retries) with cash or bank_transfer payment.
+    if (!result.alreadyExists) {
+      void sendInvoiceWebhook({
+        dealId:              result.dealId,
+        customerId:          result.customerId ?? null,
+        salespersonUserId:   salesperson_user_id ?? null,
+        paymentType:         payment_type,
+        invoiceName:         invoice_name,
+        invoiceIdNumber:     invoice_id_number,
+        invoiceEmail:        invoice_email,
+        amountPaidIncVat:    amount_paid_including_vat,
+      });
+    }
+
     res.status(result.alreadyExists ? 200 : 201).json(result);
 
   } catch (err) {
