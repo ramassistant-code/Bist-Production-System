@@ -27,7 +27,9 @@ function normalizeSupabaseUrl(connectionString: string): string {
     }
     const projectRef = directMatch[1];
     const poolerRegion = process.env.SUPABASE_POOLER_REGION || "ap-south-1";
-    url.hostname = `aws-1-${poolerRegion}.pooler.supabase.com`;
+    url.hostname =
+      process.env.SUPABASE_POOLER_HOST ||
+      `aws-1-${poolerRegion}.pooler.supabase.com`;
     url.port = "5432";
     url.username = `postgres.${projectRef}`;
     return url.toString();
@@ -42,3 +44,4 @@ export const pool = new Pool({ connectionString });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
+
