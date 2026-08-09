@@ -204,7 +204,7 @@ function formatILS(val: string | number | null | undefined) {
 
 const CREDIT_STATUS_STYLE: Record<string, string> = {
   "ממתין":         "bg-muted text-muted-foreground",
-  "בתהליך":        "bg-blue-100 text-blue-700",
+  "בתהליך":        "bg-secondary text-secondary-foreground",
   "ממתין ללקוח":   "bg-yellow-100 text-yellow-700",
   "בבדיקת איכות": "bg-orange-100 text-orange-700",
   "הושלם":         "bg-green-100 text-green-700",
@@ -216,7 +216,7 @@ const PAYMENT_STATUS_STYLE: Record<string, string> = {
   "ממתין לתשלום":   "bg-muted text-muted-foreground",
   "חלקי":           "bg-yellow-100 text-yellow-700",
   "נכשל":           "bg-red-100 text-red-600",
-  "הוחזר":          "bg-purple-100 text-purple-700",
+  "הוחזר":          "bg-secondary text-secondary-foreground",
   "בוטל":           "bg-red-100 text-red-600",
 };
 
@@ -1008,7 +1008,7 @@ export default function DealsDetail() {
                                     </span>
                                     <span className="text-muted-foreground">× {c.quantity}</span>
                                     {c.customer_note && (
-                                      <span className="text-blue-600 mr-auto">
+                                      <span className="text-primary mr-auto">
                                         {c.customer_note}
                                       </span>
                                     )}

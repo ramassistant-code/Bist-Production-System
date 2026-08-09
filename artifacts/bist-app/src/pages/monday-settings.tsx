@@ -158,8 +158,8 @@ const STATUS_LABELS: Record<string, string> = {
   completed_with_warnings: "הושלם עם אזהרות", failed: "נכשל", cancelled: "בוטל",
 };
 const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700", queued: "bg-blue-100 text-blue-700",
-  running: "bg-blue-100 text-blue-700", waiting: "bg-orange-100 text-orange-700",
+  pending: "bg-yellow-100 text-yellow-700", queued: "bg-secondary text-secondary-foreground",
+  running: "bg-secondary text-secondary-foreground", waiting: "bg-orange-100 text-orange-700",
   completed: "bg-green-100 text-green-700",
   completed_with_warnings: "bg-yellow-100 text-yellow-700",
   failed: "bg-red-100 text-red-700", cancelled: "bg-muted text-muted-foreground",
@@ -250,7 +250,7 @@ function computeTargetStatus(t: MondayTarget): string {
 function TargetStatusBadge({ status }: { status: string }) {
   const cls: Record<string, string> = {
     "פעיל": "bg-green-100 text-green-700",
-    "מוכן לבדיקה": "bg-blue-100 text-blue-700",
+    "מוכן לבדיקה": "bg-secondary text-secondary-foreground",
     "מוגדר חלקית": "bg-yellow-100 text-yellow-700",
     "לא מוגדר": "bg-muted text-muted-foreground",
     "חסום": "bg-red-100 text-red-700",
@@ -273,8 +273,8 @@ function StatusBadge({ status }: { status: string }) {
 
 function SyncDirIcon({ dir }: { dir?: string }) {
   if (!dir || dir === "disabled") return <span className="text-muted-foreground text-xs">—</span>;
-  if (dir === "supabase_to_monday") return <span title="Supabase → Monday"><ArrowLeft className="w-3.5 h-3.5 text-blue-600" /></span>;
-  if (dir === "monday_to_supabase") return <span title="Monday → Supabase"><ArrowRight className="w-3.5 h-3.5 text-purple-600" /></span>;
+  if (dir === "supabase_to_monday") return <span title="Supabase → Monday"><ArrowLeft className="w-3.5 h-3.5 text-primary" /></span>;
+  if (dir === "monday_to_supabase") return <span title="Monday → Supabase"><ArrowRight className="w-3.5 h-3.5 text-muted-foreground" /></span>;
   return <span title="דו-כיווני"><ArrowRightLeft className="w-3.5 h-3.5 text-green-600" /></span>;
 }
 
@@ -334,21 +334,21 @@ function TargetForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">שם היעד *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background" value={form.target_name ?? ""} onChange={(e) => set("target_name", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background" value={form.target_name ?? ""} onChange={(e) => set("target_name", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מפתח יעד *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background" value={form.target_key ?? ""} onChange={(e) => set("target_key", e.target.value)} placeholder="my_target" />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring bg-background" value={form.target_key ?? ""} onChange={(e) => set("target_key", e.target.value)} placeholder="my_target" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">סוג ישות *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.entity_type ?? ""} onChange={(e) => set("entity_type", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.entity_type ?? ""} onChange={(e) => set("entity_type", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">סביבת עבודה</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.environment ?? "test"} onChange={(e) => set("environment", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.environment ?? "test"} onChange={(e) => set("environment", e.target.value)}>
             <option value="test">בדיקות</option>
             <option value="production">ייצור</option>
           </select>
@@ -365,30 +365,30 @@ function TargetForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מזהה לוח Monday *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.monday_board_id ?? ""} onChange={(e) => set("monday_board_id", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.monday_board_id ?? ""} onChange={(e) => set("monday_board_id", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">שם הלוח הצפוי *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.board_name_expected ?? ""} onChange={(e) => set("board_name_expected", e.target.value)} placeholder={form.environment === "test" ? "TEST | שם הלוח" : ""} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.board_name_expected ?? ""} onChange={(e) => set("board_name_expected", e.target.value)} placeholder={form.environment === "test" ? "TEST | שם הלוח" : ""} />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מזהה קבוצה</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.monday_group_id ?? ""} onChange={(e) => set("monday_group_id", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.monday_group_id ?? ""} onChange={(e) => set("monday_group_id", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מזהה Workspace</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.monday_workspace_id ?? ""} onChange={(e) => set("monday_workspace_id", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.monday_workspace_id ?? ""} onChange={(e) => set("monday_workspace_id", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">סדר ריצה</label>
-          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.sync_order ?? 0} onChange={(e) => set("sync_order", parseInt(e.target.value) || 0)} />
+          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.sync_order ?? 0} onChange={(e) => set("sync_order", parseInt(e.target.value) || 0)} />
         </div>
       </div>
       <div>
         <label className="block text-xs font-medium text-foreground/70 mb-1">מפתח שאילתת מקור</label>
-        <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.source_query_key ?? ""} onChange={(e) => set("source_query_key", e.target.value)} />
+        <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.source_query_key ?? ""} onChange={(e) => set("source_query_key", e.target.value)} />
       </div>
 
       <SectionHeading>כיוון סנכרון</SectionHeading>
@@ -417,23 +417,23 @@ function TargetForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">תדירות בדיקה (שניות)</label>
-          <input type="number" min={30} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.polling_interval_seconds ?? 120} onChange={(e) => set("polling_interval_seconds", parseInt(e.target.value) || 120)} />
+          <input type="number" min={30} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.polling_interval_seconds ?? 120} onChange={(e) => set("polling_interval_seconds", parseInt(e.target.value) || 120)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">חפיפה בין סריקות (שניות)</label>
-          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.polling_overlap_seconds ?? 300} onChange={(e) => set("polling_overlap_seconds", parseInt(e.target.value) || 300)} />
+          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.polling_overlap_seconds ?? 300} onChange={(e) => set("polling_overlap_seconds", parseInt(e.target.value) || 300)} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מדיניות יצירת רשומות</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.inbound_create_policy ?? "reject"} onChange={(e) => set("inbound_create_policy", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.inbound_create_policy ?? "reject"} onChange={(e) => set("inbound_create_policy", e.target.value)}>
             {Object.entries(CREATE_POLICY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">טיפול בפריט לא מקושר</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.inbound_missing_link_policy ?? "review"} onChange={(e) => set("inbound_missing_link_policy", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.inbound_missing_link_policy ?? "review"} onChange={(e) => set("inbound_missing_link_policy", e.target.value)}>
             {Object.entries(MISSING_LINK_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
@@ -471,7 +471,7 @@ function TargetForm({
       {error && <p className="text-xs text-red-600 bg-destructive/10 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-2 justify-end pt-1">
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted/50 transition-colors">ביטול</button>
-        <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
+        <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
       </div>
     </div>
   );
@@ -539,7 +539,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{targets.length} יעדים</span>
-        <button onClick={() => { setIsNew(true); setEditTarget({}); setFormError(null); }} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
+        <button onClick={() => { setIsNew(true); setEditTarget({}); setFormError(null); }} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
           <Plus className="w-4 h-4" /> יצירת יעד
         </button>
       </div>
@@ -565,7 +565,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
             )}
             {targets.map((t) => {
               const status = computeTargetStatus(t);
-              const envCls = t.environment === "production" ? "bg-orange-100 text-orange-700" : "bg-sky-100 text-sky-700";
+              const envCls = t.environment === "production" ? "bg-orange-100 text-orange-700" : "bg-secondary text-secondary-foreground";
               return (
                 <tr key={t.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
@@ -580,7 +580,7 @@ function TargetsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{t.monday_board_id}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{t.board_name_expected ?? "—"}</td>
                   <td className="px-3 py-3 text-center">{t.outbound_enabled ? <CheckCircle className="w-4 h-4 text-green-600 mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}</td>
-                  <td className="px-3 py-3 text-center">{t.inbound_enabled ? <CheckCircle className="w-4 h-4 text-purple-600 mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                  <td className="px-3 py-3 text-center">{t.inbound_enabled ? <CheckCircle className="w-4 h-4 text-muted-foreground mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}</td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{t.inbound_enabled ? `${t.polling_interval_seconds ?? 120}ש׳` : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -700,21 +700,21 @@ function MappingForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">שדה Supabase *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.source_field ?? ""} onChange={(e) => set("source_field", e.target.value)} placeholder="deal.status" />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.source_field ?? ""} onChange={(e) => set("source_field", e.target.value)} placeholder="deal.status" />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">שם עמודת Monday</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.monday_column_name ?? ""} onChange={(e) => set("monday_column_name", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.monday_column_name ?? ""} onChange={(e) => set("monday_column_name", e.target.value)} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מזהה עמודת Monday *</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.monday_column_id ?? ""} onChange={(e) => set("monday_column_id", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm font-mono bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.monday_column_id ?? ""} onChange={(e) => set("monday_column_id", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">סוג עמודת Monday</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.value_type ?? "text"} onChange={(e) => set("value_type", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.value_type ?? "text"} onChange={(e) => set("value_type", e.target.value)}>
             {VALUE_TYPES.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
           </select>
         </div>
@@ -722,11 +722,11 @@ function MappingForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">ערך ברירת מחדל</label>
-          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.default_value ?? ""} onChange={(e) => set("default_value", e.target.value)} />
+          <input className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.default_value ?? ""} onChange={(e) => set("default_value", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">סדר</label>
-          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.sync_order ?? 0} onChange={(e) => set("sync_order", parseInt(e.target.value) || 0)} />
+          <input type="number" min={0} className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.sync_order ?? 0} onChange={(e) => set("sync_order", parseInt(e.target.value) || 0)} />
         </div>
       </div>
 
@@ -734,14 +734,14 @@ function MappingForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">כיוון סנכרון</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.sync_direction ?? "supabase_to_monday"} onChange={(e) => set("sync_direction", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.sync_direction ?? "supabase_to_monday"} onChange={(e) => set("sync_direction", e.target.value)}>
             {Object.entries(DIRECTION_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
         {isBidir && (
           <div>
             <label className="block text-xs font-medium text-foreground/70 mb-1">בעלות על השדה</label>
-            <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.field_authority ?? "supabase"} onChange={(e) => set("field_authority", e.target.value)}>
+            <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.field_authority ?? "supabase"} onChange={(e) => set("field_authority", e.target.value)}>
               {Object.entries(AUTHORITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
@@ -750,7 +750,7 @@ function MappingForm({
       {isBidir && (
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">מדיניות התנגשות</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.conflict_policy ?? "authority_wins"} onChange={(e) => set("conflict_policy", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.conflict_policy ?? "authority_wins"} onChange={(e) => set("conflict_policy", e.target.value)}>
             {Object.entries(CONFLICT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
@@ -760,7 +760,7 @@ function MappingForm({
       {isOutbound && (
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">טרנספורמציה יוצאת (Supabase → Monday)</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             value={form.outbound_transform_type ?? form.transform_type ?? "identity"}
             onChange={(e) => { set("outbound_transform_type", e.target.value); set("transform_type", e.target.value); }}>
             {TRANSFORM_TYPES.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
@@ -770,7 +770,7 @@ function MappingForm({
       {isInbound && (
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1">טרנספורמציה נכנסת (Monday → Supabase)</label>
-          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500" value={form.inbound_transform_type ?? "identity"} onChange={(e) => set("inbound_transform_type", e.target.value)}>
+          <select className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={form.inbound_transform_type ?? "identity"} onChange={(e) => set("inbound_transform_type", e.target.value)}>
             {TRANSFORM_TYPES.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
           </select>
         </div>
@@ -816,7 +816,7 @@ function MappingForm({
       {error && <p className="text-xs text-red-600 bg-destructive/10 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
       <div className="flex gap-2 justify-end pt-1">
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg border border-border hover:bg-muted/50 transition-colors">ביטול</button>
-        <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
+        <button type="button" disabled={isSaving} onClick={() => onSave(form)} className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 disabled:opacity-60 text-white rounded-lg transition-colors">{isSaving ? "שומר..." : "שמור"}</button>
       </div>
     </div>
   );
@@ -869,7 +869,7 @@ function MappingsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
         <div>
           <label className="block text-xs font-medium text-foreground/70 mb-1.5">בחר יעד</label>
           <select
-            className="rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[260px]"
+            className="rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring min-w-[260px]"
             value={selectedTarget?.id ?? ""}
             onChange={(e) => { const t = targets.find((x) => x.id === e.target.value); setSelectedTarget(t ?? null); }}
           >
@@ -882,7 +882,7 @@ function MappingsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
         {selectedTarget && (
           <div className="flex items-end gap-2 pb-0.5">
             <span className="text-sm text-muted-foreground">{mappings.length} מיפויים</span>
-            <button onClick={() => { setIsNew(true); setEditMapping({}); setFormError(null); }} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
+            <button onClick={() => { setIsNew(true); setEditMapping({}); setFormError(null); }} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
               <Plus className="w-4 h-4" /> יצירת מיפוי
             </button>
           </div>
@@ -1004,7 +1004,7 @@ function PollingTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
 
   const pollingStatusCls: Record<string, string> = {
     idle: "bg-muted text-muted-foreground",
-    running: "bg-blue-100 text-blue-700",
+    running: "bg-secondary text-secondary-foreground",
     waiting: "bg-yellow-100 text-yellow-700",
     failed: "bg-red-100 text-red-700",
     disabled: "bg-muted text-muted-foreground",
@@ -1022,7 +1022,7 @@ function PollingTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
             ? "הטבלה monday_sync_health_overview לא נמצאה. יש להריץ את מיגרציית הסכמה תחילה."
             : errMsg}
         </p>
-        <button onClick={() => refetch()} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline mt-1">
+        <button onClick={() => refetch()} className="flex items-center gap-1.5 text-sm text-primary hover:underline mt-1">
           <RefreshCw className="w-4 h-4" /> נסה שוב
         </button>
       </div>
@@ -1042,7 +1042,7 @@ function PollingTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: "יעדים פעילים", value: summary?.active_targets ?? 0, icon: <Activity className="w-4 h-4 text-green-600" />, cls: "text-green-700" },
-          { label: "Polling פעיל", value: summary?.polling_active ?? 0, icon: <Clock className="w-4 h-4 text-blue-600" />, cls: "text-blue-700" },
+          { label: "Polling פעיל", value: summary?.polling_active ?? 0, icon: <Clock className="w-4 h-4 text-primary" />, cls: "text-primary" },
           { label: "אירועים ממתינים", value: summary?.pending_events ?? 0, icon: <Info className="w-4 h-4 text-yellow-600" />, cls: "text-yellow-700" },
           { label: "אירועים שנכשלו", value: summary?.failed_events ?? 0, icon: <AlertCircle className="w-4 h-4 text-red-500" />, cls: "text-red-700" },
           { label: "התנגשויות פתוחות", value: summary?.open_conflicts ?? 0, icon: <AlertCircle className="w-4 h-4 text-orange-500" />, cls: "text-orange-700" },
@@ -1091,7 +1091,7 @@ function PollingTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedF
                       <p className="font-mono text-xs text-muted-foreground">{row.target_key}</p>
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.environment === "production" ? "bg-orange-100 text-orange-700" : "bg-sky-100 text-sky-700"}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${row.environment === "production" ? "bg-orange-100 text-orange-700" : "bg-secondary text-secondary-foreground"}`}>
                         {ENV_LABELS[row.environment] ?? row.environment}
                       </span>
                     </td>
@@ -1222,13 +1222,13 @@ function RunsTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthedFetc
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
                       <Link href={`/settings/monday/runs/${r.id}`}>
-                        <a className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors px-1">פרטים</a>
+                        <a className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors px-1">פרטים</a>
                       </Link>
                       {RETRY_STATUSES.includes(r.status) && (
                         <button onClick={() => actionMutation.mutate({ id: r.id, action: "retry" })} className="text-xs font-medium text-orange-600 hover:text-orange-800 hover:underline transition-colors px-1">נסה שוב</button>
                       )}
                       {RESUME_STATUSES.includes(r.status) && (
-                        <button onClick={() => actionMutation.mutate({ id: r.id, action: "resume" })} className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors px-1">המשך</button>
+                        <button onClick={() => actionMutation.mutate({ id: r.id, action: "resume" })} className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors px-1">המשך</button>
                       )}
                       {ACTIVE_STATUSES.includes(r.status) && (
                         <button onClick={() => { if (confirm("לבטל ריצה זו?")) actionMutation.mutate({ id: r.id, action: "cancel" }); }} className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline transition-colors px-1">בטל</button>
@@ -1275,7 +1275,7 @@ function ValidateTab({ authedFetch }: { authedFetch: ReturnType<typeof useAuthed
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={() => refetch()} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
+        <button onClick={() => refetch()} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
           <RefreshCw className="w-4 h-4" /> הפעל בדיקה
         </button>
         {!isLoading && (
@@ -1349,7 +1349,7 @@ export default function MondaySettings() {
               onClick={() => setActiveTab(t.key)}
               className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
                 activeTab === t.key
-                  ? "border-b-2 border-blue-600 text-blue-600"
+                  ? "border-b-2 border-primary text-primary"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >

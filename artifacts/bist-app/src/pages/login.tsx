@@ -23,9 +23,12 @@ export default function Login() {
       dir="rtl"
       className="min-h-screen bg-background flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-md p-8 space-y-6">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">BIST מערכת הפקות</h1>
+      <div className="w-full max-w-sm bg-card border border-card-border rounded-2xl shadow-md p-8 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="text-4xl font-black tracking-tight text-foreground">
+            BI<span className="text-primary">S</span>T
+          </div>
+          <h1 className="text-lg font-bold text-foreground">מערכת הפקות</h1>
           <p className="text-sm text-muted-foreground">התחברות למערכת</p>
         </div>
 

@@ -474,11 +474,11 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
               )}
 
               {paymentType && paymentType !== "credit_card" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-500/10 rounded-lg p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-primary/10 rounded-lg p-4">
                   <div className="col-span-full flex items-center justify-between">
-                    <p className="text-xs text-blue-400 font-medium">פרטי חשבונית</p>
+                    <p className="text-xs text-primary font-medium">פרטי חשבונית</p>
                     {customerBilling && (customerBilling.invoice_name || customerBilling.tax_id || customerBilling.invoice_email) && (
-                      <span className="text-xs text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-full">מולא מנתוני הלקוח — ניתן לעדכן</span>
+                      <span className="text-xs text-primary bg-primary/20 px-2 py-0.5 rounded-full">מולא מנתוני הלקוח — ניתן לעדכן</span>
                     )}
                   </div>
                   <div>

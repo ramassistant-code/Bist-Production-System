@@ -398,8 +398,8 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-          checked ? "bg-blue-600" : "bg-gray-300"
+        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
+          checked ? "bg-primary" : "bg-gray-300"
         }`}
       >
         <span
@@ -552,14 +552,14 @@ export default function QuotePdfTemplate() {
 
               {/* Template meta */}
               {active && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                <div className="bg-primary/10 border border-primary/25 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">גרסה פעילה</span>
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">גרסה פעילה</span>
                     <StatusBadge status={active.status} />
                   </div>
-                  <div className="text-sm font-medium text-blue-900">גרסה {active.version}</div>
+                  <div className="text-sm font-medium text-primary">גרסה {active.version}</div>
                   {active.activated_at && (
-                    <div className="text-xs text-blue-700">הופעל: {fmtDate(active.activated_at)}</div>
+                    <div className="text-xs text-primary">הופעל: {fmtDate(active.activated_at)}</div>
                   )}
                 </div>
               )}
@@ -571,7 +571,7 @@ export default function QuotePdfTemplate() {
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="שם הטמפלט"
                 />
               </div>
@@ -592,7 +592,7 @@ export default function QuotePdfTemplate() {
                       type="text"
                       value={cfg[key] as string}
                       onChange={(e) => setField(key, e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                   </div>
                 ))}
@@ -602,7 +602,7 @@ export default function QuotePdfTemplate() {
                     value={cfg.company_introduction}
                     onChange={(e) => setField("company_introduction", e.target.value)}
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                     placeholder="משפט תיאור קצר (אופציונלי)"
                   />
                 </div>
@@ -630,7 +630,7 @@ export default function QuotePdfTemplate() {
                       value={cfg.below_client_text}
                       onChange={(e) => setField("below_client_text", e.target.value)}
                       rows={3}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                       placeholder="טקסט חופשי שיופיע מתחת לפרטי הלקוח (אופציונלי)"
                     />
                   </div>
@@ -657,7 +657,7 @@ export default function QuotePdfTemplate() {
                       value={cfg.bottom_notes}
                       onChange={(e) => setField("bottom_notes", e.target.value)}
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                       placeholder="טקסט חופשי שיופיע מתחת לסיכום הכספי (תנאי תשלום, תנאים כלליים וכו׳)"
                     />
                   </div>
@@ -710,7 +710,7 @@ export default function QuotePdfTemplate() {
                           type="text"
                           value={cfg.labels[key]}
                           onChange={(e) => setLabel(key, e.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                       </div>
                     ))}
@@ -736,7 +736,7 @@ export default function QuotePdfTemplate() {
                   type="button"
                   onClick={handlePublish}
                   disabled={publishMutation.isPending}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl px-4 py-3 transition-colors"
+                  className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl px-4 py-3 transition-colors"
                 >
                   {publishMutation.isPending ? "מפרסם..." : "שמור ופרסם גרסה חדשה"}
                 </button>

@@ -175,12 +175,12 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
       <div className="bg-zinc-900 px-4 pt-4 pb-3 border-b border-zinc-700 space-y-2">
         <div className="flex flex-wrap gap-2 items-center">
           {msg.category && (
-            <span className="text-xs bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">
               {msg.category}
             </span>
           )}
           {msg.subcategory && (
-            <span className="text-xs bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
               {msg.subcategory}
             </span>
           )}
@@ -222,7 +222,7 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
       {msg.proposed_reply && (
         <div className="px-4 py-3 border-b border-zinc-700">
           <div className="text-xs font-medium text-zinc-500 mb-1">תשובה מוצעת (AI)</div>
-          <div className="text-sm text-zinc-200 bg-blue-950/40 border border-blue-900/40 rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
+          <div className="text-sm text-zinc-200 bg-secondary border border-border rounded-lg p-2.5 leading-relaxed whitespace-pre-wrap">
             {msg.proposed_reply}
           </div>
         </div>
@@ -247,7 +247,7 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
                   setNotes(msg.editor_notes ?? "");
                   setEditing(true);
                 }}
-                className="text-xs text-blue-400 hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 ערוך
               </button>
@@ -281,7 +281,7 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
                 rows={3}
                 disabled={mutation.isPending}
                 placeholder="השאר ריק לאשר את תשובת ה-AI..."
-                className="w-full text-sm bg-zinc-900 border border-zinc-600 text-zinc-200 placeholder-zinc-600 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full text-sm bg-zinc-900 border border-zinc-600 text-zinc-200 placeholder-zinc-600 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div>
@@ -292,7 +292,7 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
                 rows={2}
                 disabled={mutation.isPending}
                 placeholder="הערות לעצמך..."
-                className="w-full text-sm bg-zinc-900 border border-zinc-600 text-zinc-200 placeholder-zinc-600 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="w-full text-sm bg-zinc-900 border border-zinc-600 text-zinc-200 placeholder-zinc-600 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="flex items-center justify-between">
@@ -300,7 +300,7 @@ function ScoringCard({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }) 
               <button
                 onClick={handleSave}
                 disabled={mutation.isPending || score < 1}
-                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 disabled:opacity-40 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 {mutation.isPending
                   ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -424,7 +424,7 @@ export default function WhatsApp() {
           <select
             value={category}
             onChange={(e) => { setCategory(e.target.value); setSelectedId(null); }}
-            className="text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">כל הקטגוריות</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -438,7 +438,7 @@ export default function WhatsApp() {
                 onClick={() => { setFilter(f); setSelectedId(null); }}
                 className={cn(
                   "px-3 py-1.5 transition-colors",
-                  filter === f ? "bg-blue-600 text-white" : "text-zinc-400 hover:bg-zinc-800"
+                  filter === f ? "bg-primary text-white" : "text-zinc-400 hover:bg-zinc-800"
                 )}
               >
                 {f === "pending" ? "ממתין לביקורת" : "הכל"}
@@ -475,7 +475,7 @@ export default function WhatsApp() {
                   onClick={() => setSelectedId(conv.conv_id)}
                   className={cn(
                     "w-full text-right px-4 py-3.5 border-b border-zinc-800 hover:bg-zinc-800 transition-colors",
-                    selectedId === conv.conv_id ? "bg-blue-950/60 border-r-2 border-r-blue-500" : ""
+                    selectedId === conv.conv_id ? "bg-primary/10 border-r-2 border-r-primary" : ""
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -490,7 +490,7 @@ export default function WhatsApp() {
                     <div className="shrink-0 flex flex-col items-end gap-1">
                       <span className="text-xs text-zinc-600">{fmtTime(conv.last_at)}</span>
                       {conv.pending_count > 0 && (
-                        <span className="bg-blue-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+                        <span className="bg-primary text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
                           {conv.pending_count}
                         </span>
                       )}

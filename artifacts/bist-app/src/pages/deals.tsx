@@ -228,7 +228,7 @@ export default function Deals() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {deal.source_quote_version_id ? (
-                            <span className="text-blue-700 text-xs font-medium">
+                            <span className="text-primary text-xs font-medium">
                               {deal.quote_number ? `הצעה ${deal.quote_number}` : "הצעת מחיר"}
                             </span>
                           ) : (

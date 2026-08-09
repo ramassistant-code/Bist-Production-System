@@ -29,11 +29,11 @@ interface KpiCardProps {
 }
 
 const ACCENT: Record<string, string> = {
-  blue:   "bg-blue-500/10 border-blue-500/20 text-blue-600",
+  blue:   "bg-primary/10 border-primary/20 text-primary",
   green:  "bg-green-500/10 border-green-500/20 text-green-600",
   orange: "bg-orange-500/10 border-orange-500/20 text-orange-600",
   red:    "bg-red-500/10 border-red-500/20 text-red-600",
-  purple: "bg-purple-500/10 border-purple-500/20 text-purple-600",
+  purple: "bg-secondary border-card-border text-foreground",
 };
 
 function KpiCard({ icon, label, value, sub, accent = "blue" }: KpiCardProps) {
@@ -92,7 +92,7 @@ function FollowupRow({ item }: { item: FollowupItem }) {
           {formatDate(item.followup_at)}
         </p>
         {item.phone && (
-          <a href={`tel:${item.phone}`} className="text-xs text-blue-600 flex items-center gap-0.5 mt-0.5">
+          <a href={`tel:${item.phone}`} className="text-xs text-primary flex items-center gap-0.5 mt-0.5">
             <Phone className="w-2.5 h-2.5" />
             {item.phone}
           </a>
@@ -105,8 +105,8 @@ function FollowupRow({ item }: { item: FollowupItem }) {
 // ---------- Main ----------
 
 const STATUS_COLORS = [
-  "bg-blue-500/100", "bg-green-500/100", "bg-orange-400",
-  "bg-purple-500/100", "bg-red-400", "bg-gray-400", "bg-teal-500", "bg-pink-400",
+  "bg-primary", "bg-green-500/100", "bg-orange-400",
+  "bg-zinc-500", "bg-red-400", "bg-gray-400", "bg-teal-500", "bg-pink-400",
 ];
 
 export default function Dashboard() {

@@ -16,9 +16,10 @@ export function Shell({ title, badge, children, noPadding }: ShellProps) {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 flex items-center gap-3 px-8 bg-card border-b border-border shrink-0">
-          <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+          <span className="h-5 w-1 rounded-full bg-primary shrink-0" aria-hidden />
+          <h1 className="text-xl font-black tracking-tight text-foreground">{title}</h1>
           {badge && (
-            <span className="text-xs text-muted-foreground/50 font-normal">{badge}</span>
+            <span className="text-xs text-muted-foreground/60 font-normal">{badge}</span>
           )}
         </header>
         <main className={`flex-1 overflow-hidden${noPadding ? "" : " p-8 overflow-y-auto"}`}>

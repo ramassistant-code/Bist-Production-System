@@ -115,8 +115,8 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700", queued: "bg-blue-100 text-blue-700",
-  running: "bg-blue-100 text-blue-700", waiting: "bg-orange-100 text-orange-700",
+  pending: "bg-yellow-100 text-yellow-700", queued: "bg-secondary text-secondary-foreground",
+  running: "bg-secondary text-secondary-foreground", waiting: "bg-orange-100 text-orange-700",
   completed: "bg-green-100 text-green-700", completed_with_warnings: "bg-yellow-100 text-yellow-700",
   failed: "bg-red-100 text-red-700", cancelled: "bg-muted text-muted-foreground",
 };
@@ -126,7 +126,7 @@ const LOG_LEVEL_LABELS: Record<string, string> = {
 };
 
 const LOG_LEVEL_CLASSES: Record<string, string> = {
-  debug: "text-muted-foreground", info: "text-blue-700", warning: "text-yellow-700", error: "text-red-700",
+  debug: "text-muted-foreground", info: "text-primary", warning: "text-yellow-700", error: "text-red-700",
 };
 
 function fmtDate(d?: string | null) {
@@ -155,7 +155,7 @@ function JsonViewer({ data, label }: { data: unknown; label: string }) {
   if (data === null || data === undefined) return null;
   return (
     <div>
-      <button onClick={() => setOpen((p) => !p)} className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">
+      <button onClick={() => setOpen((p) => !p)} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
         {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         {label}
       </button>
@@ -196,7 +196,7 @@ function SummaryTab({ run }: { run: RunDetail }) {
               <div className="flex justify-between gap-3">
                 <span className="text-muted-foreground">ריצת אב</span>
                 <Link href={`/settings/monday/runs/${run.parent_run_id}`}>
-                  <a className="text-xs font-mono text-blue-600 hover:underline">{run.parent_run_id.slice(0, 8)}…</a>
+                  <a className="text-xs font-mono text-primary hover:underline">{run.parent_run_id.slice(0, 8)}…</a>
                 </Link>
               </div>
             )}
@@ -348,7 +348,7 @@ function ItemsTab({ runId, authedFetch }: { runId: string; authedFetch: ReturnTy
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
                         {item.monday_board_id && item.monday_item_id && (
-                          <a href={`https://monday.com/boards/${item.monday_board_id}/pulses/${item.monday_item_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                          <a href={`https://monday.com/boards/${item.monday_board_id}/pulses/${item.monday_item_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
                             <ExternalLink className="w-3.5 h-3.5" /> פתח ב-Monday
                           </a>
                         )}
@@ -407,7 +407,7 @@ function LogsTab({ runId, authedFetch }: { runId: string; authedFetch: ReturnTyp
         <input
           type="text"
           placeholder="חיפוש בלוגים..."
-          className="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={filters.search}
           onChange={(e) => setFilters((p) => ({ ...p, search: e.target.value }))}
         />
@@ -592,7 +592,7 @@ export default function MondayRunDetail() {
             </button>
           )}
           {RESUME_STATUSES.includes(run.status) && (
-            <button disabled={actionMutation.isPending} onClick={() => actionMutation.mutate("resume")} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
+            <button disabled={actionMutation.isPending} onClick={() => actionMutation.mutate("resume")} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-3 py-2 transition-colors">
               המשך
             </button>
           )}
@@ -604,7 +604,7 @@ export default function MondayRunDetail() {
           {run.progress_percent != null && (
             <div className="flex items-center gap-2 mr-auto">
               <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${run.progress_percent}%` }} />
+                <div className="h-full bg-primary/100 rounded-full transition-all" style={{ width: `${run.progress_percent}%` }} />
               </div>
               <span className="text-xs text-muted-foreground">{run.progress_percent}%</span>
             </div>
@@ -614,7 +614,7 @@ export default function MondayRunDetail() {
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border">
           {TABS.map((t) => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === t.key ? "border-b-2 border-blue-600 text-blue-600" : "text-muted-foreground hover:text-foreground"}`}>
+            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === t.key ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t.label}
             </button>
           ))}

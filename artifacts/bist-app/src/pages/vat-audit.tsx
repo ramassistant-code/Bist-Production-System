@@ -246,7 +246,7 @@ export default function VatAudit() {
                                       href={`https://monday.com/boards/${row.monday_board_id ?? ""}/pulses/${row.monday_item_id}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                                     >
                                       {row.monday_item_id}
                                       <ExternalLink className="w-3 h-3" />

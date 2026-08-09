@@ -270,15 +270,15 @@ function NameSearchDialog({ open, onClose, onSelect }: {
                 onClick={() => { onSelect(r); onClose(); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 text-right transition-colors border border-transparent hover:border-border/50"
               >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-green-500/15" : "bg-blue-500/15"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-green-500/15" : "bg-primary/15"}`}>
                   {r.type === "customer"
                     ? <UserCheck className="w-3.5 h-3.5 text-green-600" />
-                    : <User className="w-3.5 h-3.5 text-blue-600" />}
+                    : <User className="w-3.5 h-3.5 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-foreground">{r.name}</span>
-                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-green-500/40 text-green-700" : "border-blue-500/40 text-blue-700"}`}>
+                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-green-500/40 text-green-700" : "border-primary/40 text-primary"}`}>
                       {r.type === "customer" ? "לקוח" : "ליד"}
                     </Badge>
                   </div>
@@ -402,9 +402,9 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           )}
           {lookupResult.found === "lead" && (
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-primary/100 mt-1.5 shrink-0" />
               <div>
-                <p className="font-medium text-blue-700">נמצא ליד קיים</p>
+                <p className="font-medium text-primary">נמצא ליד קיים</p>
                 <p className="text-sm text-foreground/70">{lookupResult.name}</p>
                 {lookupResult.email && <p className="text-xs text-muted-foreground">{lookupResult.email}</p>}
               </div>

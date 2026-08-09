@@ -361,7 +361,7 @@ export default function QuotesDetail() {
                       pdfMutation.mutate(verData.id);
                     }
                   }}
-                  className="text-blue-700 border-blue-200 hover:bg-blue-500/10"
+                  className="text-primary border-primary/25 hover:bg-primary/10"
                 >
                   <FileDown className="w-3.5 h-3.5 ml-1" />
                   {pdfMutation.isPending ? "מייצר PDF..." : "פתח הצעת מחיר - PDF"}
@@ -477,7 +477,7 @@ export default function QuotesDetail() {
                                   {c.customer_note && <span className="text-amber-700 mr-auto">{c.customer_note}</span>}
                                 </div>
                                 {c.internal_note && (
-                                  <div className="text-blue-700"><span className="text-muted-foreground">הערה פנימית: </span>{c.internal_note}</div>
+                                  <div className="text-primary"><span className="text-muted-foreground">הערה פנימית: </span>{c.internal_note}</div>
                                 )}
                               </div>
                             ))}
