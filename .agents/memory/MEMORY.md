@@ -3,3 +3,5 @@
 - [refresh_deal_payment_totals migration](refresh-deal-payment-totals.md) — migrated to update amount_paid_including_vat + use COALESCE(total_amount_including_vat, total_amount)
 - [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
 - [bist-app mutation pattern](bist-app-mutation-pattern.md) — RLS blocks anon Supabase for app_users/lookup tables; use apiFetch+Express for mutations that need number generation; use Supabase directly when RLS allows
+- [Supabase connection quirks](supabase-connection.md) — connect via pooler aws-0-ap-southeast-1; SUPABASE_POOLER_HOST override gets wiped by merges, re-verify after every merge
+- [Monday sync architecture](monday-sync.md) — sync failures are silent by design; check SYNC_API_KEY secret + outbound_enabled flags in monday_export_targets before debugging code
