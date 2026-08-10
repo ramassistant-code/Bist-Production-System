@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Copy, AlertCircle, CheckCircle, Handshake, FileDown } from "lucide-react";
+import { ChevronRight, Copy, AlertCircle, CheckCircle, Handshake, FileDown, Send, Link2, Check, Loader2 } from "lucide-react";
 import { Shell } from "@/components/layout/shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
@@ -143,6 +144,146 @@ const TABS = [
 
 // ── Component ──────────────────────────────────────────────────────────────
 
+// ── Onboarding modal: לינק חתימה + לינק תשלום + הודעת WhatsApp ────────────────
+interface OnboardingResponse {
+  signing_url: string;
+  payment_url: string;
+  amount: number;
+  phone: string | null;
+  message: string;
+  whatsapp_url: string | null;
+}
+
+function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const [data, setData] = useState<OnboardingResponse | null>(null);
+  const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState<"pay" | "sign" | "msg" | null>(null);
+
+  const mutation = useMutation<OnboardingResponse, Error & { data?: { error?: string } }>({
+    mutationFn: () =>
+      customFetch<OnboardingResponse>(`/api/quotes/${quoteId}/onboarding`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    onSuccess: (res) => {
+      setData(res);
+      setMessage(res.message);
+    },
+    onError: (err) => {
+      toast({ title: err?.data?.error ?? err.message ?? "שגיאה ביצירת הלינקים", variant: "destructive" });
+    },
+  });
+
+  useEffect(() => {
+    if (open && !data && !mutation.isPending) mutation.mutate();
+    if (!open) {
+      setData(null);
+      setMessage("");
+      setCopied(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function copy(text: string, which: "pay" | "sign" | "msg") {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      toast({ title: "לא ניתן להעתיק ללוח", variant: "destructive" });
+    }
+  }
+
+  // בונים מחדש את קישור ה-WhatsApp מהטקסט הערוך.
+  const waUrl =
+    data?.phone && message
+      ? `https://web.whatsapp.com/send?phone=${data.phone}&text=${encodeURIComponent(message)}`
+      : null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent dir="rtl" className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>שליחה ללקוח — חתימה ותשלום</DialogTitle>
+        </DialogHeader>
+
+        {mutation.isPending ? (
+          <div className="flex items-center gap-2 py-10 justify-center text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            מייצר לינקים…
+          </div>
+        ) : !data ? (
+          <div className="space-y-4 py-6">
+            <p className="text-sm text-muted-foreground text-center">לא נוצרו לינקים.</p>
+            <div className="flex justify-center">
+              <Button size="sm" onClick={() => mutation.mutate()}>נסה שוב</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/70">לינק חתימה (PDF)</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.signing_url} dir="ltr"
+                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
+                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.signing_url, "sign")}>
+                  {copied === "sign" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/70">לינק לתשלום (כולל מע"מ)</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.payment_url} dir="ltr"
+                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
+                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.payment_url, "pay")}>
+                  {copied === "pay" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/70">הודעה ללקוח (ניתן לעריכה)</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={14}
+                dir="rtl"
+                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+              />
+            </div>
+
+            {!data.phone && (
+              <p className="flex items-center gap-1.5 text-xs text-amber-500">
+                <AlertCircle className="w-3.5 h-3.5" />
+                אין מספר טלפון תקין ללקוח — אפשר להעתיק את ההודעה ולשלוח ידנית.
+              </p>
+            )}
+          </div>
+        )}
+
+        {data && (
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => copy(message, "msg")}>
+              {copied === "msg" ? <Check className="w-4 h-4 ml-1" /> : <Copy className="w-4 h-4 ml-1" />}
+              העתק הודעה
+            </Button>
+            <Button
+              onClick={() => waUrl && window.open(waUrl, "_blank", "noopener,noreferrer")}
+              disabled={!waUrl}
+              className="bg-[#25D366] hover:bg-[#1fb457] text-white"
+            >
+              פתח בוואטסאפ
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function QuotesDetail() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -153,6 +294,7 @@ export default function QuotesDetail() {
   const [tab, setTab] = useState("info");
   const [showOpenDealModal, setShowOpenDealModal] = useState(false);
   const [lastPdfUrl, setLastPdfUrl] = useState<string | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuery<QuoteDetailData>({
     queryKey: ["quote", id],
@@ -365,6 +507,17 @@ export default function QuotesDetail() {
                 >
                   <FileDown className="w-3.5 h-3.5 ml-1" />
                   {pdfMutation.isPending ? "מייצר PDF..." : "פתח הצעת מחיר - PDF"}
+                </Button>
+              )}
+
+              {/* שליחה ללקוח — חתימה + תשלום */}
+              {verData?.id && (
+                <Button
+                  size="sm"
+                  onClick={() => setOnboardingOpen(true)}
+                  className="bg-primary text-primary-foreground hover:opacity-90"
+                >
+                  <Send className="w-3.5 h-3.5 ml-1" />שלח ללקוח
                 </Button>
               )}
 
@@ -596,6 +749,8 @@ export default function QuotesDetail() {
         }}
       />
     )}
+
+    <OnboardingModal quoteId={id} open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
     </>
   );
 }

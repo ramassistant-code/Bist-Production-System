@@ -80,6 +80,42 @@ export function buildPaymentMessage(input: PaymentMessageInput): string {
   ].join("\n");
 }
 
+export interface OnboardingMessageInput {
+  customerName: string;
+  /** לינק לעמוד החתימה הציבורי (מציג את ה-PDF + אישור). */
+  signingUrl: string;
+  /** לינק לתשלום באשראי (דינמי מ-Invoice4U, על הסכום כולל מע"מ). */
+  paymentUrl: string;
+}
+
+/**
+ * טמפלט ה-onboarding ממסך הצעת המחיר: שלב 1 = חתימה על ה-PDF, שלב 2 = תשלום.
+ * (ללא העברה בנקאית / "מה קורה אחרי" — הוסרו לפי הטמפלט העדכני.)
+ */
+export function buildOnboardingMessage(input: OnboardingMessageInput): string {
+  return [
+    `היי ${input.customerName} שמחתי להכיר :)`,
+    ``,
+    `שולח מסודר את השלבים להתקדמות:`,
+    `1. חתימה על הצעת מחיר`,
+    input.signingUrl,
+    ``,
+    `2. תשלום באשראי דרך הלינק הבא:`,
+    input.paymentUrl,
+    ``,
+    `שעות הפעילות שלנו:`,
+    `א׳ - ה׳: 9:00 - 23:00`,
+    `ו׳: 9:00 - שעתיים לפני שבת`,
+    `ש׳: שעתיים אחרי שבת - 00:00`,
+    ``,
+    `* יש חניה באזור`,
+    ``,
+    `הכתובת שלנו: אליעזר מזל 4 ראשל״צ`,
+    ``,
+    `כאן לכל שאלה נוספת🙏🏻`,
+  ].join("\n");
+}
+
 /**
  * בונה קישור שפותח את WhatsApp Web עם השיחה של הלקוח וההודעה בתיבה.
  * מחזיר null אם אין מספר טלפון תקין.

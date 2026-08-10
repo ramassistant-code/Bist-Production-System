@@ -723,7 +723,6 @@ export default function DealsDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [fullEditOpen, setFullEditOpen] = useState(false);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
-  const [paymentLinkOpen, setPaymentLinkOpen] = useState(false);
 
   const { data: deal, isLoading, isError } = useQuery<DealDetail>({
     queryKey: ["deal", id],
@@ -929,15 +928,6 @@ export default function DealsDetail() {
               </h3>
               {deal.execution_status !== "בוטלה" && (
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => setPaymentLinkOpen(true)}
-                  >
-                    <Link2 className="w-3.5 h-3.5" />
-                    צור לינק תשלום
-                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -1406,12 +1396,6 @@ export default function DealsDetail() {
           }}
         />
       )}
-
-      <PaymentLinkModal
-        dealId={deal.id}
-        open={paymentLinkOpen}
-        onClose={() => setPaymentLinkOpen(false)}
-      />
     </Shell>
   );
 }

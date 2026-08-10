@@ -28,7 +28,7 @@ router.post("/deals/:id/payment-link", async (req: Request, res: Response): Prom
         id: dealsTable.id,
         deal_number: dealsTable.deal_number,
         total_amount_including_vat: dealsTable.total_amount_including_vat,
-        remaining_amount: dealsTable.remaining_amount,
+        amount_paid_including_vat: dealsTable.amount_paid_including_vat,
         installments_count: dealsTable.installments_count,
         quote_link: dealsTable.quote_link,
         invoice_name: dealsTable.invoice_name,
@@ -54,15 +54,19 @@ router.post("/deals/:id/payment-link", async (req: Request, res: Response): Prom
       description?: string;
     };
 
-    // סכום: override מהגוף → יתרה לתשלום → סכום כולל מע"מ.
+    // סכום (תמיד כולל מע"מ): override מהגוף → יתרה לתשלום כולל מע"מ → סכום כולל מע"מ.
+    // אין שדה "יתרה כולל מע"מ" בסכמה, לכן מחשבים: סה"כ כולל מע"מ − ששולם כולל מע"מ.
     const override = body.amount != null ? Number(body.amount) : NaN;
-    const remaining = Number(deal.remaining_amount ?? NaN);
-    const total = Number(deal.total_amount_including_vat ?? NaN);
+    const totalIncVat = Number(deal.total_amount_including_vat ?? NaN);
+    const paidIncVat = Number(deal.amount_paid_including_vat ?? 0);
+    const remainingIncVat = Number.isFinite(totalIncVat)
+      ? totalIncVat - (Number.isFinite(paidIncVat) ? paidIncVat : 0)
+      : NaN;
     const sum = Number.isFinite(override) && override > 0
       ? override
-      : Number.isFinite(remaining) && remaining > 0
-      ? remaining
-      : total;
+      : Number.isFinite(remainingIncVat) && remainingIncVat > 0
+      ? remainingIncVat
+      : totalIncVat;
 
     if (!Number.isFinite(sum) || sum <= 0) {
       res.status(400).json({ error: "לא ניתן לקבוע סכום לתשלום עבור העסקה" });

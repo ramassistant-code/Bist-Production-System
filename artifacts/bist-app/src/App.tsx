@@ -55,6 +55,7 @@ import MondayRunDetail from "@/pages/monday-run-detail";
 import VatAudit from "@/pages/vat-audit";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import SignPage from "@/pages/sign";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,9 +122,15 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
-              <AuthGate>
-                <Router />
-              </AuthGate>
+              <Switch>
+                {/* עמוד חתימה ציבורי — ללא התחברות */}
+                <Route path="/sign/:token" component={SignPage} />
+                <Route>
+                  <AuthGate>
+                    <Router />
+                  </AuthGate>
+                </Route>
+              </Switch>
             </AuthProvider>
           </WouterRouter>
           <Toaster />
