@@ -14,6 +14,7 @@ import quoteVersionsRouter from "./quote-versions";
 import mondayRouter from "./monday";
 import lookupsRouter from "./lookups";
 import whatsappRouter from "./whatsapp";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(quoteVersionsRouter);
 router.use(mondayRouter);
 router.use(lookupsRouter);
 router.use(whatsappRouter);
+router.use(paymentsRouter);
 
 export default router;

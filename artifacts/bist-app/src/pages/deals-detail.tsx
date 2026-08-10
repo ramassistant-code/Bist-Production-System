@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
-import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw, Settings2, Trash2 } from "lucide-react";
+import { ChevronRight, Pencil, AlertCircle, Plus, CreditCard, Banknote, ArrowRightLeft, RefreshCw, Settings2, Trash2, Link2, Copy, Check, Loader2 } from "lucide-react";
 import DealFormDialog, { type DealEditable } from "@/components/deals/deal-form-dialog";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -233,6 +233,158 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 // ── Add Payment Modal ─────────────────────────────────────────────────────────
+
+// ── Payment link + WhatsApp modal ─────────────────────────────────────────────
+
+interface PaymentLinkResponse {
+  payment_url: string;
+  clearing_id: string | null;
+  amount: number;
+  phone: string | null;
+  message: string;
+  whatsapp_url: string | null;
+}
+
+interface PaymentLinkModalProps {
+  dealId: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+function PaymentLinkModal({ dealId, open, onClose }: PaymentLinkModalProps) {
+  const { toast } = useToast();
+  const [data, setData] = useState<PaymentLinkResponse | null>(null);
+  const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState<"link" | "msg" | null>(null);
+
+  const mutation = useMutation<PaymentLinkResponse, Error & { data?: { error?: string } }>({
+    mutationFn: () =>
+      customFetch<PaymentLinkResponse>(`/api/deals/${dealId}/payment-link`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    onSuccess: (res) => {
+      setData(res);
+      setMessage(res.message);
+    },
+    onError: (err) => {
+      toast({ title: err?.data?.error ?? err.message ?? "שגיאה ביצירת לינק תשלום", variant: "destructive" });
+    },
+  });
+
+  // בעת פתיחת המודאל — יוצרים לינק פעם אחת. בסגירה — מאפסים.
+  useEffect(() => {
+    if (open && !data && !mutation.isPending) {
+      mutation.mutate();
+    }
+    if (!open) {
+      setData(null);
+      setMessage("");
+      setCopied(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function copy(text: string, which: "link" | "msg") {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      toast({ title: "לא ניתן להעתיק ללוח", variant: "destructive" });
+    }
+  }
+
+  // בונים מחדש את קישור הוואטסאפ מהטקסט הערוך (כדי שהעריכה תשתקף).
+  const waUrl =
+    data?.phone && message
+      ? `https://web.whatsapp.com/send?phone=${data.phone}&text=${encodeURIComponent(message)}`
+      : null;
+
+  function openWhatsApp() {
+    if (!waUrl) return;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent dir="rtl" className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>לינק תשלום ושליחה בוואטסאפ</DialogTitle>
+        </DialogHeader>
+
+        {mutation.isPending ? (
+          <div className="flex items-center gap-2 py-10 justify-center text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            יוצר לינק תשלום מול Invoice4U…
+          </div>
+        ) : !data ? (
+          <div className="space-y-4 py-6">
+            <p className="text-sm text-muted-foreground text-center">לא נוצר לינק תשלום.</p>
+            <div className="flex justify-center">
+              <Button size="sm" onClick={() => mutation.mutate()}>
+                <RefreshCw className="w-3.5 h-3.5 ml-1" />
+                נסה שוב
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-2">
+            {/* Payment link */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/70">לינק לתשלום</label>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={data.payment_url}
+                  dir="ltr"
+                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none"
+                />
+                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.payment_url, "link")}>
+                  {copied === "link" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Editable message */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/70">הודעה ללקוח (ניתן לעריכה)</label>
+              <p className="text-xs text-muted-foreground">
+                מלא/החלף את החלקים ב־<span className="font-mono">[ ]</span> (לינק העברה בנקאית, מה קורה אחרי החתימה) לפני שליחה.
+              </p>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={16}
+                dir="rtl"
+                className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+              />
+            </div>
+
+            {!data.phone && (
+              <p className="flex items-center gap-1.5 text-xs text-amber-500">
+                <AlertCircle className="w-3.5 h-3.5" />
+                אין מספר טלפון תקין ללקוח — אפשר להעתיק את ההודעה ולשלוח ידנית.
+              </p>
+            )}
+          </div>
+        )}
+
+        {data && (
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => copy(message, "msg")}>
+              {copied === "msg" ? <Check className="w-4 h-4 ml-1" /> : <Copy className="w-4 h-4 ml-1" />}
+              העתק הודעה
+            </Button>
+            <Button onClick={openWhatsApp} disabled={!waUrl} className="bg-[#25D366] hover:bg-[#1fb457] text-white">
+              פתח בוואטסאפ
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface AddPaymentModalProps {
   dealId: string;
@@ -571,6 +723,7 @@ export default function DealsDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [fullEditOpen, setFullEditOpen] = useState(false);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [paymentLinkOpen, setPaymentLinkOpen] = useState(false);
 
   const { data: deal, isLoading, isError } = useQuery<DealDetail>({
     queryKey: ["deal", id],
@@ -775,15 +928,26 @@ export default function DealsDetail() {
                 )}
               </h3>
               {deal.execution_status !== "בוטלה" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => setAddPaymentOpen(true)}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  הוסף תשלום
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => setPaymentLinkOpen(true)}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    צור לינק תשלום
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => setAddPaymentOpen(true)}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    הוסף תשלום
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -1242,6 +1406,12 @@ export default function DealsDetail() {
           }}
         />
       )}
+
+      <PaymentLinkModal
+        dealId={deal.id}
+        open={paymentLinkOpen}
+        onClose={() => setPaymentLinkOpen(false)}
+      />
     </Shell>
   );
 }
