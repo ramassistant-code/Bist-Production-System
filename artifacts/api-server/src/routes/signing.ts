@@ -2,10 +2,10 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import { quotesTable, quoteVersionsTable, customersTable } from "@workspace/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
-import { createPaymentLink, isInvoice4UConfigured } from "../lib/invoice4u";
+import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";
 import { buildOnboardingMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
 import { sendWhatsAppNotification } from "../lib/invoiceWebhook";
 
@@ -131,6 +131,10 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
     const fullName = quote.invoice_name || quote.customer_name || "לקוח";
     const email = quote.invoice_email || quote.customer_email || null;
 
+    // ReturnUrl: דף תודה ציבורי עם ה-token כפרמטר
+    const signingUrl = `${publicBaseUrl(req)}/sign/${token}`;
+    const paymentReturnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
+
     const result = await createPaymentLink({
       sum,
       fullName,
@@ -139,7 +143,7 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       installments: 1,
       description: `תשלום עבור הצעה ${quote.quote_number ?? ""}`.trim(),
       externalId: quote.quote_number ?? quoteId,
-      returnUrl: RETURN_URL_BASE || null,
+      returnUrl: paymentReturnUrl,
     });
 
     if (!result.ok || !result.url) {
@@ -147,8 +151,20 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       return;
     }
 
+    // ── 5b. שמירת clearing_id בשורת signing_request ──────────────────────────
+    if (result.clearingId) {
+      const { error: updateErr } = await supabaseAdmin
+        .from("signing_requests")
+        .update({ clearing_id: result.clearingId, payment_status: "pending" })
+        .eq("id", sr.id);
+      if (updateErr) {
+        logger.warn({ err: updateErr, clearingId: result.clearingId }, "failed to save clearing_id");
+      }
+    } else {
+      logger.warn({ srId: sr.id }, "invoice4u did not return clearingId — cannot verify payment later");
+    }
+
     // ── 6. בניית ההודעה + לינק ה-WhatsApp ────────────────────────────────────
-    const signingUrl = `${publicBaseUrl(req)}/sign/${token}`;
     const message = buildOnboardingMessage({
       customerName: quote.customer_name || fullName,
       signingUrl,
@@ -168,6 +184,140 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
   } catch (err) {
     logger.error({ err }, "POST /quotes/:id/onboarding error");
     res.status(500).json({ error: "שגיאה ביצירת לינקים לשליחה" });
+  }
+});
+
+// ── verifyAndNotifyPayment ────────────────────────────────────────────────────
+// פונקציה פנימית: מאמתת תשלום מול Invoice4U ושולחת התראה חד-פעמית.
+interface SigningRequestRow {
+  id: string;
+  quote_id: string;
+  customer_id: string | null;
+  clearing_id: string | null;
+  payment_status: string | null;
+  paid_amount: number | null;
+}
+
+interface VerifyResult {
+  status: "paid" | "pending" | "no_link";
+  amount?: number;
+}
+
+async function verifyAndNotifyPayment(sr: SigningRequestRow): Promise<VerifyResult> {
+  // כבר שולם — אין לשלוח פעם נוספת
+  if (sr.payment_status === "paid") {
+    return { status: "paid", amount: Number(sr.paid_amount ?? 0) };
+  }
+  // אין clearing_id — לינק תשלום לא נוצר / לא הוחזר
+  if (!sr.clearing_id) {
+    return { status: "no_link" };
+  }
+
+  const st = await getClearingStatus(sr.clearing_id);
+  if (!st.isSuccess) {
+    return { status: "pending" };
+  }
+
+  // עדכון atomic: מונע כפילות — רק אם payment_notified_at עדיין null
+  const { data: updated } = await supabaseAdmin
+    .from("signing_requests")
+    .update({
+      payment_status: "paid",
+      paid_amount: st.amount,
+      payment_notified_at: new Date().toISOString(),
+    })
+    .eq("id", sr.id)
+    .is("payment_notified_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (updated) {
+    // אנחנו ראשונים — טוענים quote_number + customer_name ושולחים התראה
+    try {
+      const { data: qRow } = await supabaseAdmin
+        .from("quotes")
+        .select("quote_number")
+        .eq("id", sr.quote_id)
+        .maybeSingle();
+      let customerName = "";
+      if (sr.customer_id) {
+        const { data: cRow } = await supabaseAdmin
+          .from("customers")
+          .select("name")
+          .eq("id", sr.customer_id)
+          .maybeSingle();
+        customerName = cRow?.name ?? "";
+      }
+      const msg = [
+        `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""}`,
+        customerName ? `${customerName}` : "",
+        `סכום ${st.amount}₪`,
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      void sendWhatsAppNotification(msg);
+      logger.info({ srId: sr.id, amount: st.amount }, "payment notification sent");
+    } catch (notifyErr) {
+      logger.error({ err: notifyErr }, "payment notify failed");
+    }
+  } else {
+    logger.info({ srId: sr.id }, "payment already notified — skipping duplicate");
+  }
+
+  return { status: "paid", amount: st.amount };
+}
+
+// ── POST /public/payment-return/:token ────────────────────────────────────────
+// ציבורי (ללא התחברות): נקרא מדף התודה אחרי תשלום — מאמת ושולח התראה.
+router.post(
+  "/public/payment-return/:token",
+  async (req: Request, res: Response): Promise<void> => {
+    const token = String(req.params["token"]);
+    try {
+      const { data: sr } = await supabaseAdmin
+        .from("signing_requests")
+        .select("id, quote_id, customer_id, clearing_id, payment_status, paid_amount")
+        .eq("token", token)
+        .maybeSingle();
+
+      if (!sr) {
+        res.status(404).json({ error: "הקישור לא נמצא" });
+        return;
+      }
+
+      const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
+      res.json(result);
+    } catch (err) {
+      logger.error({ err }, "POST /public/payment-return/:token error");
+      res.status(500).json({ error: "שגיאה באימות תשלום" });
+    }
+  },
+);
+
+// ── POST /quotes/:id/check-payment ───────────────────────────────────────────
+// מאומת: כפתור "בדוק תשלום" ממסך ההצעה — מאמת ושולח התראה (idempotent).
+router.post("/quotes/:id/check-payment", async (req: Request, res: Response): Promise<void> => {
+  const quoteId = String(req.params["id"]);
+  try {
+    const { data: sr } = await supabaseAdmin
+      .from("signing_requests")
+      .select("id, quote_id, customer_id, clearing_id, payment_status, paid_amount, created_at")
+      .eq("quote_id", quoteId)
+      .not("clearing_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!sr) {
+      res.json({ status: "no_link" });
+      return;
+    }
+
+    const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, "POST /quotes/:id/check-payment error");
+    res.status(500).json({ error: "שגיאה בבדיקת תשלום" });
   }
 });
 

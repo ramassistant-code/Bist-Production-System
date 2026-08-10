@@ -296,6 +296,30 @@ export default function QuotesDetail() {
   const [lastPdfUrl, setLastPdfUrl] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
+  const checkPaymentMutation = useMutation<{ status: string; amount?: number }, Error>({
+    mutationFn: () =>
+      customFetch<{ status: string; amount?: number }>(`/api/quotes/${id}/check-payment`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    onSuccess: (res) => {
+      if (res.status === "paid") {
+        const fmt = (n: number) =>
+          n.toLocaleString("he-IL", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        toast({ title: `התקבל תשלום (${fmt(res.amount ?? 0)}₪)` });
+        queryClient.invalidateQueries({ queryKey: ["quote", id] });
+        queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      } else if (res.status === "pending") {
+        toast({ title: "טרם זוהה תשלום עבור ההצעה" });
+      } else {
+        toast({ title: "לא נמצא לינק תשלום להצעה זו (שלח קודם ללקוח)" });
+      }
+    },
+    onError: (err: Error & { data?: { error?: string } }) => {
+      toast({ title: (err as unknown as { data?: { error?: string } })?.data?.error ?? "שגיאה בבדיקת תשלום", variant: "destructive" });
+    },
+  });
+
   const { data, isLoading, isError } = useQuery<QuoteDetailData>({
     queryKey: ["quote", id],
     queryFn: () => customFetch<QuoteDetailData>(`/api/quotes/${id}`),
@@ -518,6 +542,24 @@ export default function QuotesDetail() {
                   className="bg-primary text-primary-foreground hover:opacity-90"
                 >
                   <Send className="w-3.5 h-3.5 ml-1" />שלח ללקוח
+                </Button>
+              )}
+
+              {/* בדיקת תשלום ידנית */}
+              {verData?.id && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={checkPaymentMutation.isPending}
+                  onClick={() => checkPaymentMutation.mutate()}
+                  className="border-green-600/40 text-green-700 hover:bg-green-50"
+                >
+                  {checkPaymentMutation.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-3.5 h-3.5 ml-1" />
+                  )}
+                  בדוק תשלום
                 </Button>
               )}
 

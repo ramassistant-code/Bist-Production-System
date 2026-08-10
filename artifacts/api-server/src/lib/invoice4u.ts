@@ -138,3 +138,83 @@ export async function createPaymentLink(
     return { ok: false, error: "כשל בפנייה ל-Invoice4U" };
   }
 }
+
+// ── GetClearingLogById ────────────────────────────────────────────────────────
+
+const I4U_CLEARING_STATUS_ENDPOINT =
+  process.env.INVOICE4U_CLEARING_STATUS_ENDPOINT ??
+  "https://api.invoice4u.co.il/Services/ApiService.svc/GetClearingLogById";
+
+export interface GetClearingStatusResult {
+  isSuccess: boolean;
+  amount: number;
+  confirmationNumber: string | null;
+  raw: unknown;
+}
+
+/**
+ * בודק את סטטוס הסליקה לפי clearingId. לעולם לא זורק — מחזיר { isSuccess:false } בכישלון.
+ */
+export async function getClearingStatus(
+  clearingId: string,
+): Promise<GetClearingStatusResult> {
+  if (!isInvoice4UConfigured()) {
+    return { isSuccess: false, amount: 0, confirmationNumber: null, raw: null };
+  }
+
+  try {
+    const body = {
+      request: {
+        clearingLogId: clearingId,
+        token: I4U_API_KEY,
+      },
+    };
+
+    const res = await fetch(I4U_CLEARING_STATUS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
+    }
+
+    if (!res.ok) {
+      logger.error({ status: res.status, raw: data }, "invoice4u getClearingStatus: HTTP error");
+      return { isSuccess: false, amount: 0, confirmationNumber: null, raw: data };
+    }
+
+    // תשובת WCF עשויה להגיע עטופה ב-"d"
+    const payload = (data as { d?: unknown })?.d ?? data;
+    const obj = (payload ?? {}) as Record<string, unknown>;
+
+    logger.info({ raw: obj }, "invoice4u getClearingStatus: raw response");
+
+    // שדות אפשריים לפי תיעוד Invoice4U
+    const isSuccess =
+      obj["IsSuccess"] === true ||
+      obj["isSuccess"] === true ||
+      String(obj["Status"] ?? obj["status"] ?? "").toLowerCase() === "success" ||
+      String(obj["TransactionStatus"] ?? "").toLowerCase() === "ok";
+
+    const amount = Number(
+      obj["Amount"] ?? obj["amount"] ?? obj["Sum"] ?? obj["sum"] ?? 0,
+    );
+
+    const confirmationNumber =
+      (obj["ConfirmationNumber"] as string | undefined) ??
+      (obj["AuthorizationNumber"] as string | undefined) ??
+      (obj["TransactionId"] as string | undefined) ??
+      null;
+
+    return { isSuccess, amount, confirmationNumber, raw: obj };
+  } catch (err) {
+    logger.error({ err }, "invoice4u getClearingStatus: request failed");
+    return { isSuccess: false, amount: 0, confirmationNumber: null, raw: null };
+  }
+}
