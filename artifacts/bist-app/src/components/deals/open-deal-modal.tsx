@@ -73,9 +73,9 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 const ASSIGNEE_LABELS: Record<string, string> = {
+  editing_operations: "עריכות ואופרציה",
+  sales: "מכירות",
   office_manager: "מנהלת משרד",
-  sales_manager: "מנהל מכירות",
-  operations_manager: "מנהל אופרציה",
 };
 
 function formatILS(n: number | null | undefined) {
