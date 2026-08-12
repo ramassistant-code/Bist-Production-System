@@ -203,17 +203,32 @@ interface VerifyResult {
   amount?: number;
 }
 
-async function verifyAndNotifyPayment(sr: SigningRequestRow): Promise<VerifyResult> {
+async function verifyAndNotifyPayment(
+  sr: SigningRequestRow,
+  fallbackClearingId?: string,
+): Promise<VerifyResult> {
   // כבר שולם — אין לשלוח פעם נוספת
   if (sr.payment_status === "paid") {
     return { status: "paid", amount: Number(sr.paid_amount ?? 0) };
   }
+
+  // אם אין clearing_id בDB אבל קיבלנו אחד מפרמטרי ReturnUrl — שומרים ומשתמשים
+  let clearingId = sr.clearing_id;
+  if (!clearingId && fallbackClearingId) {
+    logger.info({ srId: sr.id, fallbackClearingId }, "saving fallback clearingId from returnParams");
+    await supabaseAdmin
+      .from("signing_requests")
+      .update({ clearing_id: fallbackClearingId, payment_status: "pending" })
+      .eq("id", sr.id);
+    clearingId = fallbackClearingId;
+  }
+
   // אין clearing_id — לינק תשלום לא נוצר / לא הוחזר
-  if (!sr.clearing_id) {
+  if (!clearingId) {
     return { status: "no_link" };
   }
 
-  const st = await getClearingStatus(sr.clearing_id);
+  const st = await getClearingStatus(clearingId);
   if (!st.isSuccess) {
     return { status: "pending" };
   }
@@ -285,7 +300,21 @@ router.post(
         return;
       }
 
-      const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
+      // Invoice4U עשוי להחזיר clearingId בפרמטרי ה-ReturnUrl
+      const returnParams = ((req.body as { returnParams?: Record<string, string> })?.returnParams) ?? {};
+      logger.info({ returnParams }, "payment-return: returnParams from Invoice4U");
+
+      // שמות שדה אפשריים שבהם Invoice4U שולח את מזהה הסליקה
+      const fallbackClearingId =
+        returnParams["ClearingLogId"] ??
+        returnParams["clearingLogId"] ??
+        returnParams["ClearingId"] ??
+        returnParams["clearingId"] ??
+        returnParams["TransactionId"] ??
+        returnParams["transactionId"] ??
+        undefined;
+
+      const result = await verifyAndNotifyPayment(sr as SigningRequestRow, fallbackClearingId);
       res.json(result);
     } catch (err) {
       logger.error({ err }, "POST /public/payment-return/:token error");

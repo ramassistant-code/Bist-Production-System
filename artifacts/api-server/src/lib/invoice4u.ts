@@ -123,6 +123,9 @@ export async function createPaymentLink(
       (obj["ClearingLogId"] as string | undefined) ??
       undefined;
 
+    // תמיד נרשם לוג של תשובה מוצלחת — עוזר לאמת שמות שדות
+    logger.info({ payload }, "invoice4u: createPaymentLink raw response");
+
     if (!url) {
       logger.error({ payload }, "invoice4u: no payment URL in response");
       return {
