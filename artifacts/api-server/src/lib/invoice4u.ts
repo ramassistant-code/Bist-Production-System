@@ -118,7 +118,13 @@ export async function createPaymentLink(
       (obj["PaymentUrl"] as string | undefined) ??
       undefined;
 
+    // Invoice4U מחזיר את מזהה הסליקה בתוך מערך OpenInfo תחת Key="I4UClearingLogId"
+    const openInfo =
+      (obj["OpenInfo"] as Array<{ Key: string; Value: string }> | undefined) ?? [];
+    const i4uClearingLogId = openInfo.find((x) => x.Key === "I4UClearingLogId")?.Value;
+
     const clearingId =
+      i4uClearingLogId ??
       (obj["ClearingId"] as string | undefined) ??
       (obj["ClearingLogId"] as string | undefined) ??
       undefined;

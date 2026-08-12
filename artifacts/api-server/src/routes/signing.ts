@@ -205,7 +205,7 @@ interface VerifyResult {
 
 async function verifyAndNotifyPayment(
   sr: SigningRequestRow,
-  fallbackClearingId?: string,
+  opts: { fallbackClearingId?: string; confirmedByReturnUrl?: boolean } = {},
 ): Promise<VerifyResult> {
   // כבר שולם — אין לשלוח פעם נוספת
   if (sr.payment_status === "paid") {
@@ -214,22 +214,56 @@ async function verifyAndNotifyPayment(
 
   // אם אין clearing_id בDB אבל קיבלנו אחד מפרמטרי ReturnUrl — שומרים ומשתמשים
   let clearingId = sr.clearing_id;
-  if (!clearingId && fallbackClearingId) {
-    logger.info({ srId: sr.id, fallbackClearingId }, "saving fallback clearingId from returnParams");
+  if (!clearingId && opts.fallbackClearingId) {
+    logger.info({ srId: sr.id, fallbackClearingId: opts.fallbackClearingId }, "saving fallback clearingId from returnParams");
     await supabaseAdmin
       .from("signing_requests")
-      .update({ clearing_id: fallbackClearingId, payment_status: "pending" })
+      .update({ clearing_id: opts.fallbackClearingId, payment_status: "pending" })
       .eq("id", sr.id);
-    clearingId = fallbackClearingId;
+    clearingId = opts.fallbackClearingId;
   }
 
   // אין clearing_id — לינק תשלום לא נוצר / לא הוחזר
-  if (!clearingId) {
+  if (!clearingId && !opts.confirmedByReturnUrl) {
     return { status: "no_link" };
   }
 
-  const st = await getClearingStatus(clearingId);
-  if (!st.isSuccess) {
+  // ניסיון אימות דרך Invoice4U API
+  let amount = 0;
+  let apiConfirmed = false;
+
+  if (clearingId) {
+    const st = await getClearingStatus(clearingId);
+    if (st.isSuccess) {
+      apiConfirmed = true;
+      amount = st.amount;
+    } else {
+      logger.info({ srId: sr.id, raw: st.raw }, "getClearingStatus returned not-success");
+    }
+  }
+
+  // אישור דרך ReturnUrl (Invoice4U מפנה ל-ReturnUrl רק לאחר תשלום מוצלח)
+  if (!apiConfirmed && opts.confirmedByReturnUrl) {
+    logger.info({ srId: sr.id }, "payment confirmed via Invoice4U ReturnUrl redirect");
+    apiConfirmed = true;
+    // טעינת הסכום מה-totals_snapshot של גרסת ההצעה
+    const { data: srFull } = await supabaseAdmin
+      .from("signing_requests")
+      .select("quote_version_id")
+      .eq("id", sr.id)
+      .maybeSingle();
+    if (srFull?.quote_version_id) {
+      const { data: ver } = await supabaseAdmin
+        .from("quote_versions")
+        .select("totals_snapshot")
+        .eq("id", String(srFull.quote_version_id))
+        .maybeSingle();
+      const totals = (ver?.totals_snapshot ?? {}) as { total_with_vat?: number };
+      amount = Number(totals.total_with_vat ?? 0);
+    }
+  }
+
+  if (!apiConfirmed) {
     return { status: "pending" };
   }
 
@@ -238,7 +272,7 @@ async function verifyAndNotifyPayment(
     .from("signing_requests")
     .update({
       payment_status: "paid",
-      paid_amount: st.amount,
+      paid_amount: amount,
       payment_notified_at: new Date().toISOString(),
     })
     .eq("id", sr.id)
@@ -266,12 +300,12 @@ async function verifyAndNotifyPayment(
       const msg = [
         `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""}`,
         customerName ? `${customerName}` : "",
-        `סכום ${st.amount}₪`,
+        `סכום ${amount}₪`,
       ]
         .filter(Boolean)
         .join(" — ");
       void sendWhatsAppNotification(msg);
-      logger.info({ srId: sr.id, amount: st.amount }, "payment notification sent");
+      logger.info({ srId: sr.id, amount }, "payment notification sent");
     } catch (notifyErr) {
       logger.error({ err: notifyErr }, "payment notify failed");
     }
@@ -279,7 +313,7 @@ async function verifyAndNotifyPayment(
     logger.info({ srId: sr.id }, "payment already notified — skipping duplicate");
   }
 
-  return { status: "paid", amount: st.amount };
+  return { status: "paid", amount };
 }
 
 // ── POST /public/payment-return/:token ────────────────────────────────────────
@@ -314,7 +348,13 @@ router.post(
         returnParams["transactionId"] ??
         undefined;
 
-      const result = await verifyAndNotifyPayment(sr as SigningRequestRow, fallbackClearingId);
+      // Invoice4U שולח orderIdClientUsage ב-ReturnUrl רק לאחר תשלום מוצלח
+      const confirmedByReturnUrl = !!returnParams["orderIdClientUsage"];
+
+      const result = await verifyAndNotifyPayment(sr as SigningRequestRow, {
+        fallbackClearingId,
+        confirmedByReturnUrl,
+      });
       res.json(result);
     } catch (err) {
       logger.error({ err }, "POST /public/payment-return/:token error");
@@ -342,7 +382,7 @@ router.post("/quotes/:id/check-payment", async (req: Request, res: Response): Pr
       return;
     }
 
-    const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
+    const result = await verifyAndNotifyPayment(sr as SigningRequestRow, {});
     res.json(result);
   } catch (err) {
     logger.error({ err }, "POST /quotes/:id/check-payment error");
