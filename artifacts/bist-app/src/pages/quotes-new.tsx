@@ -904,12 +904,6 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
             onChange={(e) => update({ customerNotes: e.target.value })}
             placeholder="הערה שתופיע בהצעת המחיר ששולחים ללקוח" />
         </div>
-        <div className="space-y-1">
-          <Label>הערה לצוות האופרציה <span className="text-xs text-muted-foreground">(פנימית — לא מוצגת ללקוח)</span></Label>
-          <Textarea value={state.operationNotes} rows={2}
-            onChange={(e) => update({ operationNotes: e.target.value })}
-            placeholder="הנחיות לצוות הביצוע" />
-        </div>
       </div>
     </div>
   );
