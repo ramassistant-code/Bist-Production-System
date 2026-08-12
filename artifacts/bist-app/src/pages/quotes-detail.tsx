@@ -223,28 +223,6 @@ function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: bo
         ) : (
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/70">לינק חתימה (PDF)</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.signing_url} dir="ltr"
-                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
-                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.signing_url, "sign")}>
-                  {copied === "sign" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/70">לינק לתשלום (כולל מע"מ)</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.payment_url} dir="ltr"
-                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
-                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.payment_url, "pay")}>
-                  {copied === "pay" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground/70">הודעה ללקוח (ניתן לעריכה)</label>
               <textarea
                 value={message}
