@@ -56,6 +56,7 @@ import VatAudit from "@/pages/vat-audit";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import SignPage from "@/pages/sign";
+import PayPage from "@/pages/pay";
 import PaymentDone from "@/pages/payment-done";
 
 const queryClient = new QueryClient({
@@ -126,6 +127,7 @@ function App() {
               <Switch>
                 {/* עמודים ציבוריים — ללא התחברות */}
                 <Route path="/sign/:token" component={SignPage} />
+                <Route path="/pay/:token" component={PayPage} />
                 <Route path="/payment-done" component={PaymentDone} />
                 <Route>
                   <AuthGate>

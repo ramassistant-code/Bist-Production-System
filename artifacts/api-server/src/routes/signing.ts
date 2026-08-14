@@ -25,15 +25,10 @@ function publicBaseUrl(req: Request): string {
 }
 
 // ── POST /quotes/:id/onboarding ───────────────────────────────────────────────
-// ממסך הצעת המחיר: מייצר לינק חתימה (עמוד ציבורי ל-PDF) + לינק תשלום (Invoice4U
-// על הסכום כולל מע"מ מתוך totals_snapshot), ובונה הודעת WhatsApp מוכנה לעריכה.
+// ממסך הצעת המחיר: מייצר לינק חתימה (עמוד ציבורי ל-PDF) + לינק לדף פרטי חשבונית
+// (/pay/:token), ובונה הודעת WhatsApp מוכנה לעריכה.
 router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promise<void> => {
   const quoteId = String(req.params["id"]);
-
-  if (!isInvoice4UConfigured()) {
-    res.status(503).json({ error: "אינטגרציית Invoice4U לא מוגדרת (חסר INVOICE4U_API_KEY)" });
-    return;
-  }
 
   try {
     // ── 1. טעינת הצעה + לקוח + ליד (fallback לטלפון/שם) ─────────────────────────
@@ -135,47 +130,14 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       return;
     }
 
-    // ── 5. לינק תשלום (Invoice4U) על הסכום כולל מע"מ ─────────────────────────
-    const fullName = quote.invoice_name || quote.customer_name || quote.lead_name || "לקוח";
-    const email = quote.invoice_email || quote.customer_email || quote.lead_email || null;
-
-    // ReturnUrl: דף תודה ציבורי עם ה-token כפרמטר
+    // ── 5. לינקים: חתימה + דף פרטי חשבונית (/pay/:token) ────────────────────
     const signingUrl = `${publicBaseUrl(req)}/sign/${token}`;
-    const paymentReturnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
+    const paymentUrl = `${publicBaseUrl(req)}/pay/${token}`;
 
     const contactPhone = quote.customer_phone ?? quote.lead_phone ?? null;
 
-    const result = await createPaymentLink({
-      sum,
-      fullName,
-      email,
-      phone: contactPhone,
-      installments: 1,
-      description: `תשלום עבור הצעה ${quote.quote_number ?? ""}`.trim(),
-      externalId: quote.quote_number ?? quoteId,
-      returnUrl: paymentReturnUrl,
-    });
-
-    if (!result.ok || !result.url) {
-      res.status(502).json({ error: result.error ?? "כשל ביצירת לינק תשלום" });
-      return;
-    }
-
-    // ── 5b. שמירת clearing_id בשורת signing_request ──────────────────────────
-    if (result.clearingId) {
-      const { error: updateErr } = await supabaseAdmin
-        .from("signing_requests")
-        .update({ clearing_id: result.clearingId, payment_status: "pending" })
-        .eq("id", sr.id);
-      if (updateErr) {
-        logger.warn({ err: updateErr, clearingId: result.clearingId }, "failed to save clearing_id");
-      }
-    } else {
-      logger.warn({ srId: sr.id }, "invoice4u did not return clearingId — cannot verify payment later");
-    }
-
     // ── 6. בניית ההודעה + לינק ה-WhatsApp ────────────────────────────────────
-    // לשם הברכה: contact_name מה-party_snapshot > שם הלקוח > שם הליד > fallback
+    const fullName = quote.invoice_name || quote.customer_name || quote.lead_name || "לקוח";
     const greetingName =
       partySnap.contact_name ||
       quote.customer_name ||
@@ -185,14 +147,14 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
     const message = buildOnboardingMessage({
       customerName: greetingName,
       signingUrl,
-      paymentUrl: result.url,
+      paymentUrl,
     });
     const phone = normalizePhoneIL(contactPhone);
     const whatsappUrl = buildWhatsAppLink(contactPhone, message);
 
     res.json({
       signing_url: signingUrl,
-      payment_url: result.url,
+      payment_url: paymentUrl,
       amount: sum,
       phone,
       message,
@@ -201,6 +163,200 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
   } catch (err) {
     logger.error({ err }, "POST /quotes/:id/onboarding error");
     res.status(500).json({ error: "שגיאה ביצירת לינקים לשליחה" });
+  }
+});
+
+// ── GET /public/pay/:token ────────────────────────────────────────────────────
+// ציבורי: טוען פרטי פרה-פיל לטופס החשבונית (invoice_name, tax_id, email, amount).
+router.get("/public/pay/:token", async (req: Request, res: Response): Promise<void> => {
+  const token = String(req.params["token"]);
+  try {
+    const { data: sr } = await supabaseAdmin
+      .from("signing_requests")
+      .select("id, quote_id, quote_version_id, customer_id, payment_status, invoice_name, invoice_tax_id, invoice_email")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (!sr) {
+      res.status(404).json({ error: "הקישור לא נמצא" });
+      return;
+    }
+
+    if (sr.payment_status === "paid") {
+      res.json({ status: "paid" });
+      return;
+    }
+
+    // טעינת פרטי לקוח לפרה-פיל
+    let invoiceName = String(sr.invoice_name ?? "");
+    let invoiceTaxId = String(sr.invoice_tax_id ?? "");
+    let invoiceEmail = String(sr.invoice_email ?? "");
+
+    if (sr.customer_id && (!invoiceName || !invoiceEmail)) {
+      const { data: c } = await supabaseAdmin
+        .from("customers")
+        .select("name, invoice_name, email, invoice_email, tax_id")
+        .eq("id", String(sr.customer_id))
+        .maybeSingle();
+      if (c) {
+        if (!invoiceName) invoiceName = (c.invoice_name as string | null) || (c.name as string | null) || "";
+        if (!invoiceTaxId) invoiceTaxId = (c.tax_id as string | null) || "";
+        if (!invoiceEmail) invoiceEmail = (c.invoice_email as string | null) || (c.email as string | null) || "";
+      }
+    }
+
+    // סכום + מספר הצעה
+    const { data: quote } = await supabaseAdmin
+      .from("quotes")
+      .select("quote_number")
+      .eq("id", String(sr.quote_id))
+      .maybeSingle();
+
+    let amount: number | null = null;
+    if (sr.quote_version_id) {
+      const { data: ver } = await supabaseAdmin
+        .from("quote_versions")
+        .select("totals_snapshot")
+        .eq("id", String(sr.quote_version_id))
+        .maybeSingle();
+      const totals = (ver?.totals_snapshot ?? {}) as { total_with_vat?: number };
+      amount = totals.total_with_vat != null ? Number(totals.total_with_vat) : null;
+    }
+
+    res.json({
+      status: "pending",
+      quote_number: quote?.quote_number ?? null,
+      amount,
+      invoice_name: invoiceName,
+      invoice_tax_id: invoiceTaxId,
+      invoice_email: invoiceEmail,
+    });
+  } catch (err) {
+    logger.error({ err }, "GET /public/pay/:token error");
+    res.status(500).json({ error: "שגיאה בטעינת פרטי תשלום" });
+  }
+});
+
+// ── POST /public/pay/:token ───────────────────────────────────────────────────
+// ציבורי: מקבל פרטי חשבונית, יוצר לינק סליקה ב-Invoice4U עם IsDocCreate=true,
+// שומר את הפרטים ב-signing_requests, ומחזיר { clearing_url }.
+router.post("/public/pay/:token", async (req: Request, res: Response): Promise<void> => {
+  const token = String(req.params["token"]);
+  const body = (req.body ?? {}) as {
+    invoice_name?: string;
+    invoice_tax_id?: string;
+    invoice_email?: string;
+  };
+
+  const invoiceName = (body.invoice_name ?? "").trim();
+  const invoiceTaxId = (body.invoice_tax_id ?? "").trim();
+  const invoiceEmail = (body.invoice_email ?? "").trim();
+
+  if (!invoiceName) {
+    res.status(400).json({ error: "שם לחשבונית הוא שדה חובה" });
+    return;
+  }
+  if (!invoiceEmail || !invoiceEmail.includes("@")) {
+    res.status(400).json({ error: "יש להזין כתובת מייל תקינה" });
+    return;
+  }
+
+  if (!isInvoice4UConfigured()) {
+    res.status(503).json({ error: "אינטגרציית Invoice4U לא מוגדרת" });
+    return;
+  }
+
+  try {
+    // טעינת signing_request
+    const { data: sr } = await supabaseAdmin
+      .from("signing_requests")
+      .select("id, quote_id, quote_version_id, customer_id, payment_status")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (!sr) {
+      res.status(404).json({ error: "הקישור לא נמצא" });
+      return;
+    }
+    if (sr.payment_status === "paid") {
+      res.status(409).json({ error: "התשלום כבר בוצע" });
+      return;
+    }
+
+    // טעינת סכום + מספר הצעה
+    const { data: quote } = await supabaseAdmin
+      .from("quotes")
+      .select("quote_number")
+      .eq("id", String(sr.quote_id))
+      .maybeSingle();
+    const quoteNumber = quote?.quote_number ?? "";
+
+    let sum: number | null = null;
+    if (sr.quote_version_id) {
+      const { data: ver } = await supabaseAdmin
+        .from("quote_versions")
+        .select("totals_snapshot")
+        .eq("id", String(sr.quote_version_id))
+        .maybeSingle();
+      const totals = (ver?.totals_snapshot ?? {}) as { total_with_vat?: number };
+      sum = totals.total_with_vat != null ? Number(totals.total_with_vat) : null;
+    }
+
+    if (!sum || !Number.isFinite(sum) || sum <= 0) {
+      res.status(400).json({ error: "לא ניתן לקבוע סכום עבור ההצעה" });
+      return;
+    }
+
+    // טלפון הלקוח (אופציונלי)
+    let customerPhone: string | null = null;
+    if (sr.customer_id) {
+      const { data: c } = await supabaseAdmin
+        .from("customers")
+        .select("phone")
+        .eq("id", String(sr.customer_id))
+        .maybeSingle();
+      customerPhone = (c?.phone as string | null) ?? null;
+    }
+
+    // יצירת לינק סליקה עם IsDocCreate=true (Invoice4U יפיק חשבונית וישלח למייל)
+    const returnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
+    const result = await createPaymentLink({
+      sum,
+      fullName: invoiceName,
+      email: invoiceEmail,
+      phone: customerPhone,
+      installments: 1,
+      description: `תשלום עבור הצעה ${quoteNumber}`.trim(),
+      externalId: quoteNumber || String(sr.quote_id),
+      returnUrl,
+      isDocCreate: true,
+      docHeadline: `הצעה ${quoteNumber}`.trim(),
+      docComments: invoiceTaxId ? `ת.ז/ח.פ: ${invoiceTaxId}` : undefined,
+    });
+
+    logger.info({ raw: result.raw, ok: result.ok }, "pay/:token — createPaymentLink response");
+
+    if (!result.ok || !result.url) {
+      res.status(502).json({ error: result.error ?? "כשל ביצירת לינק סליקה" });
+      return;
+    }
+
+    // שמירת פרטי חשבונית + clearing_id
+    await supabaseAdmin
+      .from("signing_requests")
+      .update({
+        invoice_name: invoiceName,
+        invoice_tax_id: invoiceTaxId || null,
+        invoice_email: invoiceEmail,
+        ...(result.clearingId ? { clearing_id: result.clearingId } : {}),
+        payment_status: "pending",
+      })
+      .eq("token", token);
+
+    res.json({ clearing_url: result.url });
+  } catch (err) {
+    logger.error({ err }, "POST /public/pay/:token error");
+    res.status(500).json({ error: "שגיאה ביצירת לינק תשלום" });
   }
 });
 

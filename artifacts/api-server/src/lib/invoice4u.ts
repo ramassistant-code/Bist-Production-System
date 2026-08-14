@@ -40,6 +40,12 @@ export interface CreatePaymentLinkInput {
   returnUrl?: string | null;
   /** מזהה חיצוני לשיוך התשלום (למשל מספר עסקה) — חוזר ב-callback. */
   externalId?: string | null;
+  /** כאשר true — Invoice4U יפיק חשבונית וישלח למייל הלקוח בסיום התשלום. */
+  isDocCreate?: boolean;
+  /** כותרת המסמך שיופק (DocHeadline). */
+  docHeadline?: string;
+  /** הערות למסמך — למשל ת"ז/ח"פ (DocComments). */
+  docComments?: string;
 }
 
 export interface CreatePaymentLinkResult {
@@ -86,6 +92,14 @@ export async function createPaymentLink(
       PaymentsNum: installments,
       ...(input.returnUrl ? { ReturnUrl: input.returnUrl } : {}),
       ...(input.externalId ? { OrderIdClientUsage: input.externalId } : {}),
+      ...(input.isDocCreate
+        ? {
+            IsDocCreate: true,
+            DocLanguage: "he",
+            ...(input.docHeadline ? { DocHeadline: input.docHeadline } : {}),
+            ...(input.docComments ? { DocComments: input.docComments } : {}),
+          }
+        : {}),
     },
   };
 
