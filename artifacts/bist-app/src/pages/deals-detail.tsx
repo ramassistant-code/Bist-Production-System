@@ -738,11 +738,18 @@ export default function DealsDetail() {
     staleTime: 20_000,
   });
 
-  const { data: creditsData } = useQuery<{ credits: CreditRow[] }>({
+  const { data: creditsData, refetch: refetchCredits } = useQuery<{ credits: CreditRow[] }>({
     queryKey: ["deal-credits", id],
     queryFn: () => customFetch<{ credits: CreditRow[] }>(`/api/deals/${id}/credits`),
     enabled: !!id,
     staleTime: 20_000,
+  });
+
+  const syncCreditsMutation = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/deals/${id}/sync-credits`, { method: "POST" }),
+    onSuccess: () => void refetchCredits(),
+    onError: () => toast({ title: "שגיאה בסנכרון קרדיטים", variant: "destructive" }),
   });
 
   const { data: mondayData, refetch: refetchMonday, isFetching: mondayFetching } = useQuery<{
@@ -1008,6 +1015,14 @@ export default function DealsDetail() {
                   <span className="mr-1.5 text-xs font-normal text-muted-foreground">({credits.length})</span>
                 )}
               </h3>
+              <button
+                onClick={() => syncCreditsMutation.mutate()}
+                disabled={syncCreditsMutation.isPending}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                title="סנכרן קרדיטים מה-snapshot"
+              >
+                {syncCreditsMutation.isPending ? "מסנכרן…" : "סנכרן"}
+              </button>
             </div>
 
             {credits.length === 0 ? (
@@ -1039,6 +1054,9 @@ export default function DealsDetail() {
                           </span>
                         </div>
                       </div>
+                      {c.salesperson_note && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">{c.salesperson_note}</p>
+                      )}
                       {qty > 0 && (
                         <div className="mt-1.5 h-1 bg-muted rounded-full overflow-hidden">
                           <div
