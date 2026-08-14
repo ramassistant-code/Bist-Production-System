@@ -273,15 +273,22 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
     `
     : "";
 
+  const clientTaxId = party?.tax_id ?? "";
   const sigHtml = cfg.show_signature_section
     ? `
     <div style="margin-top:32px;border-top:2px solid #e5e7eb;padding-top:20px;">
       <div style="font-weight:700;font-size:14px;color:#111827;margin-bottom:16px;">${L.signature_title}</div>
       <div style="display:flex;gap:24px;">
-        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.full_name}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.id_or_company_number}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        <div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.signature}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>
-        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="border-bottom:1px solid #d1d5db;height:28px;"></div></div>` : ""}
+        <div style="flex:1;">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.full_name}</div>
+          <div style="font-size:14px;font-weight:600;color:#111827;padding:4px 0 6px;">${clientName}</div>
+        </div>
+        ${clientTaxId ? `
+        <div style="flex:1;">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.id_or_company_number}</div>
+          <div style="font-size:14px;font-weight:600;color:#111827;padding:4px 0 6px;">${clientTaxId}</div>
+        </div>` : ""}
+        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="border-bottom:1px solid #d1d5db;height:28px;margin-top:4px;"></div></div>` : ""}
       </div>
     </div>
   `

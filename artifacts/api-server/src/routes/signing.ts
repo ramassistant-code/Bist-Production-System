@@ -1,13 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
-import { quotesTable, quoteVersionsTable, customersTable } from "@workspace/db/schema";
+import { quotesTable, quoteVersionsTable, customersTable, leadsTable } from "@workspace/db/schema";
 import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";
 import { buildOnboardingMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
 import { sendWhatsAppNotification } from "../lib/invoiceWebhook";
+import { sendSignedEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -35,21 +36,26 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
   }
 
   try {
-    // ── 1. טעינת הצעה + לקוח ─────────────────────────────────────────────────
+    // ── 1. טעינת הצעה + לקוח + ליד (fallback לטלפון/שם) ─────────────────────────
     const rows = await db
       .select({
         quote_id: quotesTable.id,
         quote_number: quotesTable.quote_number,
         current_version_id: quotesTable.current_version_id,
         customer_id: quotesTable.customer_id,
+        lead_id: quotesTable.lead_id,
         customer_name: customersTable.name,
         customer_phone: customersTable.phone,
         customer_email: customersTable.email,
         invoice_name: customersTable.invoice_name,
         invoice_email: customersTable.invoice_email,
+        lead_name: leadsTable.name,
+        lead_phone: leadsTable.phone,
+        lead_email: leadsTable.email,
       })
       .from(quotesTable)
       .leftJoin(customersTable, eq(quotesTable.customer_id, customersTable.id))
+      .leftJoin(leadsTable, eq(quotesTable.lead_id, leadsTable.id))
       .where(and(isNull(quotesTable.deleted_at), eq(quotesTable.id, quoteId)))
       .limit(1);
 
@@ -65,12 +71,13 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       return;
     }
 
-    // ── 2. סכום כולל מע"מ מתוך totals_snapshot של הגרסה ──────────────────────
+    // ── 2. סכום כולל מע"מ + party_snapshot לשם איש הקשר ─────────────────────
     const verRows = await db
       .select({
         id: quoteVersionsTable.id,
         version_number: quoteVersionsTable.version_number,
         totals_snapshot: quoteVersionsTable.totals_snapshot,
+        party_snapshot: quoteVersionsTable.party_snapshot,
       })
       .from(quoteVersionsTable)
       .where(eq(quoteVersionsTable.id, versionId))
@@ -81,6 +88,7 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       return;
     }
     const totals = (verRows[0]!.totals_snapshot ?? {}) as { total_with_vat?: number };
+    const partySnap = (verRows[0]!.party_snapshot ?? {}) as { contact_name?: string; business_name?: string };
     const sum = Number(totals.total_with_vat ?? NaN);
     if (!Number.isFinite(sum) || sum <= 0) {
       res.status(400).json({ error: "לא ניתן לקבוע סכום כולל מע\"מ עבור ההצעה" });
@@ -128,18 +136,20 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
     }
 
     // ── 5. לינק תשלום (Invoice4U) על הסכום כולל מע"מ ─────────────────────────
-    const fullName = quote.invoice_name || quote.customer_name || "לקוח";
-    const email = quote.invoice_email || quote.customer_email || null;
+    const fullName = quote.invoice_name || quote.customer_name || quote.lead_name || "לקוח";
+    const email = quote.invoice_email || quote.customer_email || quote.lead_email || null;
 
     // ReturnUrl: דף תודה ציבורי עם ה-token כפרמטר
     const signingUrl = `${publicBaseUrl(req)}/sign/${token}`;
     const paymentReturnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
 
+    const contactPhone = quote.customer_phone ?? quote.lead_phone ?? null;
+
     const result = await createPaymentLink({
       sum,
       fullName,
       email,
-      phone: quote.customer_phone ?? null,
+      phone: contactPhone,
       installments: 1,
       description: `תשלום עבור הצעה ${quote.quote_number ?? ""}`.trim(),
       externalId: quote.quote_number ?? quoteId,
@@ -165,13 +175,20 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
     }
 
     // ── 6. בניית ההודעה + לינק ה-WhatsApp ────────────────────────────────────
+    // לשם הברכה: contact_name מה-party_snapshot > שם הלקוח > שם הליד > fallback
+    const greetingName =
+      partySnap.contact_name ||
+      quote.customer_name ||
+      quote.lead_name ||
+      fullName;
+
     const message = buildOnboardingMessage({
-      customerName: quote.customer_name || fullName,
+      customerName: greetingName,
       signingUrl,
       paymentUrl: result.url,
     });
-    const phone = normalizePhoneIL(quote.customer_phone);
-    const whatsappUrl = buildWhatsAppLink(quote.customer_phone, message);
+    const phone = normalizePhoneIL(contactPhone);
+    const whatsappUrl = buildWhatsAppLink(contactPhone, message);
 
     res.json({
       signing_url: signingUrl,
@@ -297,13 +314,7 @@ async function verifyAndNotifyPayment(
           .maybeSingle();
         customerName = cRow?.name ?? "";
       }
-      const msg = [
-        `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""}`,
-        customerName ? `${customerName}` : "",
-        `סכום ${amount}₪`,
-      ]
-        .filter(Boolean)
-        .join(" — ");
+      const msg = `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""} — סכום ${amount}₪ של הלקוח ${customerName}`;
       void sendWhatsAppNotification(msg);
       logger.info({ srId: sr.id, amount }, "payment notification sent");
     } catch (notifyErr) {
@@ -453,9 +464,10 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
 // ושולח התראת WhatsApp לאיש המכירות דרך n8n.
 router.post("/public/signing/:token", async (req: Request, res: Response): Promise<void> => {
   const token = String(req.params["token"]);
-  const body = (req.body ?? {}) as { signer_name?: string; signer_id_number?: string };
+  const body = (req.body ?? {}) as { signer_name?: string; signer_id_number?: string; customer_note?: string };
   const signerName = (body.signer_name ?? "").trim();
   const signerId = (body.signer_id_number ?? "").trim();
+  const customerNote = (body.customer_note ?? "").trim();
 
   if (!signerName) {
     res.status(400).json({ error: "יש להזין שם מלא" });
@@ -498,6 +510,7 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
         status: "signed",
         signer_name: signerName,
         signer_id_number: signerId || null,
+        customer_note: customerNote || null,
         signed_at: now.toISOString(),
         signed_ip: ip,
         signed_user_agent: ua,
@@ -532,26 +545,32 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
       logger.error({ err: statusErr }, "failed to set quote approved after signing");
     }
 
-    // התראת WhatsApp לאיש המכירות דרך n8n (fire-and-forget, פעם אחת).
+    // התראת WhatsApp לאיש המכירות + מייל ללקוח (fire-and-forget).
     try {
       const { data: quote } = await supabaseAdmin
         .from("quotes")
         .select("quote_number")
         .eq("id", String(sr.quote_id))
         .maybeSingle();
+
       let customerName = "";
+      let customerEmail = "";
       if (sr.customer_id) {
         const { data: c } = await supabaseAdmin
           .from("customers")
-          .select("name")
+          .select("name, email, invoice_email")
           .eq("id", String(sr.customer_id))
           .maybeSingle();
         customerName = c?.name ?? "";
+        customerEmail = c?.invoice_email || c?.email || "";
       }
+
+      // WhatsApp לאיש המכירות
       const msg = [
         `✍️ הצעה ${quote?.quote_number ?? ""} נחתמה!`,
         customerName ? `לקוח: ${customerName}` : "",
         `חתם/ה: ${signerName}${signerId ? ` (ת"ז ${signerId})` : ""}`,
+        customerNote ? `הודעת לקוח: ${customerNote}` : "",
         `בתאריך: ${now.toLocaleString("he-IL")}`,
       ]
         .filter(Boolean)
@@ -561,6 +580,32 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
         .from("signing_requests")
         .update({ notified_at: now.toISOString() })
         .eq("id", sr.id);
+
+      // מייל ללקוח עם פרטי החתימה + לינק ה-PDF
+      if (customerEmail) {
+        let pdfUrl: string | null = null;
+        const { data: srFull } = await supabaseAdmin
+          .from("signing_requests")
+          .select("unsigned_pdf_path")
+          .eq("id", sr.id)
+          .maybeSingle();
+        if (srFull?.unsigned_pdf_path) {
+          const { data: signed } = await supabaseAdmin.storage
+            .from("quote-pdfs")
+            .createSignedUrl(String(srFull.unsigned_pdf_path), 7 * 24 * 3600);
+          pdfUrl = signed?.signedUrl ?? null;
+        }
+        void sendSignedEmail({
+          to: customerEmail,
+          customerName,
+          quoteNumber: quote?.quote_number ?? "",
+          signerName,
+          signerId,
+          signedAt: now.toLocaleString("he-IL"),
+          customerNote,
+          pdfUrl,
+        });
+      }
     } catch (notifyErr) {
       logger.error({ err: notifyErr }, "failed to send signed notification");
     }
