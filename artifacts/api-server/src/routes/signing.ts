@@ -275,7 +275,7 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
     // טעינת signing_request
     const { data: sr } = await supabaseAdmin
       .from("signing_requests")
-      .select("id, quote_id, quote_version_id, customer_id, payment_status")
+      .select("id, quote_id, quote_version_id, customer_id, payment_status, expires_at")
       .eq("token", token)
       .maybeSingle();
 
@@ -285,6 +285,10 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
     }
     if (sr.payment_status === "paid") {
       res.status(409).json({ error: "התשלום כבר בוצע" });
+      return;
+    }
+    if (sr.expires_at && new Date(String(sr.expires_at)) < new Date()) {
+      res.status(400).json({ error: "פג תוקף הקישור" });
       return;
     }
 
