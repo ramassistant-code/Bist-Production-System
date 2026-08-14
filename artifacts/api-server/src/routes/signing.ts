@@ -187,6 +187,7 @@ router.get("/public/pay/:token", async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    // task #41: קישור שפג תוקפו — מחזיר expired כדי שהלקוח לא יוכל להתחיל תשלום
     if (sr.expires_at && new Date(String(sr.expires_at)) < new Date()) {
       res.json({ status: "expired" });
       return;
@@ -211,11 +212,11 @@ router.get("/public/pay/:token", async (req: Request, res: Response): Promise<vo
     }
 
     // סכום + מספר הצעה
-    const { data: quote } = await supabaseAdmin
-      .from("quotes")
-      .select("quote_number")
-      .eq("id", String(sr.quote_id))
-      .maybeSingle();
+      const { data: quote } = await supabaseAdmin
+        .from("quotes")
+        .select("quote_number")
+        .eq("id", String(sr.quote_id))
+        .maybeSingle();
 
     let amount: number | null = null;
     if (sr.quote_version_id) {
@@ -287,8 +288,9 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       res.status(409).json({ error: "התשלום כבר בוצע" });
       return;
     }
+    // task #41: חסימת תשלום אם פג תוקף הקישור
     if (sr.expires_at && new Date(String(sr.expires_at)) < new Date()) {
-      res.status(400).json({ error: "פג תוקף הקישור" });
+      res.status(410).json({ error: "פג תוקף הקישור — לא ניתן לבצע תשלום" });
       return;
     }
 
@@ -350,7 +352,16 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // שמירת פרטי חשבונית + clearing_id
+    // task #42: רישום PaymentId (מזהה Meshulam/upay) מתוך OpenInfo לצורך מעקב.
+    // אין עמודה ייעודית ב-DB — נשמר בלוג עד שתתווסף (ראה task #47).
+    if (result.paymentId) {
+      logger.info(
+        { paymentId: result.paymentId, clearingId: result.clearingId },
+        "pay/:token — Invoice4U PaymentId from OpenInfo",
+      );
+    }
+
+    // שמירת פרטי חשבונית + clearing_id (I4UClearingLogId)
     await supabaseAdmin
       .from("signing_requests")
       .update({
@@ -387,62 +398,31 @@ interface VerifyResult {
 
 async function verifyAndNotifyPayment(
   sr: SigningRequestRow,
-  opts: { fallbackClearingId?: string; confirmedByReturnUrl?: boolean } = {},
 ): Promise<VerifyResult> {
   // כבר שולם — אין לשלוח פעם נוספת
   if (sr.payment_status === "paid") {
     return { status: "paid", amount: Number(sr.paid_amount ?? 0) };
   }
 
-  // אם אין clearing_id בDB אבל קיבלנו אחד מפרמטרי ReturnUrl — שומרים ומשתמשים
-  let clearingId = sr.clearing_id;
-  if (!clearingId && opts.fallbackClearingId) {
-    logger.info({ srId: sr.id, fallbackClearingId: opts.fallbackClearingId }, "saving fallback clearingId from returnParams");
-    await supabaseAdmin
-      .from("signing_requests")
-      .update({ clearing_id: opts.fallbackClearingId, payment_status: "pending" })
-      .eq("id", sr.id);
-    clearingId = opts.fallbackClearingId;
-  }
-
-  // אין clearing_id — לינק תשלום לא נוצר / לא הוחזר
-  if (!clearingId && !opts.confirmedByReturnUrl) {
+  // clearing_id נשמר בלבד על ידי POST /public/pay/:token בצד השרת.
+  // ⚠️ אסור לקבל clearing_id ממשתמש/ReturnUrl — כל בעל token יכול לשייך
+  //    סליקה זרה לבקשה זו. מאמתים רק לפי מה שנשמר בשרת.
+  const clearingId = sr.clearing_id;
+  if (!clearingId) {
     return { status: "no_link" };
   }
 
-  // ניסיון אימות דרך Invoice4U API
+  // אימות מול Invoice4U API (GetClearingLogByI4UClearingLogId)
   let amount = 0;
   let apiConfirmed = false;
 
-  if (clearingId) {
-    const st = await getClearingStatus(clearingId);
-    if (st.isSuccess) {
-      apiConfirmed = true;
-      amount = st.amount;
-    } else {
-      logger.info({ srId: sr.id, raw: st.raw }, "getClearingStatus returned not-success");
-    }
-  }
-
-  // אישור דרך ReturnUrl (Invoice4U מפנה ל-ReturnUrl רק לאחר תשלום מוצלח)
-  if (!apiConfirmed && opts.confirmedByReturnUrl) {
-    logger.info({ srId: sr.id }, "payment confirmed via Invoice4U ReturnUrl redirect");
+  const st = await getClearingStatus(clearingId);
+  if (st.isSuccess) {
     apiConfirmed = true;
-    // טעינת הסכום מה-totals_snapshot של גרסת ההצעה
-    const { data: srFull } = await supabaseAdmin
-      .from("signing_requests")
-      .select("quote_version_id")
-      .eq("id", sr.id)
-      .maybeSingle();
-    if (srFull?.quote_version_id) {
-      const { data: ver } = await supabaseAdmin
-        .from("quote_versions")
-        .select("totals_snapshot")
-        .eq("id", String(srFull.quote_version_id))
-        .maybeSingle();
-      const totals = (ver?.totals_snapshot ?? {}) as { total_with_vat?: number };
-      amount = Number(totals.total_with_vat ?? 0);
-    }
+    amount = st.amount;
+    logger.info({ srId: sr.id, amount, confirmationNumber: st.confirmationNumber }, "getClearingStatus confirmed payment");
+  } else {
+    logger.info({ srId: sr.id, raw: st.raw }, "getClearingStatus returned not-success");
   }
 
   if (!apiConfirmed) {
@@ -497,40 +477,26 @@ async function verifyAndNotifyPayment(
 router.post(
   "/public/payment-return/:token",
   async (req: Request, res: Response): Promise<void> => {
-    const token = String(req.params["token"]);
-    try {
-      const { data: sr } = await supabaseAdmin
-        .from("signing_requests")
-        .select("id, quote_id, customer_id, clearing_id, payment_status, paid_amount")
-        .eq("token", token)
-        .maybeSingle();
+  const token = String(req.params["token"]);
+  try {
+    const { data: sr } = await supabaseAdmin
+      .from("signing_requests")
+      .select("id, quote_id, customer_id, clearing_id, payment_status, paid_amount")
+      .eq("token", token)
+      .maybeSingle();
 
       if (!sr) {
         res.status(404).json({ error: "הקישור לא נמצא" });
         return;
       }
 
-      // Invoice4U עשוי להחזיר clearingId בפרמטרי ה-ReturnUrl
+      // Invoice4U מפנה ל-ReturnUrl אחרי תשלום — מגיע עם returnParams מהדפדפן.
+      // ⚠️ לא מקבלים clearing_id מפרמטרים אלה — כל בעל token יכול לזייף אותם.
+      //    האימות נעשה אך ורק לפי clearing_id שנשמר בשרת בזמן יצירת לינק הסליקה.
       const returnParams = ((req.body as { returnParams?: Record<string, string> })?.returnParams) ?? {};
-      logger.info({ returnParams }, "payment-return: returnParams from Invoice4U");
+      logger.info({ returnParams }, "payment-return: returnParams from Invoice4U (for debug only)");
 
-      // שמות שדה אפשריים שבהם Invoice4U שולח את מזהה הסליקה
-      const fallbackClearingId =
-        returnParams["ClearingLogId"] ??
-        returnParams["clearingLogId"] ??
-        returnParams["ClearingId"] ??
-        returnParams["clearingId"] ??
-        returnParams["TransactionId"] ??
-        returnParams["transactionId"] ??
-        undefined;
-
-      // Invoice4U שולח orderIdClientUsage ב-ReturnUrl רק לאחר תשלום מוצלח
-      const confirmedByReturnUrl = !!returnParams["orderIdClientUsage"];
-
-      const result = await verifyAndNotifyPayment(sr as SigningRequestRow, {
-        fallbackClearingId,
-        confirmedByReturnUrl,
-      });
+      const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
       res.json(result);
     } catch (err) {
       logger.error({ err }, "POST /public/payment-return/:token error");
@@ -558,7 +524,7 @@ router.post("/quotes/:id/check-payment", async (req: Request, res: Response): Pr
       return;
     }
 
-    const result = await verifyAndNotifyPayment(sr as SigningRequestRow, {});
+    const result = await verifyAndNotifyPayment(sr as SigningRequestRow);
     res.json(result);
   } catch (err) {
     logger.error({ err }, "POST /quotes/:id/check-payment error");
@@ -587,19 +553,19 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
       status = "expired";
     }
 
-    const { data: quote } = await supabaseAdmin
-      .from("quotes")
-      .select("quote_number")
-      .eq("id", String(sr.quote_id))
-      .maybeSingle();
-
-    let customerName = "";
-    if (sr.customer_id) {
-      const { data: c } = await supabaseAdmin
-        .from("customers")
-        .select("name")
-        .eq("id", String(sr.customer_id))
+      const { data: quote } = await supabaseAdmin
+        .from("quotes")
+        .select("quote_number")
+        .eq("id", String(sr.quote_id))
         .maybeSingle();
+
+      let customerName = "";
+    if (sr.customer_id) {
+        const { data: c } = await supabaseAdmin
+          .from("customers")
+          .select("name, email, invoice_email")
+          .eq("id", String(sr.customer_id))
+          .maybeSingle();
       customerName = c?.name ?? "";
     }
 

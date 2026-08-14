@@ -51,8 +51,16 @@ export interface CreatePaymentLinkInput {
 export interface CreatePaymentLinkResult {
   ok: boolean;
   url?: string;
-  /** מזהה הסליקה מצד Invoice4U, אם הוחזר. */
+  /**
+   * מזהה הסליקה הפנימי של Invoice4U (I4UClearingLogId מתוך OpenInfo).
+   * משמש לאימות סטטוס דרך GetClearingLogByI4UClearingLogId.
+   */
   clearingId?: string;
+  /**
+   * מזהה התשלום מצד ספק הסליקה (PaymentId מתוך OpenInfo — Meshulam/upay).
+   * אלטרנטיבי ל-clearingId; שמור ב-DB לצורך אימות עתידי.
+   */
+  paymentId?: string;
   error?: string;
   /** התשובה הגולמית — שימושי לדיבוג בזמן אימות מול החשבון. */
   raw?: unknown;
@@ -132,10 +140,14 @@ export async function createPaymentLink(
       (obj["PaymentUrl"] as string | undefined) ??
       undefined;
 
-    // Invoice4U מחזיר את מזהה הסליקה בתוך מערך OpenInfo תחת Key="I4UClearingLogId"
+    // Invoice4U מחזיר מזהים בתוך מערך OpenInfo:
+    //   Key="I4UClearingLogId" → מזהה פנימי של Invoice4U (לשאילתת GetClearingLogByI4UClearingLogId)
+    //   Key="PaymentId"        → מזהה מצד ספק הסליקה (Meshulam/upay)
+    //   Key="ClearingTraceId"  → trace ID לדיבוג
     const openInfo =
       (obj["OpenInfo"] as Array<{ Key: string; Value: string }> | undefined) ?? [];
     const i4uClearingLogId = openInfo.find((x) => x.Key === "I4UClearingLogId")?.Value;
+    const paymentId = openInfo.find((x) => x.Key === "PaymentId")?.Value;
 
     const clearingId =
       i4uClearingLogId ??
@@ -155,18 +167,30 @@ export async function createPaymentLink(
       };
     }
 
-    return { ok: true, url, clearingId, raw: payload };
+    return { ok: true, url, clearingId, paymentId, raw: payload };
   } catch (err) {
     logger.error({ err }, "invoice4u: request failed");
     return { ok: false, error: "כשל בפנייה ל-Invoice4U" };
   }
 }
 
-// ── GetClearingLogById ────────────────────────────────────────────────────────
+// ── GetClearingLogByI4UClearingLogId ──────────────────────────────────────────
+//
+// ⚠️  מה למדנו מהלוגים:
+//   • createPaymentLink מחזיר ב-OpenInfo שלושה מפתחות:
+//       "I4UClearingLogId"  — מזהה לוג פנימי ב-Invoice4U (לדוגמה: "8333119")
+//       "PaymentId"         — מזהה התשלום אצל ספק הסליקה upay/Meshulam (לדוגמה: "187600804")
+//       "ClearingTraceId"   — trace ID לדיבוג
+//   • הendpoint GetClearingLogById נופל עם ECONNRESET — שם שגוי או path לא נתמך.
+//   • הendpoint הנכון לשאילתה לפי I4UClearingLogId הוא GetClearingLogByI4UClearingLogId.
+//   • שמות השדות בגוף הבקשה חייבים להיות PascalCase בהתאם לממשק WCF:
+//       Invoice4UUserApiKey (לא "token"), I4UClearingLogId (לא "clearingLogId").
+//
+// env override: INVOICE4U_CLEARING_STATUS_ENDPOINT להחלפת ה-endpoint בלי build.
 
 const I4U_CLEARING_STATUS_ENDPOINT =
   process.env.INVOICE4U_CLEARING_STATUS_ENDPOINT ??
-  "https://api.invoice4u.co.il/Services/ApiService.svc/GetClearingLogById";
+  "https://api.invoice4u.co.il/Services/ApiService.svc/GetClearingLogByI4UClearingLogId";
 
 export interface GetClearingStatusResult {
   isSuccess: boolean;
@@ -176,7 +200,8 @@ export interface GetClearingStatusResult {
 }
 
 /**
- * בודק את סטטוס הסליקה לפי clearingId. לעולם לא זורק — מחזיר { isSuccess:false } בכישלון.
+ * בודק את סטטוס הסליקה לפי I4UClearingLogId שהוחזר ב-OpenInfo של createPaymentLink.
+ * לעולם לא זורק — מחזיר { isSuccess:false } בכישלון.
  */
 export async function getClearingStatus(
   clearingId: string,
@@ -186,10 +211,11 @@ export async function getClearingStatus(
   }
 
   try {
+    // שמות השדות חייבים PascalCase — WCF דוחה camelCase בשקט (ECONNRESET).
     const body = {
       request: {
-        clearingLogId: clearingId,
-        token: I4U_API_KEY,
+        I4UClearingLogId: clearingId,
+        Invoice4UUserApiKey: I4U_API_KEY,
       },
     };
 
@@ -216,9 +242,11 @@ export async function getClearingStatus(
     const payload = (data as { d?: unknown })?.d ?? data;
     const obj = (payload ?? {}) as Record<string, unknown>;
 
-    logger.info({ raw: obj }, "invoice4u getClearingStatus: raw response");
+    logger.info({ endpoint: I4U_CLEARING_STATUS_ENDPOINT, raw: obj }, "invoice4u getClearingStatus: raw response");
 
-    // שדות אפשריים לפי תיעוד Invoice4U
+    // שדות אפשריים לפי תיעוד Invoice4U + ממשק WCF.
+    // ⚠️ ErrorCode===0 אינו מספיק — הוא מצביע על הצלחת הקריאה ל-API, לא על אישור עסקה.
+    // רק שדה המצביע במפורש על אישור/settlement של התשלום מהווה ראיה לתשלום.
     const isSuccess =
       obj["IsSuccess"] === true ||
       obj["isSuccess"] === true ||
@@ -233,6 +261,7 @@ export async function getClearingStatus(
       (obj["ConfirmationNumber"] as string | undefined) ??
       (obj["AuthorizationNumber"] as string | undefined) ??
       (obj["TransactionId"] as string | undefined) ??
+      (obj["PaymentId"] as string | undefined) ??
       null;
 
     return { isSuccess, amount, confirmationNumber, raw: obj };

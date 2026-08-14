@@ -16,7 +16,7 @@ const ALLOWED_TABLES = new Set([
 const router: IRouter = Router();
 
 router.get("/lookups/:table", async (req: Request, res: Response): Promise<void> => {
-  const table = req.params["table"] ?? "";
+  const table = String(req.params["table"] ?? "");
   if (!ALLOWED_TABLES.has(table)) {
     res.status(400).json({ error: "לוח בדיקה לא ידוע" });
     return;
