@@ -173,7 +173,7 @@ router.get("/public/pay/:token", async (req: Request, res: Response): Promise<vo
   try {
     const { data: sr } = await supabaseAdmin
       .from("signing_requests")
-      .select("id, quote_id, quote_version_id, customer_id, payment_status, invoice_name, invoice_tax_id, invoice_email")
+      .select("id, quote_id, quote_version_id, customer_id, payment_status, invoice_name, invoice_tax_id, invoice_email, expires_at")
       .eq("token", token)
       .maybeSingle();
 
@@ -184,6 +184,11 @@ router.get("/public/pay/:token", async (req: Request, res: Response): Promise<vo
 
     if (sr.payment_status === "paid") {
       res.json({ status: "paid" });
+      return;
+    }
+
+    if (sr.expires_at && new Date(String(sr.expires_at)) < new Date()) {
+      res.json({ status: "expired" });
       return;
     }
 

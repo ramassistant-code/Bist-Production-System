@@ -118,6 +118,12 @@ export default function PayPage() {
                 <p className="text-lg font-semibold text-green-700">התשלום כבר בוצע</p>
                 <p className="text-sm text-muted-foreground">תודה — ניצור איתך קשר להמשך 🙏🏻</p>
               </div>
+            ) : data.status === "expired" ? (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-8 text-center space-y-2">
+                <div className="text-4xl">⏰</div>
+                <p className="text-lg font-semibold text-amber-700">פג תוקף הקישור</p>
+                <p className="text-sm text-muted-foreground">הקישור לתשלום אינו בתוקף עוד. אנא פנה אלינו לקבלת קישור חדש.</p>
+              </div>
             ) : (
               <div className="rounded-lg border border-border bg-card p-6 space-y-5">
 
