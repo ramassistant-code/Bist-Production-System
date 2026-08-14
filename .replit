@@ -26,6 +26,8 @@ SYNC_SERVICE_URL = "https://syncdbandmonday-production-9e87.up.railway.app"
 SYNC_ENV = "production"
 INVOICE_NOTIFY_ENABLED = "true"
 INVOICE_WEBHOOK_URL = "https://rambist.app.n8n.cloud/webhook/53bf79df-0bf3-43a3-9524-9bba8c2d783c/invoice-details/production"
+PUBLIC_APP_URL = "https://bist-production-system.replit.app"
+INVOICE4U_RETURN_URL = "https://bist-production-system.replit.app/payment-done"
 
 [nix]
 channel = "stable-25_05"
