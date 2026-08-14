@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import { quotesTable, quoteVersionsTable, customersTable, leadsTable } from "@workspace/db/schema";
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";

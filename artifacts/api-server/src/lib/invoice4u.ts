@@ -111,6 +111,23 @@ export async function createPaymentLink(
     },
   };
 
+  // רשום רק דגלי אימות (ללא PII) — מאפשר לוודא שדות כמו IsDocCreate, PaymentsNum וכו׳
+  const req = requestBody["request"] as Record<string, unknown>;
+  logger.info(
+    {
+      isDocCreate: req["IsDocCreate"] ?? false,
+      docLanguage: req["DocLanguage"] ?? null,
+      hasDocHeadline: !!req["DocHeadline"],
+      hasDocComments: !!req["DocComments"],
+      hasEmail: !!req["Email"],
+      hasPhone: !!req["Phone"],
+      paymentsNum: req["PaymentsNum"] ?? 1,
+      clearingCompanyType: req["CreditCardCompanyType"] ?? null,
+      type: req["Type"] ?? null,
+    },
+    "invoice4u: createPaymentLink request-flags",
+  );
+
   try {
     const res = await fetch(I4U_ENDPOINT, {
       method: "POST",
