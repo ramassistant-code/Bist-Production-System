@@ -106,6 +106,34 @@ async function buildMessage(params: InvoiceWebhookParams): Promise<string> {
 }
 
 /**
+ * sendWhatsAppNotification — generic fire-and-forget WhatsApp notification via
+ * the same n8n webhook (payload { message }). Never throws. Used e.g. when a
+ * quote is signed, so it reuses the proven INVOICE_WEBHOOK_URL / kill-switch.
+ */
+export async function sendWhatsAppNotification(message: string): Promise<void> {
+  if (process.env.INVOICE_NOTIFY_ENABLED === "false") return;
+  const webhookUrl = process.env.INVOICE_WEBHOOK_URL ?? DEFAULT_WEBHOOK_URL;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+        signal: controller.signal,
+      });
+      const responseBody = await res.text().catch(() => "");
+      logger.info({ status: res.status, responseBody }, "whatsapp notification sent");
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (err) {
+    logger.error({ err }, "whatsapp notification failed");
+  }
+}
+
+/**
  * sendInvoiceWebhook — fire-and-forget.
  * Call with `void sendInvoiceWebhook(...)` — never awaited by callers.
  */

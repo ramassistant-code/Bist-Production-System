@@ -55,6 +55,8 @@ import MondayRunDetail from "@/pages/monday-run-detail";
 import VatAudit from "@/pages/vat-audit";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
+import SignPage from "@/pages/sign";
+import PaymentDone from "@/pages/payment-done";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,9 +123,16 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
-              <AuthGate>
-                <Router />
-              </AuthGate>
+              <Switch>
+                {/* עמודים ציבוריים — ללא התחברות */}
+                <Route path="/sign/:token" component={SignPage} />
+                <Route path="/payment-done" component={PaymentDone} />
+                <Route>
+                  <AuthGate>
+                    <Router />
+                  </AuthGate>
+                </Route>
+              </Switch>
             </AuthProvider>
           </WouterRouter>
           <Toaster />
