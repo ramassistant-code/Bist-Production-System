@@ -973,6 +973,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       quantity: number;
       product_id?: string;
       product_name_snapshot?: string;
+      internal_note?: string | null;
       components_snapshot?: SnapshotComponent[];
     }
 
@@ -997,7 +998,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             status: "בתהליך",
             quantity: String(totalQty),
             source_key: creditSourceKey,
-            salesperson_note: comp.internal_note?.trim() || null,
+            salesperson_note: item.internal_note?.trim() || null,
           })
           .onConflictDoNothing();
       }
@@ -1329,12 +1330,14 @@ router.post("/deals/:id/sync-credits", async (req: Request, res: Response): Prom
       quantity: number;
       component_name_snapshot: string;
       component_description_snapshot?: string;
+      internal_note?: string | null;
     }
     interface SyncItem {
       line_id: string;
       quantity: number;
       product_id?: string;
       product_name_snapshot?: string;
+      internal_note?: string | null;
       components_snapshot?: SyncComponent[];
     }
 
@@ -1346,23 +1349,50 @@ router.post("/deals/:id/sync-credits", async (req: Request, res: Response): Prom
       for (const comp of item.components_snapshot ?? []) {
         const totalQty = (item.quantity ?? 1) * (comp.quantity ?? 1);
         const creditSourceKey = `deal:${id}:item:${item.line_id}:component:${comp.component_id}`;
-        const result = await db
-          .insert(creditsTable)
-          .values({
-            deal_id: id,
-            customer_id: deal.customer_id ?? undefined,
-            source_component_id: comp.component_id,
-            source_quote_item_id: item.line_id,
-            source_product_id: item.product_id ?? undefined,
-            parent_product_name: item.product_name_snapshot ?? null,
-            credit_name: comp.component_name_snapshot,
-            description: comp.component_description_snapshot ?? null,
-            status: "בתהליך",
-            quantity: String(totalQty),
-            source_key: creditSourceKey,
-          })
-          .onConflictDoNothing();
-        if (result.rowCount && result.rowCount > 0) created++;
+        const noteValue = item.internal_note?.trim() || null;
+
+        // Atomic upsert: advisory lock prevents concurrent inserts for the same source_key;
+        // the select filters to active (non-deleted) credits only.
+        await db.transaction(async (tx) => {
+          // Per-key advisory lock — held until end of transaction.
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${creditSourceKey}))`);
+
+          const existing = await tx
+            .select({ id: creditsTable.id })
+            .from(creditsTable)
+            .where(
+              and(
+                eq(creditsTable.source_key, creditSourceKey),
+                isNull(creditsTable.deleted_at),
+              ),
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            // Active credit exists — just refresh the note.
+            await tx
+              .update(creditsTable)
+              .set({ salesperson_note: noteValue })
+              .where(eq(creditsTable.id, existing[0]!.id));
+          } else {
+            // No active credit — create one.
+            await tx.insert(creditsTable).values({
+              deal_id: id,
+              customer_id: deal.customer_id ?? undefined,
+              source_component_id: comp.component_id,
+              source_quote_item_id: item.line_id,
+              source_product_id: item.product_id ?? undefined,
+              parent_product_name: item.product_name_snapshot ?? null,
+              credit_name: comp.component_name_snapshot,
+              description: comp.component_description_snapshot ?? null,
+              status: "בתהליך",
+              quantity: String(totalQty),
+              source_key: creditSourceKey,
+              salesperson_note: noteValue,
+            });
+            created++;
+          }
+        });
       }
     }
 

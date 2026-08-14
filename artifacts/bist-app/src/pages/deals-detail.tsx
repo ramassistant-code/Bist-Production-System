@@ -391,18 +391,19 @@ interface AddPaymentModalProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  defaultInvoice?: { name: string; idNumber: string; email: string };
 }
 
-function AddPaymentModal({ dealId, open, onClose, onSaved }: AddPaymentModalProps) {
+function AddPaymentModal({ dealId, open, onClose, onSaved, defaultInvoice }: AddPaymentModalProps) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] = useState("");
   const [paymentPurpose, setPaymentPurpose] = useState("גבייה");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
   const [installments, setInstallments] = useState("1");
-  const [invoiceName, setInvoiceName] = useState("");
-  const [invoiceIdNumber, setInvoiceIdNumber] = useState("");
-  const [invoiceEmail, setInvoiceEmail] = useState("");
+  const [invoiceName, setInvoiceName] = useState(defaultInvoice?.name ?? "");
+  const [invoiceIdNumber, setInvoiceIdNumber] = useState(defaultInvoice?.idNumber ?? "");
+  const [invoiceEmail, setInvoiceEmail] = useState(defaultInvoice?.email ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -737,11 +738,18 @@ export default function DealsDetail() {
     staleTime: 20_000,
   });
 
-  const { data: creditsData } = useQuery<{ credits: CreditRow[] }>({
+  const { data: creditsData, refetch: refetchCredits } = useQuery<{ credits: CreditRow[] }>({
     queryKey: ["deal-credits", id],
     queryFn: () => customFetch<{ credits: CreditRow[] }>(`/api/deals/${id}/credits`),
     enabled: !!id,
     staleTime: 20_000,
+  });
+
+  const syncCreditsMutation = useMutation({
+    mutationFn: () =>
+      customFetch(`/api/deals/${id}/sync-credits`, { method: "POST" }),
+    onSuccess: () => void refetchCredits(),
+    onError: () => toast({ title: "שגיאה בסנכרון קרדיטים", variant: "destructive" }),
   });
 
   const { data: mondayData, refetch: refetchMonday, isFetching: mondayFetching } = useQuery<{
@@ -1007,6 +1015,14 @@ export default function DealsDetail() {
                   <span className="mr-1.5 text-xs font-normal text-muted-foreground">({credits.length})</span>
                 )}
               </h3>
+              <button
+                onClick={() => syncCreditsMutation.mutate()}
+                disabled={syncCreditsMutation.isPending}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+                title="סנכרן קרדיטים מה-snapshot"
+              >
+                {syncCreditsMutation.isPending ? "מסנכרן…" : "סנכרן"}
+              </button>
             </div>
 
             {credits.length === 0 ? (
@@ -1038,6 +1054,9 @@ export default function DealsDetail() {
                           </span>
                         </div>
                       </div>
+                      {c.salesperson_note && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">{c.salesperson_note}</p>
+                      )}
                       {qty > 0 && (
                         <div className="mt-1.5 h-1 bg-muted rounded-full overflow-hidden">
                           <div
@@ -1394,6 +1413,17 @@ export default function DealsDetail() {
             void refetchPayments();
             queryClient.invalidateQueries({ queryKey: ["deal", id] });
           }}
+          defaultInvoice={(() => {
+            // מחפש את התשלום הלא-כרטיסי האחרון ולוקח ממנו פרטי חשבונית
+            const lastNonCard = [...(paymentsData?.payments ?? [])]
+              .reverse()
+              .find((p) => p.payment_method !== "credit_card" && p.invoice_name);
+            return {
+              name: lastNonCard?.invoice_name ?? deal.invoice_name ?? "",
+              idNumber: deal.invoice_id_number ?? "",
+              email: lastNonCard?.invoice_email ?? deal.invoice_email ?? "",
+            };
+          })()}
         />
       )}
     </Shell>

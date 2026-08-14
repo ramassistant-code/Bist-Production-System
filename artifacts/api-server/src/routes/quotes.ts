@@ -235,7 +235,21 @@ router.get("/quotes/:id", async (req: Request, res: Response): Promise<void> => 
       FROM quote_versions WHERE quote_id = ${id} ORDER BY version_number ASC
     `);
 
-    res.json({ quote, currentVersion: verRows.rows[0] ?? null, versions: allVersions.rows });
+    // signing info — latest signed request for this quote
+    const signingRows = await db.execute(sql`
+      SELECT id, signer_name, signer_id_number, signed_at, signed_ip
+      FROM signing_requests
+      WHERE quote_id = ${id} AND status = 'signed'
+      ORDER BY signed_at DESC
+      LIMIT 1
+    `);
+
+    res.json({
+      quote,
+      currentVersion: verRows.rows[0] ?? null,
+      versions: allVersions.rows,
+      signingInfo: signingRows.rows[0] ?? null,
+    });
   } catch (err) {
     logger.error({ err }, "Failed to get quote");
     res.status(500).json({ error: "שגיאה בטעינת הצעת המחיר" });

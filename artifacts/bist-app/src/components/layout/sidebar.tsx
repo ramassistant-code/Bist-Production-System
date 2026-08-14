@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle } from "lucide-react";
+import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
   { name: "לידים", href: "/leads", icon: Target },
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const [location] = useLocation();
+  const { appUser, signOut } = useAuth();
 
   return (
     <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-full border-l border-sidebar-border">
@@ -47,7 +49,29 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-6 py-4 border-t border-sidebar-border/60">
+
+      {/* User info + logout */}
+      {appUser && (
+        <div className="px-3 py-3 border-t border-sidebar-border/60 space-y-1">
+          <div className="px-3 py-1.5">
+            <p className="text-xs font-medium text-sidebar-foreground truncate">
+              {appUser.full_name || appUser.email}
+            </p>
+            {appUser.full_name && (
+              <p className="text-[11px] text-sidebar-foreground/50 truncate">{appUser.email}</p>
+            )}
+          </div>
+          <button
+            onClick={() => void signOut()}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>התנתק</span>
+          </button>
+        </div>
+      )}
+
+      <div className="px-6 py-3 border-t border-sidebar-border/60">
         <p className="text-[11px] leading-tight text-sidebar-foreground/40">
           BIST — Businesses · Innovation · Startups · Technology
         </p>

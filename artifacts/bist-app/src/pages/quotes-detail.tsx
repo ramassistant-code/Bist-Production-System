@@ -99,10 +99,17 @@ interface QuoteRow {
   lead_phone?: string;
   created_at: string;
 }
+interface SigningInfo {
+  id: string;
+  signer_name: string | null;
+  signer_id_number: string | null;
+  signed_at: string | null;
+}
 interface QuoteDetailData {
   quote: QuoteRow;
   currentVersion: QuoteVersion | null;
   versions: Array<{ id: string; version_number: number; status: string; created_at: string; sent_at: string | null; approved_at: string | null; locked_at: string | null }>;
+  signingInfo: SigningInfo | null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -222,28 +229,6 @@ function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: bo
           </div>
         ) : (
           <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/70">לינק חתימה (PDF)</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.signing_url} dir="ltr"
-                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
-                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.signing_url, "sign")}>
-                  {copied === "sign" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground/70">לינק לתשלום (כולל מע"מ)</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.payment_url} dir="ltr"
-                  className="w-full h-9 rounded-md border border-input bg-muted/40 px-3 text-sm shadow-sm focus:outline-none" />
-                <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => copy(data.payment_url, "pay")}>
-                  {copied === "pay" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                </Button>
-              </div>
-            </div>
-
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground/70">הודעה ללקוח (ניתן לעריכה)</label>
               <textarea
@@ -423,7 +408,7 @@ export default function QuotesDetail() {
     );
   }
 
-  const { quote, currentVersion: verData, versions } = data;
+  const { quote, currentVersion: verData, versions, signingInfo } = data;
   const party = verData?.party_snapshot;
   const totals = verData?.totals_snapshot;
   const terms = verData?.terms_snapshot;
@@ -584,6 +569,43 @@ export default function QuotesDetail() {
               </div>
             ))}
           </div>
+
+          {/* באנר חתימה */}
+          {signingInfo?.signed_at && (
+            <div className="rounded-xl border border-green-500/40 bg-green-500/8 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6" dir="rtl">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-2xl">✍️</span>
+                <span className="text-green-700 font-bold text-base">הלקוח חתם!</span>
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-green-900/80">
+                <span>
+                  <span className="font-medium">תאריך ושעה: </span>
+                  {new Date(signingInfo.signed_at).toLocaleString("he-IL", {
+                    day: "2-digit", month: "2-digit", year: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
+                {signingInfo.signer_name && (
+                  <span>
+                    <span className="font-medium">שם החותם: </span>
+                    {signingInfo.signer_name}
+                  </span>
+                )}
+                {signingInfo.signer_id_number && (
+                  <span>
+                    <span className="font-medium">ת.ז / ח.פ: </span>
+                    {signingInfo.signer_id_number}
+                  </span>
+                )}
+                {(quote.customer_phone || quote.lead_phone) && (
+                  <span>
+                    <span className="font-medium">טלפון: </span>
+                    {quote.customer_phone || quote.lead_phone}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {isLocked && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2">

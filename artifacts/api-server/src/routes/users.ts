@@ -145,6 +145,12 @@ router.patch("/admin/users/:id", async (req: Request, res: Response): Promise<vo
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "Failed to update user");
+    // unique constraint violation — מייל כבר קיים אצל משתמש אחר
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("duplicate key") && msg.includes("email")) {
+      res.status(409).json({ error: "כתובת המייל כבר רשומה עבור משתמש אחר" });
+      return;
+    }
     res.status(500).json({ error: "שגיאת שרת" });
   }
 });

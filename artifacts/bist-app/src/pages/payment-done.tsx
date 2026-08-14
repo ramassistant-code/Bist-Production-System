@@ -23,12 +23,19 @@ export default function PaymentDone() {
       return;
     }
 
+    // Invoice4U עשוי להוסיף פרמטרים לכתובת החזרה — שולחים הכל לשרת
+    const returnParams: Record<string, string> = {};
+    params.forEach((value, key) => {
+      if (key !== "token") returnParams[key] = value;
+    });
+
     let alive = true;
     (async () => {
       try {
         const res = await fetch(`${apiBase}/api/public/payment-return/${token}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ returnParams }),
         });
         const j = (await res.json().catch(() => ({}))) as {
           status?: string;
