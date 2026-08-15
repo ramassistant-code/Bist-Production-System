@@ -76,7 +76,6 @@ interface WizardState {
   // Step 4
   deliveryTerms: string;
   customerNotes: string;
-  operationNotes: string;
   internalNotes: string;
 }
 
@@ -152,7 +151,7 @@ const initialState: WizardState = {
   projectTitle: "", validUntil: endOfCurrentMonth(),
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
   deliveryTerms: "",
-  customerNotes: "", operationNotes: "", internalNotes: "",
+  customerNotes: "", internalNotes: "",
 };
 
 // ── Step indicators ────────────────────────────────────────────────────────
@@ -1060,7 +1059,6 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
         validUntil: String(terms?.valid_until ?? ""),
         deliveryTerms: String(terms?.delivery_terms ?? ""),
         customerNotes: String(notes?.customer_notes ?? ""),
-        operationNotes: String(notes?.operation_notes ?? ""),
         internalNotes: String(notes?.internal_notes ?? ""),
         items: items.map((it) => ({
           line_id: crypto.randomUUID(),
@@ -1167,7 +1165,6 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       basket_override_note: state.basketOverrideNote || undefined,
       delivery_terms: state.deliveryTerms || undefined,
       customer_notes: state.customerNotes || undefined,
-      operation_notes: state.operationNotes || undefined,
       internal_notes: state.internalNotes || undefined,
       generate_pdf: sendImmediately,
       send_immediately: sendImmediately,
