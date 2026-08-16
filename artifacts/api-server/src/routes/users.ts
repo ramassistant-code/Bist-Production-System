@@ -4,6 +4,8 @@ import { appUsersTable } from "@workspace/db/schema";
 import { eq, isNull, and, asc, sql } from "drizzle-orm";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { logger } from "../lib/logger";
+import { sendLoginCodeEmail } from "../lib/email";
+import { createHmac, randomInt } from "node:crypto";
 import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
@@ -52,6 +54,175 @@ router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
     });
   } catch (err) {
     logger.error({ err }, "Failed to verify auth user");
+    res.status(500).json({ error: "שגיאת שרת" });
+  }
+});
+
+// ── כניסה באמצעות קוד חד-פעמי במייל ─────────────────────────────────────────
+
+// HMAC עם מפתח מחוץ ל-DB — כדי שקוד בן 6 ספרות לא יהיה ניתן לניחוש גם אם הטבלה נחשפת
+function hashCode(code: string): string {
+  const pepper = process.env.SESSION_SECRET ?? "";
+  return createHmac("sha256", pepper).update(code).digest("hex");
+}
+
+// POST /auth/otp/request — שולח קוד למייל רק אם קיים משתמש מערכת פעיל
+router.post("/auth/otp/request", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const email = String((req.body as { email?: string })?.email ?? "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      res.status(400).json({ error: "כתובת אימייל לא תקינה" });
+      return;
+    }
+
+    // תשובה אחידה — לא חושפים אם המשתמש קיים או לא
+    const genericResponse = { ok: true, message: "אם קיים משתמש עם כתובת זו — נשלח אליו קוד" };
+
+    const [appUser] = await db
+      .select()
+      .from(appUsersTable)
+      .where(
+        and(
+          eq(appUsersTable.email, email),
+          eq(appUsersTable.is_active, true),
+          isNull(appUsersTable.deleted_at)
+        )
+      )
+      .limit(1);
+
+    if (!appUser) {
+      res.json(genericResponse);
+      return;
+    }
+
+    // הגבלת קצב: לא יותר מקוד אחד ב-60 שניות
+    const recent = await db.execute(sql`
+      select 1 from login_codes
+      where email = ${email} and created_at > now() - interval '60 seconds'
+      limit 1
+    `);
+    if (recent.rows.length > 0) {
+      res.json(genericResponse);
+      return;
+    }
+
+    const code = String(randomInt(100000, 1000000)); // 6 ספרות
+    await db.execute(sql`
+      update login_codes set used_at = now() where email = ${email} and used_at is null
+    `);
+    await db.execute(sql`
+      insert into login_codes (email, code_hash, expires_at)
+      values (${email}, ${hashCode(code)}, now() + interval '10 minutes')
+    `);
+
+    // תשובה אחידה גם אם השליחה נכשלה — כדי לא לחשוף קיום משתמש; הכשל נרשם בלוג
+    const sent = await sendLoginCodeEmail(email, code);
+    if (!sent) {
+      logger.error({ email }, "otp/request: login code email failed to send");
+    }
+
+    res.json(genericResponse);
+  } catch (err) {
+    logger.error({ err }, "POST /auth/otp/request error");
+    res.status(500).json({ error: "שגיאת שרת" });
+  }
+});
+
+// POST /auth/otp/verify — מאמת קוד ומחזיר token_hash לכניסה דרך Supabase
+router.post("/auth/otp/verify", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const body = req.body as { email?: string; code?: string };
+    const email = String(body?.email ?? "").trim().toLowerCase();
+    const code = String(body?.code ?? "").trim();
+
+    if (!email || !/^\d{6}$/.test(code)) {
+      res.status(400).json({ error: "קוד לא תקין" });
+      return;
+    }
+
+    // אימות אטומי: פקודת UPDATE אחת שנועלת את השורה — מונעת ניחוש מקבילי ושימוש כפול.
+    // קוד נכון → מסומן כמנוצל; קוד שגוי → attempts עולה. אין מרוץ בין בדיקה לעדכון.
+    const codeHash = hashCode(code);
+    const claim = await db.execute(sql`
+      update login_codes
+      set used_at = case when code_hash = ${codeHash} then now() else used_at end,
+          attempts = attempts + case when code_hash = ${codeHash} then 0 else 1 end
+      where id = (
+        select id from login_codes
+        where email = ${email} and used_at is null and expires_at > now()
+        order by created_at desc limit 1
+        for update
+      )
+        and used_at is null and expires_at > now() and attempts < 5
+      returning id, (code_hash = ${codeHash}) as ok, attempts
+    `);
+    const claimed = claim.rows[0] as { id: string; ok: boolean; attempts: number } | undefined;
+
+    if (!claimed) {
+      res.status(400).json({ error: "הקוד פג תוקף או שנוצל — בקש קוד חדש" });
+      return;
+    }
+    if (!claimed.ok) {
+      res.status(400).json({
+        error: claimed.attempts >= 5 ? "יותר מדי ניסיונות — בקש קוד חדש" : "קוד שגוי",
+      });
+      return;
+    }
+    const claimedId = claimed.id;
+    // אם שלב ה-Supabase ייכשל — נשחרר את הקוד כדי לאפשר ניסיון חוזר
+    const releaseCode = () =>
+      db.execute(sql`update login_codes set used_at = null where id = ${claimedId}`).catch(() => {});
+
+    // וידוא שהמשתמש עדיין פעיל
+    const [appUser] = await db
+      .select()
+      .from(appUsersTable)
+      .where(
+        and(
+          eq(appUsersTable.email, email),
+          eq(appUsersTable.is_active, true),
+          isNull(appUsersTable.deleted_at)
+        )
+      )
+      .limit(1);
+    if (!appUser) {
+      res.status(403).json({ error: "אין משתמש פעיל במערכת עם כתובת אימייל זו" });
+      return;
+    }
+
+    // וידוא שקיים משתמש Auth ב-Supabase — ניסיון יצירה ישיר (בטוח גם מעל עמוד אחד של משתמשים);
+    // אם המייל כבר רשום — זו לא שגיאה
+    const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+    });
+    if (createErr) {
+      const msg = createErr.message?.toLowerCase() ?? "";
+      const alreadyExists =
+        msg.includes("already") || (createErr as { code?: string }).code === "email_exists";
+      if (!alreadyExists) {
+        logger.error({ createErr }, "otp/verify: failed to create auth user");
+        await releaseCode();
+        res.status(500).json({ error: "שגיאה ביצירת משתמש — נסה שוב" });
+        return;
+      }
+    }
+
+    // הפקת token_hash שאיתו הקליינט יקבל session מ-Supabase
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+    if (linkErr || !linkData?.properties?.hashed_token) {
+      logger.error({ linkErr }, "otp/verify: failed to generate link");
+      await releaseCode();
+      res.status(500).json({ error: "שגיאה ביצירת כניסה — נסה שוב" });
+      return;
+    }
+
+    res.json({ ok: true, token_hash: linkData.properties.hashed_token });
+  } catch (err) {
+    logger.error({ err }, "POST /auth/otp/verify error");
     res.status(500).json({ error: "שגיאת שרת" });
   }
 });
