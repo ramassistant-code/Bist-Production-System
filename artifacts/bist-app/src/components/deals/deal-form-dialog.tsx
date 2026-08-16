@@ -202,7 +202,7 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
   const fetchSalespersons = useCallback(async (term: string): Promise<ComboboxOption[]> => {
     const users = await apiFetch<Array<{ id: string; full_name: string | null; is_active: boolean; role: string | null }>>("/api/users");
     return users
-      .filter((u) => u.is_active && (u.role === "מכירות" || u.role === "מנהל") && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
+      .filter((u) => u.is_active && (u.role === "מכירות" || u.role === "מנהל" || u.role === "sales" || u.role === "admin") && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
       .map((u) => ({ id: u.id, label: u.full_name ?? u.id }))
       .slice(0, 50);
   }, []);

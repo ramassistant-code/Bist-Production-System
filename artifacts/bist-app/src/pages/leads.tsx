@@ -211,7 +211,7 @@ function LeadFormSupabase({ lead, onSuccess, onCancel }: LeadFormSupabaseProps) 
       "/api/users",
     );
     return users
-      .filter((u) => u.is_active && (u.role === "מכירות" || u.role === "מנהל") && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
+      .filter((u) => u.is_active && (u.role === "מכירות" || u.role === "מנהל" || u.role === "sales" || u.role === "admin") && (!term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase())))
       .map((u) => ({ id: u.id, label: u.full_name ?? u.id }))
       .slice(0, 50);
   }, []);
