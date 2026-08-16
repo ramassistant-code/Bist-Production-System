@@ -7,7 +7,7 @@ import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";
 import { buildOnboardingMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
-import { sendWhatsAppNotification } from "../lib/invoiceWebhook";
+import { sendSalespersonNotification, resolveSalespersonPhone } from "../lib/invoiceWebhook";
 import { sendSignedEmail } from "../lib/email";
 
 const router: IRouter = Router();
@@ -460,7 +460,8 @@ async function verifyAndNotifyPayment(
         customerName = cRow?.name ?? "";
       }
       const msg = `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""} — סכום ${amount}₪ של הלקוח ${customerName}`;
-      void sendWhatsAppNotification(msg);
+      const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+      void sendSalespersonNotification(msg, spPhone);
       logger.info({ srId: sr.id, amount }, "payment notification sent");
     } catch (notifyErr) {
       logger.error({ err: notifyErr }, "payment notify failed");
@@ -560,6 +561,7 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
         .maybeSingle();
 
       let customerName = "";
+      let customerEmail = "";
     if (sr.customer_id) {
         const { data: c } = await supabaseAdmin
           .from("customers")
@@ -567,6 +569,7 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
           .eq("id", String(sr.customer_id))
           .maybeSingle();
       customerName = c?.name ?? "";
+      customerEmail = c?.invoice_email || c?.email || "";
     }
 
     let pdfUrl: string | null = null;
@@ -580,6 +583,7 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
     res.json({
       status,
       customer_name: customerName,
+      customer_email: customerEmail,
       quote_number: quote?.quote_number ?? null,
       pdf_url: pdfUrl,
       signed_at: sr.signed_at ?? null,
@@ -595,10 +599,11 @@ router.get("/public/signing/:token", async (req: Request, res: Response): Promis
 // ושולח התראת WhatsApp לאיש המכירות דרך n8n.
 router.post("/public/signing/:token", async (req: Request, res: Response): Promise<void> => {
   const token = String(req.params["token"]);
-  const body = (req.body ?? {}) as { signer_name?: string; signer_id_number?: string; customer_note?: string };
+  const body = (req.body ?? {}) as { signer_name?: string; signer_id_number?: string; customer_note?: string; signer_email?: string };
   const signerName = (body.signer_name ?? "").trim();
   const signerId = (body.signer_id_number ?? "").trim();
   const customerNote = (body.customer_note ?? "").trim();
+  const signerEmail = (body.signer_email ?? "").trim();
 
   if (!signerName) {
     res.status(400).json({ error: "יש להזין שם מלא" });
@@ -695,6 +700,8 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
         customerName = c?.name ?? "";
         customerEmail = c?.invoice_email || c?.email || "";
       }
+      // אם הלקוח הזין מייל בטופס החתימה — משתמשים בו (גובר על ה-DB)
+      if (signerEmail) customerEmail = signerEmail;
 
       // WhatsApp לאיש המכירות
       const msg = [
@@ -706,7 +713,8 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
       ]
         .filter(Boolean)
         .join("\n");
-      void sendWhatsAppNotification(msg);
+      const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+      void sendSalespersonNotification(msg, spPhone);
       await supabaseAdmin
         .from("signing_requests")
         .update({ notified_at: now.toISOString() })

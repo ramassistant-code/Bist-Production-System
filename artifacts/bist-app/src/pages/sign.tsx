@@ -6,6 +6,7 @@ import { useParams } from "wouter";
 interface SigningData {
   status: "pending" | "signed" | "expired" | "cancelled" | string;
   customer_name: string;
+  customer_email: string;
   quote_number: string | null;
   pdf_url: string | null;
   signed_at: string | null;
@@ -23,6 +24,7 @@ export default function SignPage() {
 
   const [name, setName] = useState("");
   const [idNumber, setIdNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export default function SignPage() {
         if (!res.ok) throw new Error(j.error || "שגיאה בטעינת המסמך");
         if (!alive) return;
         setData(j as SigningData);
+        if ((j as SigningData).customer_email) setEmail((j as SigningData).customer_email);
         if ((j as SigningData).status === "signed") setDone(true);
       } catch (e) {
         if (alive) setLoadError(e instanceof Error ? e.message : "שגיאה");
@@ -68,6 +71,7 @@ export default function SignPage() {
           signer_name: name.trim(),
           signer_id_number: idNumber.trim(),
           customer_note: "",
+          signer_email: email.trim(),
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -177,6 +181,19 @@ export default function SignPage() {
                       inputMode="numeric"
                       className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                       placeholder="ת.ז / ח.פ"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm text-muted-foreground">מייל — לקבלת העתק של הצעת המחיר (אופציונלי)</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      inputMode="email"
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="your@email.com"
+                      dir="ltr"
                     />
                   </div>
 
