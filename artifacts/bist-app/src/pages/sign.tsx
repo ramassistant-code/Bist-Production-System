@@ -23,7 +23,6 @@ export default function SignPage() {
 
   const [name, setName] = useState("");
   const [idNumber, setIdNumber] = useState("");
-  const [customerNote, setCustomerNote] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -68,7 +67,7 @@ export default function SignPage() {
         body: JSON.stringify({
           signer_name: name.trim(),
           signer_id_number: idNumber.trim(),
-          customer_note: customerNote.trim(),
+          customer_note: "",
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -178,17 +177,6 @@ export default function SignPage() {
                       inputMode="numeric"
                       className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                       placeholder="ת.ז / ח.פ"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm text-muted-foreground">הודעה (אופציונלי) — הערות, בקשות מיוחדות</label>
-                    <textarea
-                      value={customerNote}
-                      onChange={(e) => setCustomerNote(e.target.value)}
-                      rows={3}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                      placeholder="כאן תוכל/י לכתוב כל הערה או בקשה..."
                     />
                   </div>
 

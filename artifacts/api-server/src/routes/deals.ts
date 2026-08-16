@@ -1287,6 +1287,23 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
         status: paymentsTable.status,
       });
 
+    // Persist billing info back to customer so future forms are prefilled
+    if (
+      deal.customer_id &&
+      payment_type !== "credit_card" &&
+      (invoice_name || invoice_id_number || invoice_email)
+    ) {
+      await db
+        .update(customersTable)
+        .set({
+          ...(invoice_name ? { invoice_name } : {}),
+          ...(invoice_id_number ? { tax_id: invoice_id_number } : {}),
+          ...(invoice_email ? { invoice_email } : {}),
+          updated_at: new Date(),
+        })
+        .where(eq(customersTable.id, deal.customer_id));
+    }
+
     // Refresh deal totals to reflect new payment
     await refreshDealPaymentTotals(id);
     void notifySync({ action: "deal_updated", id });

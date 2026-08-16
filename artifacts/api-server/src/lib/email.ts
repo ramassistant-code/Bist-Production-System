@@ -25,6 +25,43 @@ function createTransport() {
   });
 }
 
+/**
+ * שולח קוד כניסה חד-פעמי למשתמש מערכת.
+ */
+export async function sendLoginCodeEmail(to: string, code: string): Promise<boolean> {
+  if (!isSmtpConfigured()) {
+    logger.warn({ to }, "email: SMTP not configured — cannot send login code");
+    return false;
+  }
+  const html = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"/></head>
+<body style="font-family:Arial,sans-serif;direction:rtl;color:#111827;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#111827;">קוד כניסה למערכת BIST</h2>
+  <p>הקוד שלך לכניסה למערכת:</p>
+  <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#f3f4f6;border-radius:8px;padding:16px;text-align:center;margin:16px 0;">${code}</div>
+  <p style="color:#6b7280;">הקוד תקף ל-10 דקות. אם לא ביקשת קוד — התעלם ממייל זה.</p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;"/>
+  <p style="font-size:12px;color:#9ca3af;">BIST Productions</p>
+</body>
+</html>`;
+  try {
+    const transport = createTransport();
+    await transport.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject: "קוד כניסה למערכת BIST",
+      html,
+    });
+    logger.info({ to }, "login code email sent");
+    return true;
+  } catch (err) {
+    logger.error({ err, to }, "failed to send login code email");
+    return false;
+  }
+}
+
 export interface SignedEmailParams {
   to: string;
   customerName: string;
