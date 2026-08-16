@@ -7,7 +7,7 @@ import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";
 import { buildOnboardingMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
-import { sendWhatsAppNotification } from "../lib/invoiceWebhook";
+import { sendSalespersonNotification, resolveSalespersonPhone } from "../lib/invoiceWebhook";
 import { sendSignedEmail } from "../lib/email";
 
 const router: IRouter = Router();
@@ -460,7 +460,8 @@ async function verifyAndNotifyPayment(
         customerName = cRow?.name ?? "";
       }
       const msg = `💰 התקבל תשלום על הצעה ${qRow?.quote_number ?? ""} — סכום ${amount}₪ של הלקוח ${customerName}`;
-      void sendWhatsAppNotification(msg);
+      const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+      void sendSalespersonNotification(msg, spPhone);
       logger.info({ srId: sr.id, amount }, "payment notification sent");
     } catch (notifyErr) {
       logger.error({ err: notifyErr }, "payment notify failed");
@@ -712,7 +713,8 @@ router.post("/public/signing/:token", async (req: Request, res: Response): Promi
       ]
         .filter(Boolean)
         .join("\n");
-      void sendWhatsAppNotification(msg);
+      const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+      void sendSalespersonNotification(msg, spPhone);
       await supabaseAdmin
         .from("signing_requests")
         .update({ notified_at: now.toISOString() })

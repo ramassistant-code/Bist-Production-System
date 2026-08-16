@@ -1,0 +1,200 @@
+# פרומפט לרפליט — ניתוב התראות WhatsApp לאיש המכירות במקום לקבוצה
+
+## הבעיה
+
+כרגע **כל** התראות ה-WhatsApp נשלחות לקבוצה "תשלומים וחשבוניות אולפן", כי כולן עוברות דרך אותו webhook.
+
+הפונקציה `sendWhatsAppNotification()` ב-`artifacts/api-server/src/lib/invoiceWebhook.ts` שולחת ל-`INVOICE_WEBHOOK_URL`, וב-production ה-URL הזה מצביע על ה-workflow "פרטים לחשבונית" ב-n8n, שמוגדר קשיח לשלוח לקבוצה.
+
+**מה נכון להישאר כמו שהוא:** רק ההודעה "פרטים לחשבונית" (`<שם> שילם ₪X מתוך ₪Y` + פרטי חשבונית), שנשלחת מ-`sendInvoiceWebhook()` ב-`routes/deals.ts` ביצירת עסקה. היא צריכה להמשיך ללכת לקבוצה. **אל תיגע בה.**
+
+**מה צריך לעבור לאיש המכירות:** כל שאר ההתראות — כרגע שתיים, שתיהן ב-`artifacts/api-server/src/routes/signing.ts`:
+1. התראת חתימה — `✍️ הצעה ... נחתמה!` (ב-`POST /public/signing/:token`)
+2. התראת תשלום — `💰 התקבל תשלום על הצעה ...` (בפונקציית האימות שנקראת מ-`/public/payment-return/:token` ומכפתור "בדוק תשלום")
+
+ב-n8n כבר קיים ופעיל workflow ייעודי שמקבל `{ message, phone }` ושולח למספר הדינמי:
+`https://rambist.app.n8n.cloud/webhook/notify-salesperson`
+
+---
+
+## מה לעשות
+
+### 1. `artifacts/api-server/src/lib/invoiceWebhook.ts`
+
+הוסף שתי פונקציות מיוצאות חדשות. **אל תשנה** את `sendInvoiceWebhook` ואת `buildMessage`.
+
+```ts
+import { dealsTable, customersTable, appUsersTable, leadsTable, quotesTable } from "@workspace/db/schema";
+import { normalizePhoneIL } from "./whatsapp-link";
+```
+(הוסף רק את מה שחסר לייבוא הקיים)
+
+```ts
+/**
+ * resolveSalespersonPhone — מאתר את הטלפון של איש המכירות של ההצעה.
+ * ל-quotes אין שדה salesperson_id, לכן: quote → lead → salesperson,
+ * ואם אין ליד — דרך העסקה שנוצרה מההצעה, ואם אין — דרך הליד של הלקוח.
+ * מחזיר מספר מנורמל (972...) או null.
+ */
+export async function resolveSalespersonPhone(quoteId: string): Promise<string | null> {
+  try {
+    let salespersonId: string | null = null;
+
+    // 1) דרך הליד של ההצעה
+    const qRows = await db
+      .select({ lead_id: quotesTable.lead_id, customer_id: quotesTable.customer_id })
+      .from(quotesTable)
+      .where(eq(quotesTable.id, quoteId))
+      .limit(1);
+    const q = qRows[0];
+
+    if (q?.lead_id) {
+      const l = await db
+        .select({ salesperson_id: leadsTable.salesperson_id })
+        .from(leadsTable)
+        .where(eq(leadsTable.id, q.lead_id))
+        .limit(1);
+      salespersonId = l[0]?.salesperson_id ?? null;
+    }
+
+    // 2) fallback — העסקה שנוצרה מההצעה
+    if (!salespersonId) {
+      const d = await db
+        .select({ salesperson_id: dealsTable.salesperson_id })
+        .from(dealsTable)
+        .where(eq(dealsTable.quote_id, quoteId))
+        .limit(1);
+      salespersonId = d[0]?.salesperson_id ?? null;
+    }
+
+    // 3) fallback — הליד של הלקוח
+    if (!salespersonId && q?.customer_id) {
+      const c = await db
+        .select({ lead_id: customersTable.lead_id })
+        .from(customersTable)
+        .where(eq(customersTable.id, q.customer_id))
+        .limit(1);
+      const custLeadId = c[0]?.lead_id ?? null;
+      if (custLeadId) {
+        const l2 = await db
+          .select({ salesperson_id: leadsTable.salesperson_id })
+          .from(leadsTable)
+          .where(eq(leadsTable.id, custLeadId))
+          .limit(1);
+        salespersonId = l2[0]?.salesperson_id ?? null;
+      }
+    }
+
+    if (!salespersonId) {
+      logger.warn({ quoteId }, "resolveSalespersonPhone: no salesperson found for quote");
+      return null;
+    }
+
+    const u = await db
+      .select({ phone: appUsersTable.phone })
+      .from(appUsersTable)
+      .where(eq(appUsersTable.id, salespersonId))
+      .limit(1);
+
+    const phone = normalizePhoneIL(u[0]?.phone ?? null);
+    if (!phone) logger.warn({ quoteId, salespersonId }, "resolveSalespersonPhone: salesperson has no usable phone");
+    return phone;
+  } catch (err) {
+    logger.error({ err, quoteId }, "resolveSalespersonPhone failed");
+    return null;
+  }
+}
+
+/**
+ * sendSalespersonNotification — התראת WhatsApp לאיש מכירות ספציפי,
+ * דרך ה-workflow הייעודי ב-n8n (payload { message, phone }).
+ * fire-and-forget, לעולם לא זורק.
+ */
+export async function sendSalespersonNotification(
+  message: string,
+  phone: string | null,
+): Promise<void> {
+  if (process.env.INVOICE_NOTIFY_ENABLED === "false") return;
+
+  const webhookUrl = process.env.SALESPERSON_NOTIFY_WEBHOOK_URL;
+  if (!webhookUrl) {
+    logger.error("SALESPERSON_NOTIFY_WEBHOOK_URL is not set — salesperson notification skipped");
+    return;
+  }
+  if (!phone) {
+    logger.error("salesperson notification skipped — no phone resolved");
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, phone }),
+        signal: controller.signal,
+      });
+      const responseBody = await res.text().catch(() => "");
+      logger.info({ status: res.status, responseBody }, "salesperson notification sent");
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (err) {
+    logger.error({ err }, "salesperson notification failed");
+  }
+}
+```
+
+חשוב: אם `phone` הוא null — **לא לשלוח בכלל** (ולא ליפול חזרה לקבוצה). ה-Code node ב-n8n עושה fallback לקבוצה כשהטלפון ריק, ולכן חייבים לחסום את זה כאן בצד השרת.
+
+### 2. `artifacts/api-server/src/routes/signing.ts`
+
+עדכן את הייבוא:
+```ts
+import { sendSalespersonNotification, resolveSalespersonPhone } from "../lib/invoiceWebhook";
+```
+(אפשר להסיר את `sendWhatsAppNotification` מהייבוא אם לא נשארו לו שימושים בקובץ)
+
+**א. התראת החתימה** — בבלוק "התראת WhatsApp לאיש המכירות + מייל ללקוח" בתוך `POST /public/signing/:token`, החלף:
+```ts
+void sendWhatsAppNotification(msg);
+```
+ב:
+```ts
+const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+void sendSalespersonNotification(msg, spPhone);
+```
+
+**ב. התראת התשלום** — בפונקציה שמאמתת תשלום ושולחת `💰 התקבל תשלום על הצעה ...`, החלף:
+```ts
+void sendWhatsAppNotification(msg);
+```
+ב:
+```ts
+const spPhone = await resolveSalespersonPhone(String(sr.quote_id));
+void sendSalespersonNotification(msg, spPhone);
+```
+
+אל תשנה שום דבר אחר בלוגיקה — לא את בניית ההודעות, לא את עדכוני הסטטוס, לא את ה-idempotency (`notified_at` / `payment_notified_at`), ולא את מייל החתימה ללקוח.
+
+### 3. Secrets ב-Replit
+
+הוסף:
+```
+SALESPERSON_NOTIFY_WEBHOOK_URL = https://rambist.app.n8n.cloud/webhook/notify-salesperson
+```
+`INVOICE_WEBHOOK_URL` נשאר בדיוק כמו שהוא (הוא משרת רק את הודעת "פרטים לחשבונית" לקבוצה).
+
+---
+
+## בנייה ובדיקה
+
+1. `cd artifacts/api-server && pnpm build`
+2. Stop / Run (ה-api-server רץ מ-`dist`)
+3. בדיקה: קח הצעה עם ליד שיש לו איש מכירות עם טלפון ב-`app_users.phone`, שלח אונבורדינג, וחתום בעמוד הציבורי.
+   - **מצופה:** הודעת `✍️ ... נחתמה!` מגיעה לוואטסאפ האישי של איש המכירות, ולא לקבוצה.
+   - בלוגים חפש `salesperson notification sent` עם status 200.
+   - אם מופיע `no salesperson found for quote` או `no usable phone` — הבעיה בדאטה (`leads.salesperson_id` ריק, או `app_users.phone` ריק), לא בקוד.
+4. יצירת עסקה במזומן/העברה בנקאית צריכה להמשיך לשלוח את "פרטים לחשבונית" לקבוצה — ודא שזה לא נשבר.

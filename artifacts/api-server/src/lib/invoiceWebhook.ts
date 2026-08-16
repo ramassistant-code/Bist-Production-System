@@ -9,9 +9,10 @@
  */
 
 import { db } from "@workspace/db";
-import { dealsTable, customersTable, appUsersTable } from "@workspace/db/schema";
+import { dealsTable, customersTable, appUsersTable, leadsTable, quotesTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { normalizePhoneIL } from "./whatsapp-link";
 
 const DEFAULT_WEBHOOK_URL =
   "https://rambist.app.n8n.cloud/webhook/invoice-details/development";
@@ -103,6 +104,122 @@ async function buildMessage(params: InvoiceWebhookParams): Promise<string> {
     `איש מכירות: ${salespersonName}`,
     `שולם באמצעות ${paymentMethodHe}`,
   ].join("\n");
+}
+
+/**
+ * resolveSalespersonPhone — מאתר את הטלפון של איש המכירות של ההצעה.
+ * quote → lead → salesperson, fallback → עסקה מההצעה, fallback → ליד הלקוח.
+ * מחזיר מספר מנורמל (972...) או null.
+ */
+export async function resolveSalespersonPhone(quoteId: string): Promise<string | null> {
+  try {
+    let salespersonId: string | null = null;
+
+    // 1) דרך הליד של ההצעה
+    const qRows = await db
+      .select({ lead_id: quotesTable.lead_id, customer_id: quotesTable.customer_id })
+      .from(quotesTable)
+      .where(eq(quotesTable.id, quoteId))
+      .limit(1);
+    const q = qRows[0];
+
+    if (q?.lead_id) {
+      const l = await db
+        .select({ salesperson_id: leadsTable.salesperson_id })
+        .from(leadsTable)
+        .where(eq(leadsTable.id, q.lead_id))
+        .limit(1);
+      salespersonId = l[0]?.salesperson_id ?? null;
+    }
+
+    // 2) fallback — העסקה שנוצרה מההצעה
+    if (!salespersonId) {
+      const d = await db
+        .select({ salesperson_id: dealsTable.salesperson_id })
+        .from(dealsTable)
+        .where(eq(dealsTable.quote_id, quoteId))
+        .limit(1);
+      salespersonId = d[0]?.salesperson_id ?? null;
+    }
+
+    // 3) fallback — הליד של הלקוח
+    if (!salespersonId && q?.customer_id) {
+      const c = await db
+        .select({ lead_id: customersTable.lead_id })
+        .from(customersTable)
+        .where(eq(customersTable.id, q.customer_id))
+        .limit(1);
+      const custLeadId = c[0]?.lead_id ?? null;
+      if (custLeadId) {
+        const l2 = await db
+          .select({ salesperson_id: leadsTable.salesperson_id })
+          .from(leadsTable)
+          .where(eq(leadsTable.id, custLeadId))
+          .limit(1);
+        salespersonId = l2[0]?.salesperson_id ?? null;
+      }
+    }
+
+    if (!salespersonId) {
+      logger.warn({ quoteId }, "resolveSalespersonPhone: no salesperson found for quote");
+      return null;
+    }
+
+    const u = await db
+      .select({ phone: appUsersTable.phone })
+      .from(appUsersTable)
+      .where(eq(appUsersTable.id, salespersonId))
+      .limit(1);
+
+    const phone = normalizePhoneIL(u[0]?.phone ?? null);
+    if (!phone) logger.warn({ quoteId, salespersonId }, "resolveSalespersonPhone: salesperson has no usable phone");
+    return phone;
+  } catch (err) {
+    logger.error({ err, quoteId }, "resolveSalespersonPhone failed");
+    return null;
+  }
+}
+
+/**
+ * sendSalespersonNotification — התראת WhatsApp לאיש מכירות ספציפי,
+ * דרך ה-workflow הייעודי ב-n8n (payload { message, phone }).
+ * fire-and-forget, לעולם לא זורק.
+ * אם phone הוא null — לא שולח כלל (מונע fallback לקבוצה בצד n8n).
+ */
+export async function sendSalespersonNotification(
+  message: string,
+  phone: string | null,
+): Promise<void> {
+  if (process.env.INVOICE_NOTIFY_ENABLED === "false") return;
+
+  const webhookUrl = process.env.SALESPERSON_NOTIFY_WEBHOOK_URL;
+  if (!webhookUrl) {
+    logger.error("SALESPERSON_NOTIFY_WEBHOOK_URL is not set — salesperson notification skipped");
+    return;
+  }
+  if (!phone) {
+    logger.error("salesperson notification skipped — no phone resolved");
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, phone }),
+        signal: controller.signal,
+      });
+      const responseBody = await res.text().catch(() => "");
+      logger.info({ status: res.status, responseBody }, "salesperson notification sent");
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (err) {
+    logger.error({ err }, "salesperson notification failed");
+  }
 }
 
 /**
