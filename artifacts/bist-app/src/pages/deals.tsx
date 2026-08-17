@@ -64,7 +64,7 @@ const EXECUTION_STATUS_OPTIONS = [
   { value: "", label: "כל הסטטוסים" },
   { value: "פתוחה", label: "פתוחה" },
   { value: "ממתינה לתיאום", label: "ממתינה לתיאום" },
-  { value: "בטיפול", label: "בטיפול" },
+  { value: "בעבודה", label: "בעבודה" },
   { value: "הושלמה", label: "הושלמה" },
   { value: "בוטלה", label: "בוטלה" },
 ];

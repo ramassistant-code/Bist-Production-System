@@ -23,7 +23,7 @@ import { sendInvoiceWebhook } from "../lib/invoiceWebhook";
 
 const router: IRouter = Router();
 
-const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בטיפול", "הושלמה", "בוטלה"];
+const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בעבודה", "בטיפול", "הושלמה", "בוטלה"];
 const VALID_PAYMENT_TYPES = ["cash", "credit_card", "bank_transfer"];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
