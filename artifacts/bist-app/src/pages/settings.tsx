@@ -3,8 +3,7 @@ import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import { useAuth } from "@/lib/auth-context";
-import { useLayout } from "@/lib/layout-context";
-import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound, ShieldCheck, PanelLeft, LayoutDashboard } from "lucide-react";
+import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound, ShieldCheck } from "lucide-react";
 import versionInfo from "@/version.json";
 
 interface AppUser {
@@ -408,40 +407,9 @@ export default function Settings() {
     closeDialog();
   };
 
-  const { mode, setMode } = useLayout();
-
   return (
     <Shell title="הגדרות" badge={`גרסה ${versionInfo.version}`}>
       <div className="p-6 space-y-6 overflow-auto h-full">
-
-        {/* Layout toggle */}
-        <section>
-          <h2 className="text-base font-semibold text-foreground/80 mb-3">מראה הממשק</h2>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setMode("sidebar")}
-              className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
-                mode === "sidebar"
-                  ? "border-primary bg-primary/5 text-primary shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40"
-              }`}
-            >
-              <PanelLeft className="w-4 h-4" />
-              ניווט צד (ברירת מחדל)
-            </button>
-            <button
-              onClick={() => setMode("dock")}
-              className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
-                mode === "dock"
-                  ? "border-primary bg-primary/5 text-primary shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40"
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dock תחתון (עיצוב חדש)
-            </button>
-          </div>
-        </section>
 
         {/* Quick links */}
         <section>
