@@ -90,6 +90,7 @@ interface PaymentRow {
   status: string;
   installments_count: number | null;
   invoice_name: string | null;
+  invoice_tax_id: string | null;
   invoice_email: string | null;
   source_type: string | null;
   created_at: string;
@@ -1420,7 +1421,11 @@ export default function DealsDetail() {
               .find((p) => p.payment_method !== "credit_card" && p.invoice_name);
             return {
               name: lastNonCard?.invoice_name ?? deal.invoice_name ?? "",
-              idNumber: deal.invoice_id_number ?? "",
+              idNumber:
+                lastNonCard?.invoice_tax_id ??
+                deal.invoice_id_number ??
+                (deal.party_snapshot as { tax_id?: string } | null)?.tax_id ??
+                "",
               email: lastNonCard?.invoice_email ?? deal.invoice_email ?? "",
             };
           })()}

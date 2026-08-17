@@ -125,7 +125,7 @@ router.post(
       const html = renderQuoteHtml({
         config: template.configuration as unknown as PdfConfig,
         quoteNumber: String(quote.quote_number),
-        issueDate: String(version.approved_at ?? version.created_at),
+        issueDate: new Date().toISOString(),
         party: version.party_snapshot as unknown as PartySnapshot | null,
         items: (version.items_snapshot as unknown as ItemSnapshot[]) ?? [],
         totals: version.totals_snapshot as unknown as TotalsSnapshot | null,

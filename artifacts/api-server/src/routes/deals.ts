@@ -1124,6 +1124,7 @@ router.get("/deals/:id/payments", async (req: Request, res: Response): Promise<v
         status: paymentsTable.status,
         installments_count: paymentsTable.installments_count,
         invoice_name: paymentsTable.invoice_name,
+        invoice_tax_id: paymentsTable.invoice_tax_id,
         invoice_email: paymentsTable.invoice_email,
         source_type: paymentsTable.source_type,
         created_at: paymentsTable.created_at,
@@ -1307,6 +1308,18 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
     // Refresh deal totals to reflect new payment
     await refreshDealPaymentTotals(id);
     void notifySync({ action: "deal_updated", id });
+
+    // ── Invoice WhatsApp notification (fire-and-forget) ──────────────────────
+    void sendInvoiceWebhook({
+      dealId:            id,
+      customerId:        deal.customer_id ?? null,
+      salespersonUserId: deal.salesperson_id ?? null,
+      paymentType:       payment_type,
+      invoiceName:       invoice_name,
+      invoiceIdNumber:   invoice_id_number,
+      invoiceEmail:      invoice_email,
+      amountPaidIncVat:  amount_inc_vat,
+    });
 
     res.status(201).json({ success: true, payment: inserted[0] });
   } catch (err) {
