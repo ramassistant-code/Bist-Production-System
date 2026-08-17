@@ -1267,7 +1267,20 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
     const dealVatRateDecimal = dealVatRateRaw > 1 ? dealVatRateRaw / 100 : dealVatRateRaw;
     const dealVatDivisor = 1 + dealVatRateDecimal;
     const amount_inc_vat = amount; // user entered inclusive
-    const amount_ex_vat  = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
+    let amount_ex_vat    = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
+
+    // Guard against rounding overshoot: if amount_ex_vat slightly exceeds the
+    // DB remaining_amount (generated = total_amount - paid_amount) by less than
+    // 0.02, cap it to the exact remaining so the DB constraint doesn't fire.
+    const remainingRows = await db
+      .select({ remaining_amount: dealsTable.remaining_amount })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, id))
+      .limit(1);
+    const remainingExVat = Number(remainingRows[0]?.remaining_amount ?? 0);
+    if (remainingExVat > 0 && amount_ex_vat > remainingExVat && amount_ex_vat - remainingExVat < 0.02) {
+      amount_ex_vat = remainingExVat;
+    }
 
     const PAYMENT_METHOD_MAP: Record<string, string> = {
       cash: "מזומן",
