@@ -72,22 +72,27 @@
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
-  --text-xs: 0.8125rem;
-  --text-xs--line-height: calc(1.125 / 0.8125);
-  --text-sm: 0.9375rem;
-  --text-sm--line-height: calc(1.375 / 0.9375);
-  --text-base: 1.0625rem;
-  --text-base--line-height: calc(1.625 / 1.0625);
-  --text-lg: 1.1875rem;
-  --text-lg--line-height: calc(1.875 / 1.1875);
-  --text-xl: 1.3125rem;
-  --text-xl--line-height: calc(1.875 / 1.3125);
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: calc(2 / 1.5);
-  --text-3xl: 1.875rem;
-  --text-3xl--line-height: calc(2.25 / 1.875);
-  --text-4xl: 2.25rem;
-  --text-4xl--line-height: calc(2.5 / 2.25);
+  /* Whole ramp raised ~2px. 94% of the app's text sits on xs/sm, so those two
+     steps decide how the system reads; at 13/15px it read as cramped. Hebrew
+     has no ascenders or descenders, so word shapes are less distinctive than
+     in Latin and small sizes cost more legibility here. Line heights are set
+     a little looser than the usual ratios for the same reason. */
+  --text-xs: 0.9375rem;                          /* 15px */
+  --text-xs--line-height: calc(1.375 / 0.9375);  /* 22px */
+  --text-sm: 1.0625rem;                          /* 17px */
+  --text-sm--line-height: calc(1.625 / 1.0625);  /* 26px */
+  --text-base: 1.1875rem;                        /* 19px */
+  --text-base--line-height: calc(1.75 / 1.1875); /* 28px */
+  --text-lg: 1.3125rem;                          /* 21px */
+  --text-lg--line-height: calc(1.875 / 1.3125);  /* 30px */
+  --text-xl: 1.5rem;                             /* 24px */
+  --text-xl--line-height: calc(2 / 1.5);         /* 32px */
+  --text-2xl: 1.75rem;                           /* 28px */
+  --text-2xl--line-height: calc(2.25 / 1.75);    /* 36px */
+  --text-3xl: 2.125rem;                          /* 34px */
+  --text-3xl--line-height: calc(2.5 / 2.125);    /* 40px */
+  --text-4xl: 2.5rem;                            /* 40px */
+  --text-4xl--line-height: calc(2.75 / 2.5);     /* 44px */
   --text-5xl: 3rem;
   --text-5xl--line-height: 1;
   --text-6xl: 3.75rem;
