@@ -65,13 +65,50 @@ function empty(val: string | null | undefined): string {
   return val?.trim() ? val.trim() : "—";
 }
 
-function statusVariant(
-  status: string | null | undefined,
-): "default" | "secondary" | "outline" | "destructive" {
+type StatusVariant =
+  | "default"
+  | "secondary"
+  | "outline"
+  | "destructive"
+  | "success"
+  | "warning"
+  | "info";
+
+// Explicit map over lookup_lead_status. Substring matching used to collapse 19 of
+// the 21 statuses into one look, so the column carried almost no information.
+// Unknown values fall through to "outline" rather than guessing a bucket.
+const LEAD_STATUS_VARIANT: Record<string, StatusVariant> = {
+  // won
+  "לקוח פעיל": "success",
+  // needs action now
+  "לקראת סגירה": "warning",
+  "פייפ להיום": "warning",
+  "שיחה מחר": "warning",
+  "פייפ למחר": "warning",
+  "תשובה עוד יומיים": "warning",
+  "המשך שיחה השבוע": "warning",
+  // live pipeline
+  חדש: "info",
+  בתהליך: "info",
+  פייפ: "info",
+  פייפים: "info",
+  "השאיר פרטים פעם שנייה": "info",
+  "אימון מכירות Inbound": "info",
+  // dormant / low signal
+  "פולואפ ארוך": "secondary",
+  "פייפ חלש": "secondary",
+  "לידים ישנים": "secondary",
+  "אין מענה": "secondary",
+  טעות: "secondary",
+  "מספר שגוי": "secondary",
+  // lost
+  "לא רלוונטי": "destructive",
+  "סגרה במקום אחר": "destructive",
+};
+
+function statusVariant(status: string | null | undefined): StatusVariant {
   if (!status) return "secondary";
-  if (status.includes("פעיל") || status.includes("סגור")) return "default";
-  if (status.includes("דחיי") || status.includes("לא")) return "destructive";
-  return "outline";
+  return LEAD_STATUS_VARIANT[status.trim()] ?? "outline";
 }
 
 /** Extract YYYY-MM-DD from a timestamp string (or return empty string). */

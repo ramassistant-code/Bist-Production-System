@@ -168,13 +168,13 @@ function StepBar({ current }: { current: number }) {
           <div key={i} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1 shrink-0">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2
-                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-gray-100 text-gray-400 border-border"}`}>
+                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-muted text-muted-foreground border-border"}`}>
                 {done ? "✓" : i + 1}
               </div>
-              <span className={`text-xs hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-gray-400"}`}>{label}</span>
+              <span className={`text-xs hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-muted-foreground"}`}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-gray-200"}`} />
+              <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-border"}`} />
             )}
           </div>
         );
@@ -269,15 +269,15 @@ function NameSearchDialog({ open, onClose, onSelect }: {
                 onClick={() => { onSelect(r); onClose(); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 text-right transition-colors border border-transparent hover:border-border/50"
               >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-green-500/15" : "bg-primary/15"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-success/15" : "bg-primary/15"}`}>
                   {r.type === "customer"
-                    ? <UserCheck className="w-3.5 h-3.5 text-green-600" />
+                    ? <UserCheck className="w-3.5 h-3.5 text-success-accent" />
                     : <User className="w-3.5 h-3.5 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-foreground">{r.name}</span>
-                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-green-500/40 text-green-700" : "border-primary/40 text-primary"}`}>
+                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-success/40 text-success-accent" : "border-primary/40 text-primary"}`}>
                       {r.type === "customer" ? "לקוח" : "ליד"}
                     </Badge>
                   </div>
@@ -391,9 +391,9 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <div className="rounded-lg border p-4 bg-muted/40 space-y-3">
           {lookupResult.found === "customer" && (
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-success-accent mt-1.5 shrink-0" />
               <div>
-                <p className="font-medium text-green-700">נמצא לקוח קיים</p>
+                <p className="font-medium text-success-accent">נמצא לקוח קיים</p>
                 <p className="text-sm text-foreground/70">{lookupResult.name}</p>
                 {lookupResult.email && <p className="text-xs text-muted-foreground">{lookupResult.email}</p>}
               </div>
@@ -412,8 +412,8 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           {lookupResult.found === "none" && (
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-orange-400 mt-1.5 shrink-0" />
-                <p className="font-medium text-orange-700">לא נמצא לקוח או ליד. יפתח ליד חדש.</p>
+                <div className="w-2 h-2 rounded-full bg-warning-accent mt-1.5 shrink-0" />
+                <p className="font-medium text-warning-accent">לא נמצא לקוח או ליד. יפתח ליד חדש.</p>
               </div>
               <div className="space-y-2 pt-1">
                 <div className="space-y-1">
@@ -574,7 +574,7 @@ function ComponentRow({
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 text-muted-foreground hover:text-red-500 transition-colors"
+          className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
           title="הסר רכיב"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -632,9 +632,9 @@ function BasketRow({
           {item.category_snapshot && <p className="text-xs text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-sm font-bold text-gray-800">{formatILS(lineTotal)}</span>
+          <span className="text-sm font-bold text-foreground">{formatILS(lineTotal)}</span>
           <Button size="sm" variant="ghost" onClick={onRemove} title="הסר">
-            <Trash2 className="w-4 h-4 text-red-400" />
+            <Trash2 className="w-4 h-4 text-destructive" />
           </Button>
         </div>
       </div>
@@ -652,7 +652,7 @@ function BasketRow({
             <Input type="number" min={0} step={0.01} value={item.unit_price}
               onChange={(e) => handlePriceChange(e.target.value)} />
             {priceChanged && !item.manual_price_override && (
-              <p className="text-xs text-orange-600">המחיר שונה מהקטלוג</p>
+              <p className="text-xs text-warning-accent">המחיר שונה מהקטלוג</p>
             )}
           </div>
           <div className="space-y-1 col-span-2 sm:col-span-1">
@@ -663,10 +663,10 @@ function BasketRow({
 
         {item.manual_price_override && (
           <div className="space-y-1">
-            <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
+            <Label className="text-xs text-warning-accent">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
             <Input value={item.price_override_reason} placeholder="חובה לפרט את סיבת שינוי המחיר"
               onChange={(e) => setField("price_override_reason", e.target.value)}
-              className="border-orange-200 focus-visible:ring-orange-300" />
+              className="border-warning/40 focus-visible:ring-warning/50" />
           </div>
         )}
 
@@ -823,10 +823,10 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
                     onChange={(e) => update({ basketManualTotal: e.target.value })}
                     dir="ltr" />
                   <div className="space-y-1">
-                    <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
+                    <Label className="text-xs text-warning-accent">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
                     <Input value={state.basketOverrideNote} placeholder="חובה לפרט את סיבת שינוי הסה״כ"
                       onChange={(e) => update({ basketOverrideNote: e.target.value })}
-                      className="border-orange-200" />
+                      className="border-warning/40" />
                   </div>
                 </div>
               )}
@@ -838,7 +838,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               <span>{formatILS(calc.effectiveSubtotal)}</span>
             </div>
             {calc.discount > 0 && (
-              <div className="flex justify-between text-sm text-green-700">
+              <div className="flex justify-between text-sm text-success-accent">
                 <span>הנחה</span>
                 <span>-{formatILS(calc.discount)}</span>
               </div>
@@ -949,7 +949,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
       <div className="rounded-lg border border-border p-4 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">שורות הצעה ({state.items.length})</p>
         {state.items.map((item) => (
-          <div key={item.line_id} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
+          <div key={item.line_id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
             <span className="text-foreground/70">{item.product_name_snapshot || "שורה ידנית"} × {item.quantity}</span>
             <span className="font-medium">{formatILS(item.unit_price * item.quantity)}</span>
           </div>
@@ -959,7 +959,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
       {/* Totals */}
       <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">סה״כ לפני הנחה</span><span>{formatILS(calc.effectiveSubtotal)}</span></div>
-        {calc.discount > 0 && <div className="flex justify-between text-green-700"><span>הנחה</span><span>-{formatILS(calc.discount)}</span></div>}
+        {calc.discount > 0 && <div className="flex justify-between text-success-accent"><span>הנחה</span><span>-{formatILS(calc.discount)}</span></div>}
         <div className="flex justify-between"><span className="text-muted-foreground">סה״כ אחרי הנחה</span><span>{formatILS(calc.afterDiscount)}</span></div>
         <div className="flex justify-between text-muted-foreground"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
         <Separator />
@@ -980,7 +980,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
         <Button onClick={onSave} disabled={isSaving || isCreating} variant="outline">
           {isSaving ? "שומר..." : "שמור כטיוטה"}
         </Button>
-        <Button onClick={onCreateQuote} disabled={isSaving || isCreating} className="bg-green-600 hover:bg-green-700 text-white">
+        <Button onClick={onCreateQuote} disabled={isSaving || isCreating} className="bg-success hover:bg-success/90 text-success-foreground">
           {isCreating ? (
             <span className="flex items-center gap-2">
               <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />

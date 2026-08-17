@@ -41,12 +41,22 @@ interface DealsResponse {
 
 const EXECUTION_STATUS_VARIANT: Record<
   string,
-  "default" | "secondary" | "outline" | "destructive"
+  | "default"
+  | "secondary"
+  | "outline"
+  | "destructive"
+  | "success"
+  | "warning"
+  | "info"
 > = {
-  פתוחה: "secondary",
+  // Values actually present in the data
+  פתוחה: "info",
+  בעבודה: "warning",
+  בוצע: "success",
+  // Kept for older / imported records
   "ממתינה לתיאום": "secondary",
-  בטיפול: "default",
-  הושלמה: "default",
+  בטיפול: "warning",
+  הושלמה: "success",
   בוטלה: "destructive",
 };
 

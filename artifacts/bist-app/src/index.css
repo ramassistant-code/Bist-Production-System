@@ -39,6 +39,18 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
 
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
+  /* *-accent = readable as TEXT/icon directly on the page background.
+     The plain tokens above are solid fills that expect *-foreground on top. */
+  --color-success-accent: hsl(var(--success-accent));
+  --color-warning-accent: hsl(var(--warning-accent));
+
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));
@@ -125,6 +137,15 @@
   --accent-foreground: 0 0% 9%;
   --destructive: 0 72% 40%;
   --destructive-foreground: 0 0% 100%;
+  /* Semantic status colors — used by badge success/warning/info variants */
+  --success: 142 58% 30%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 45%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 75% 40%;
+  --info-foreground: 0 0% 100%;
+  --success-accent: 142 65% 26%;
+  --warning-accent: 38 95% 32%;
   --input: 0 0% 90%;
   --ring: 0 68% 49%;
   --chart-1: 0 68% 49%;
@@ -218,6 +239,15 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 70% 44%;
   --destructive-foreground: 0 0% 100%;
+  /* Semantic status colors — tuned for contrast on the near-black dark surfaces */
+  --success: 142 55% 32%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 90% 50%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 70% 45%;
+  --info-foreground: 0 0% 100%;
+  --success-accent: 142 62% 52%;
+  --warning-accent: 38 92% 58%;
   --input: 0 0% 16%;
   --ring: 0 68% 55%;
   --chart-1: 0 68% 55%;
