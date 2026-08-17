@@ -288,7 +288,7 @@ export function renderQuoteHtml(input: RenderQuoteHtmlInput): string {
           <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.id_or_company_number}</div>
           <div style="font-size:14px;font-weight:600;color:#111827;padding:4px 0 6px;">${clientTaxId}</div>
         </div>` : ""}
-        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="border-bottom:1px solid #d1d5db;height:28px;margin-top:4px;"></div></div>` : ""}
+        ${cfg.show_signature_date ? `<div style="flex:1;"><div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${L.date}</div><div style="font-size:14px;font-weight:600;color:#111827;padding:4px 0 6px;">${fmtDate(issueDate)}</div></div>` : ""}
       </div>
     </div>
   `
