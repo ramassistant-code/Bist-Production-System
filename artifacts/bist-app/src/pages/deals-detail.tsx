@@ -660,7 +660,8 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
               onChange={(e) => setExecStatus(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
             >
-              {EXECUTION_STATUSES.map((s) => (
+              {/* Always include current value in case it's a legacy status */}
+              {[...new Set([execStatus, ...EXECUTION_STATUSES].filter(Boolean))].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
