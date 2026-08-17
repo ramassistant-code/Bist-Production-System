@@ -157,7 +157,7 @@ interface DealDetail {
 const EXECUTION_STATUSES = [
   "פתוחה",
   "ממתינה לתיאום",
-  "בטיפול",
+  "בעבודה",
   "הושלמה",
   "בוטלה",
 ];
@@ -173,7 +173,7 @@ const EXEC_STATUS_VARIANT: Record<
 > = {
   פתוחה: "secondary",
   "ממתינה לתיאום": "secondary",
-  בטיפול: "default",
+  בעבודה: "default",
   הושלמה: "default",
   בוטלה: "destructive",
 };
@@ -206,19 +206,19 @@ function formatILS(val: string | number | null | undefined) {
 const CREDIT_STATUS_STYLE: Record<string, string> = {
   "ממתין":         "bg-muted text-muted-foreground",
   "בתהליך":        "bg-secondary text-secondary-foreground",
-  "ממתין ללקוח":   "bg-yellow-100 text-yellow-700",
-  "בבדיקת איכות": "bg-orange-100 text-orange-700",
-  "הושלם":         "bg-green-100 text-green-700",
-  "בוטל":          "bg-red-100 text-red-600",
+  "ממתין ללקוח":   "bg-warning/15 text-warning-accent",
+  "בבדיקת איכות": "bg-warning/15 text-warning-accent",
+  "הושלם":         "bg-success/15 text-success-accent",
+  "בוטל":          "bg-destructive/15 text-destructive-accent",
 };
 
 const PAYMENT_STATUS_STYLE: Record<string, string> = {
-  "התקבל":          "bg-green-100 text-green-700",
+  "התקבל":          "bg-success/15 text-success-accent",
   "ממתין לתשלום":   "bg-muted text-muted-foreground",
-  "חלקי":           "bg-yellow-100 text-yellow-700",
-  "נכשל":           "bg-red-100 text-red-600",
+  "חלקי":           "bg-warning/15 text-warning-accent",
+  "נכשל":           "bg-destructive/15 text-destructive-accent",
   "הוחזר":          "bg-secondary text-secondary-foreground",
-  "בוטל":           "bg-red-100 text-red-600",
+  "בוטל":           "bg-destructive/15 text-destructive-accent",
 };
 
 const PAYMENT_METHOD_ICON: Record<string, React.ReactNode> = {
@@ -363,7 +363,7 @@ function PaymentLinkModal({ dealId, open, onClose }: PaymentLinkModalProps) {
             </div>
 
             {!data.phone && (
-              <p className="flex items-center gap-1.5 text-xs text-amber-500">
+              <p className="flex items-center gap-1.5 text-xs text-warning-accent">
                 <AlertCircle className="w-3.5 h-3.5" />
                 אין מספר טלפון תקין ללקוח — אפשר להעתיק את ההודעה ולשלוח ידנית.
               </p>
@@ -506,7 +506,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved, defaultInvoice }: Add
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     paymentType === pt
                       ? "bg-primary text-white border-primary"
-                      : "bg-card text-foreground/70 border-border hover:border-gray-400"
+                      : "bg-card text-foreground/70 border-border hover:border-border"
                   }`}
                 >
                   {PAYMENT_LABELS[pt]}
@@ -660,7 +660,8 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
               onChange={(e) => setExecStatus(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
             >
-              {EXECUTION_STATUSES.map((s) => (
+              {/* Always include current value in case it's a legacy status */}
+              {[...new Set([execStatus, ...EXECUTION_STATUSES].filter(Boolean))].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -674,16 +675,9 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground/70">סטטוס תשלום</label>
-            <select
-              value={payStatus}
-              onChange={(e) => setPayStatus(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
-            >
-              <option value="">— ללא סטטוס תשלום —</option>
-              {PAYMENT_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+            <div className="h-9 rounded-md border border-input bg-muted/40 px-3 py-1 text-sm flex items-center text-muted-foreground">
+              {deal.payment_status || "— מחושב אוטומטית —"}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -1161,7 +1155,7 @@ export default function DealsDetail() {
                             </div>
                           )}
                           {item.manual_price_override && item.price_override_reason && (
-                            <div className="text-xs text-orange-700">
+                            <div className="text-xs text-warning-accent">
                               <span className="font-medium">סיבת שינוי מחיר: </span>
                               {item.price_override_reason}
                             </div>
@@ -1206,7 +1200,7 @@ export default function DealsDetail() {
                         </div>
                       )}
                       {(totals.discount_amount ?? 0) > 0 && (
-                        <div className="flex justify-between text-green-700">
+                        <div className="flex justify-between text-success-accent">
                           <span>הנחה</span>
                           <span>-{formatILS(totals.discount_amount)}</span>
                         </div>

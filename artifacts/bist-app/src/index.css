@@ -39,6 +39,19 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
 
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+
+  /* *-accent = readable as TEXT/icon directly on the page background.
+     The plain tokens above are solid fills that expect *-foreground on top. */
+  --color-success-accent: hsl(var(--success-accent));
+  --color-warning-accent: hsl(var(--warning-accent));
+  --color-destructive-accent: hsl(var(--destructive-accent));
+
   --color-chart-1: hsl(var(--chart-1));
   --color-chart-2: hsl(var(--chart-2));
   --color-chart-3: hsl(var(--chart-3));
@@ -60,22 +73,27 @@
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
-  --text-xs: 0.8125rem;
-  --text-xs--line-height: calc(1.125 / 0.8125);
-  --text-sm: 0.9375rem;
-  --text-sm--line-height: calc(1.375 / 0.9375);
-  --text-base: 1.0625rem;
-  --text-base--line-height: calc(1.625 / 1.0625);
-  --text-lg: 1.1875rem;
-  --text-lg--line-height: calc(1.875 / 1.1875);
-  --text-xl: 1.3125rem;
-  --text-xl--line-height: calc(1.875 / 1.3125);
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: calc(2 / 1.5);
-  --text-3xl: 1.875rem;
-  --text-3xl--line-height: calc(2.25 / 1.875);
-  --text-4xl: 2.25rem;
-  --text-4xl--line-height: calc(2.5 / 2.25);
+  /* Whole ramp raised ~2px. 94% of the app's text sits on xs/sm, so those two
+     steps decide how the system reads; at 13/15px it read as cramped. Hebrew
+     has no ascenders or descenders, so word shapes are less distinctive than
+     in Latin and small sizes cost more legibility here. Line heights are set
+     a little looser than the usual ratios for the same reason. */
+  --text-xs: 0.9375rem;                          /* 15px */
+  --text-xs--line-height: calc(1.375 / 0.9375);  /* 22px */
+  --text-sm: 1.0625rem;                          /* 17px */
+  --text-sm--line-height: calc(1.625 / 1.0625);  /* 26px */
+  --text-base: 1.1875rem;                        /* 19px */
+  --text-base--line-height: calc(1.75 / 1.1875); /* 28px */
+  --text-lg: 1.3125rem;                          /* 21px */
+  --text-lg--line-height: calc(1.875 / 1.3125);  /* 30px */
+  --text-xl: 1.5rem;                             /* 24px */
+  --text-xl--line-height: calc(2 / 1.5);         /* 32px */
+  --text-2xl: 1.75rem;                           /* 28px */
+  --text-2xl--line-height: calc(2.25 / 1.75);    /* 36px */
+  --text-3xl: 2.125rem;                          /* 34px */
+  --text-3xl--line-height: calc(2.5 / 2.125);    /* 40px */
+  --text-4xl: 2.5rem;                            /* 40px */
+  --text-4xl--line-height: calc(2.75 / 2.5);     /* 44px */
   --text-5xl: 3rem;
   --text-5xl--line-height: 1;
   --text-6xl: 3.75rem;
@@ -125,6 +143,16 @@
   --accent-foreground: 0 0% 9%;
   --destructive: 0 72% 40%;
   --destructive-foreground: 0 0% 100%;
+  /* Semantic status colors — used by badge success/warning/info variants */
+  --success: 142 58% 30%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 45%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 75% 40%;
+  --info-foreground: 0 0% 100%;
+  --success-accent: 142 65% 26%;
+  --warning-accent: 38 95% 32%;
+  --destructive-accent: 0 72% 42%;
   --input: 0 0% 90%;
   --ring: 0 68% 49%;
   --chart-1: 0 68% 49%;
@@ -218,6 +246,16 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 70% 44%;
   --destructive-foreground: 0 0% 100%;
+  /* Semantic status colors — tuned for contrast on the near-black dark surfaces */
+  --success: 142 55% 32%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 90% 50%;
+  --warning-foreground: 0 0% 10%;
+  --info: 210 70% 45%;
+  --info-foreground: 0 0% 100%;
+  --success-accent: 142 62% 52%;
+  --warning-accent: 38 92% 58%;
+  --destructive-accent: 0 75% 62%;
   --input: 0 0% 16%;
   --ring: 0 68% 55%;
   --chart-1: 0 68% 55%;

@@ -65,13 +65,50 @@ function empty(val: string | null | undefined): string {
   return val?.trim() ? val.trim() : "—";
 }
 
-function statusVariant(
-  status: string | null | undefined,
-): "default" | "secondary" | "outline" | "destructive" {
+type StatusVariant =
+  | "default"
+  | "secondary"
+  | "outline"
+  | "destructive"
+  | "success"
+  | "warning"
+  | "info";
+
+// Explicit map over lookup_lead_status. Substring matching used to collapse 19 of
+// the 21 statuses into one look, so the column carried almost no information.
+// Unknown values fall through to "outline" rather than guessing a bucket.
+const LEAD_STATUS_VARIANT: Record<string, StatusVariant> = {
+  // won
+  "לקוח פעיל": "success",
+  // needs action now
+  "לקראת סגירה": "warning",
+  "פייפ להיום": "warning",
+  "שיחה מחר": "warning",
+  "פייפ למחר": "warning",
+  "תשובה עוד יומיים": "warning",
+  "המשך שיחה השבוע": "warning",
+  // live pipeline
+  חדש: "info",
+  בתהליך: "info",
+  פייפ: "info",
+  פייפים: "info",
+  "השאיר פרטים פעם שנייה": "info",
+  "אימון מכירות Inbound": "info",
+  // dormant / low signal
+  "פולואפ ארוך": "secondary",
+  "פייפ חלש": "secondary",
+  "לידים ישנים": "secondary",
+  "אין מענה": "secondary",
+  טעות: "secondary",
+  "מספר שגוי": "secondary",
+  // lost
+  "לא רלוונטי": "destructive",
+  "סגרה במקום אחר": "destructive",
+};
+
+function statusVariant(status: string | null | undefined): StatusVariant {
   if (!status) return "secondary";
-  if (status.includes("פעיל") || status.includes("סגור")) return "default";
-  if (status.includes("דחיי") || status.includes("לא")) return "destructive";
-  return "outline";
+  return LEAD_STATUS_VARIANT[status.trim()] ?? "outline";
 }
 
 /** Extract YYYY-MM-DD from a timestamp string (or return empty string). */
@@ -660,8 +697,11 @@ export default function Leads() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">מספר ליד</th>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[130px]">מספר ליד</th>
+                    {/* Capped: this column was taking 397px and left the table
+                        17px from overflowing its container, which would clip the
+                        actions column off the left edge in RTL. */}
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground max-w-[280px]">שם</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">טלפון</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">אימייל</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">סטטוס</th>

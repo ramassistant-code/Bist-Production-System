@@ -23,7 +23,7 @@ import { sendInvoiceWebhook } from "../lib/invoiceWebhook";
 
 const router: IRouter = Router();
 
-const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בטיפול", "הושלמה", "בוטלה"];
+const VALID_EXECUTION_STATUSES = ["פתוחה", "ממתינה לתיאום", "בעבודה", "בטיפול", "הושלמה", "בוטלה"];
 const VALID_PAYMENT_TYPES = ["cash", "credit_card", "bank_transfer"];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -108,17 +108,27 @@ async function refreshDealPaymentTotals(dealId: string, tx: DbOrTx = db): Promis
   const paidIncVat = Math.round(Number(sumRow.paid_inc_vat ?? 0) * 100) / 100;
 
   const dealResult = await tx
-    .select({ total_amount: dealsTable.total_amount })
+    .select({
+      total_amount:              dealsTable.total_amount,
+      total_amount_including_vat: dealsTable.total_amount_including_vat,
+    })
     .from(dealsTable)
     .where(eq(dealsTable.id, dealId))
     .limit(1);
 
-  const totalExVat  = Number(dealResult[0]?.total_amount ?? 0);
-  const remaining   = Math.max(0, Math.round((totalExVat - paidExVat) * 100) / 100);
+  const totalExVat  = Number(dealResult[0]?.total_amount              ?? 0);
+  const totalIncVat = Number(dealResult[0]?.total_amount_including_vat ?? 0);
 
-  const payStatus = paidExVat <= 0
+  // A deal is "fully paid" if EITHER comparison (ex-VAT or inc-VAT) says so.
+  // This handles older payments that lack amount_paid_including_vat, and deals
+  // that only have total_amount_including_vat (pre-VAT-migration).
+  const paidEnoughExVat  = totalExVat  > 0 && paidExVat  >= totalExVat  - 0.01;
+  const paidEnoughIncVat = totalIncVat > 0 && paidIncVat >= totalIncVat - 0.01;
+  const hasPaid          = paidExVat > 0 || paidIncVat > 0;
+
+  const payStatus = !hasPaid
     ? "ממתינה לתשלום"
-    : totalExVat > 0 && remaining <= 0.01
+    : paidEnoughExVat || paidEnoughIncVat
       ? "שולמה במלואה"
       : "תשלום חלקי";
 
@@ -1099,6 +1109,10 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    // Always recompute payment_status from actual payments so a PATCH
+    // (execution_status / notes edit) cannot leave a stale value.
+    await refreshDealPaymentTotals(id);
+
     void notifySync({ action: "deal_updated", id });
     res.json({ success: true });
   } catch (err) {
@@ -1253,7 +1267,20 @@ router.post("/deals/:id/payments", async (req: Request, res: Response): Promise<
     const dealVatRateDecimal = dealVatRateRaw > 1 ? dealVatRateRaw / 100 : dealVatRateRaw;
     const dealVatDivisor = 1 + dealVatRateDecimal;
     const amount_inc_vat = amount; // user entered inclusive
-    const amount_ex_vat  = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
+    let amount_ex_vat    = Math.round((amount_inc_vat / dealVatDivisor) * 100) / 100;
+
+    // Guard against rounding overshoot: if amount_ex_vat slightly exceeds the
+    // DB remaining_amount (generated = total_amount - paid_amount) by less than
+    // 0.02, cap it to the exact remaining so the DB constraint doesn't fire.
+    const remainingRows = await db
+      .select({ remaining_amount: dealsTable.remaining_amount })
+      .from(dealsTable)
+      .where(eq(dealsTable.id, id))
+      .limit(1);
+    const remainingExVat = Number(remainingRows[0]?.remaining_amount ?? 0);
+    if (remainingExVat > 0 && amount_ex_vat > remainingExVat && amount_ex_vat - remainingExVat < 0.02) {
+      amount_ex_vat = remainingExVat;
+    }
 
     const PAYMENT_METHOD_MAP: Record<string, string> = {
       cash: "מזומן",

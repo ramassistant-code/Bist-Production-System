@@ -120,7 +120,9 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     customer_note: product.quote_notes_default ?? "",
     internal_note: "",
     components: components.map(c => ({ ...c, customer_note: c.customer_note ?? "", internal_note: c.internal_note ?? "" })),
-    components_expanded: false,
+    // Open by default: what a product is made of is the point of this step,
+    // not a detail to go looking for.
+    components_expanded: true,
   };
 }
 
@@ -168,13 +170,13 @@ function StepBar({ current }: { current: number }) {
           <div key={i} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1 shrink-0">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2
-                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-gray-100 text-gray-400 border-border"}`}>
+                ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-muted text-muted-foreground border-border"}`}>
                 {done ? "✓" : i + 1}
               </div>
-              <span className={`text-xs hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-gray-400"}`}>{label}</span>
+              <span className={`text-sm hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-muted-foreground"}`}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-gray-200"}`} />
+              <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-border"}`} />
             )}
           </div>
         );
@@ -269,15 +271,15 @@ function NameSearchDialog({ open, onClose, onSelect }: {
                 onClick={() => { onSelect(r); onClose(); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 text-right transition-colors border border-transparent hover:border-border/50"
               >
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-green-500/15" : "bg-primary/15"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${r.type === "customer" ? "bg-success/15" : "bg-primary/15"}`}>
                   {r.type === "customer"
-                    ? <UserCheck className="w-3.5 h-3.5 text-green-600" />
+                    ? <UserCheck className="w-3.5 h-3.5 text-success-accent" />
                     : <User className="w-3.5 h-3.5 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-foreground">{r.name}</span>
-                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-green-500/40 text-green-700" : "border-primary/40 text-primary"}`}>
+                    <Badge variant="outline" className={`text-xs py-0 ${r.type === "customer" ? "border-success/40 text-success-accent" : "border-primary/40 text-primary"}`}>
                       {r.type === "customer" ? "לקוח" : "ליד"}
                     </Badge>
                   </div>
@@ -354,7 +356,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-lg" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
         <p className="text-sm text-muted-foreground">הזינו מספר טלפון לחיפוש לקוח קיים, ליד קיים, או לפתיחת ליד חדש.</p>
       </div>
       <div className="space-y-2">
@@ -391,9 +393,9 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <div className="rounded-lg border p-4 bg-muted/40 space-y-3">
           {lookupResult.found === "customer" && (
             <div className="flex items-start gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-success-accent mt-1.5 shrink-0" />
               <div>
-                <p className="font-medium text-green-700">נמצא לקוח קיים</p>
+                <p className="font-medium text-success-accent">נמצא לקוח קיים</p>
                 <p className="text-sm text-foreground/70">{lookupResult.name}</p>
                 {lookupResult.email && <p className="text-xs text-muted-foreground">{lookupResult.email}</p>}
               </div>
@@ -412,8 +414,8 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           {lookupResult.found === "none" && (
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-orange-400 mt-1.5 shrink-0" />
-                <p className="font-medium text-orange-700">לא נמצא לקוח או ליד. יפתח ליד חדש.</p>
+                <div className="w-2 h-2 rounded-full bg-warning-accent mt-1.5 shrink-0" />
+                <p className="font-medium text-warning-accent">לא נמצא לקוח או ליד. יפתח ליד חדש.</p>
               </div>
               <div className="space-y-2 pt-1">
                 <div className="space-y-1">
@@ -443,7 +445,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-lg" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 2 — פרטי הצעה</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 2 — פרטי הצעה</h2>
         <p className="text-sm text-muted-foreground">מספר ההצעה ייוצר אוטומטית בעת השמירה.</p>
       </div>
       <div className="space-y-4">
@@ -490,49 +492,61 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" dir="rtl">
-      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col mx-4">
+      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
-        </div>
-        <div className="px-5 py-3 border-b space-y-2">
-          <Input placeholder="חיפוש מוצר..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
-          <div className="flex gap-2">
-            <select
-              className="flex-1 border rounded-md px-2 py-1.5 text-sm bg-background"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              dir="rtl"
-            >
-              <option value="">כל הקטגוריות</option>
-              {uniqueCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+          <div>
+            <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {displayed.length === activeProducts.length
+                ? `${activeProducts.length} מוצרים`
+                : `${displayed.length} מתוך ${activeProducts.length} מוצרים`}
+            </p>
           </div>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="סגור">✕</Button>
+        </div>
+        <div className="px-5 py-3 border-b flex gap-2">
+          <Input className="flex-1" placeholder="חיפוש מוצר..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+          <select
+            className="w-48 shrink-0 h-9 border border-input rounded-md px-2 text-sm bg-background"
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            dir="rtl"
+          >
+            <option value="">כל הקטגוריות</option>
+            {uniqueCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-border/30">
           {displayed.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">לא נמצאו מוצרים</p>
           )}
+          {/* Whole row is the target — the old 64px "הוסף" button sat ~400px away
+              from the product name it belonged to. */}
           {displayed.map((p) => (
-            <div key={p.id} className="flex items-start justify-between px-5 py-3 hover:bg-muted/50">
+            <button
+              key={p.id}
+              type="button"
+              disabled={adding !== null}
+              onClick={() => handleAdd(p)}
+              className="w-full text-right px-5 py-3 flex items-center gap-4 hover-elevate disabled:opacity-50"
+            >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm text-foreground">{p.name}</p>
-                <div className="flex gap-2 flex-wrap mt-0.5">
-                  {p.category && <span className="text-xs text-muted-foreground">{p.category}</span>}
-                </div>
-                {p.consumer_price && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    ₪{parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
-                  </p>
-                )}
+                <p className="text-lg font-medium text-foreground truncate">{p.name}</p>
+                <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                  {[p.product_number, p.category, p.deliverable_type].filter(Boolean).join(" · ")}
+                </p>
               </div>
-              <Button size="sm" variant="outline" className="mr-3 shrink-0"
-                disabled={adding === p.id} onClick={() => handleAdd(p)}>
-                {adding === p.id ? "מוסיף..." : "הוסף"}
-              </Button>
-            </div>
+              <span className="shrink-0 text-lg font-semibold text-foreground tabular-nums">
+                {p.consumer_price
+                  ? `₪${parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
+                  : "—"}
+              </span>
+              <span className="shrink-0 text-sm text-muted-foreground w-16 text-left">
+                {adding === p.id ? "מוסיף..." : "הוסף +"}
+              </span>
+            </button>
           ))}
         </div>
         <div className="px-5 py-3 border-t">
@@ -552,44 +566,65 @@ function ComponentRow({
   onChange: (updated: BasketComponent) => void;
   onRemove: () => void;
 }) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = Boolean(comp.customer_note?.trim() || comp.internal_note?.trim());
+
   return (
-    <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-3 border border-border/50">
-      <div className="flex items-start gap-2 flex-wrap">
-        <div className="flex-1 min-w-[160px]">
-          <p className="text-xs font-medium text-foreground/70">{comp.component_name_snapshot}</p>
+    <div className="rounded-md bg-muted/40 border border-border/50">
+      {/* One line per component. The notes underneath were forcing three rows
+          each, which made a 9-component product unreadable. */}
+      <div className="flex items-center gap-3 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-medium text-foreground truncate">{comp.component_name_snapshot}</p>
           {comp.component_description_snapshot && (
-            <p className="text-xs text-muted-foreground mt-0.5">{comp.component_description_snapshot}</p>
+            <p className="text-sm text-muted-foreground truncate">{comp.component_description_snapshot}</p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground">כמות:</span>
-          <Input type="number" min={0} step={1} value={comp.quantity} className="w-20 h-7 text-xs"
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Label className="text-sm text-muted-foreground">כמות</Label>
+          <Input type="number" min={0} step={1} value={comp.quantity} className="w-20 h-9 text-base"
             onChange={(e) => onChange({ ...comp, quantity: parseFloat(e.target.value) || 0 })} />
         </div>
         {comp.unit_cost_snapshot > 0 && (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
+          <span className="shrink-0 w-32 text-left text-sm text-muted-foreground whitespace-nowrap tabular-nums">
             עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
         <button
           type="button"
+          onClick={() => setNotesOpen((v) => !v)}
+          className="shrink-0 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          הערות
+          {hasNotes && !notesOpen && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
+          )}
+        </button>
+        <button
+          type="button"
           onClick={onRemove}
-          className="shrink-0 text-muted-foreground hover:text-red-500 transition-colors"
+          className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
           title="הסר רכיב"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-      <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערה להצעת מחיר</Label>
-        <Input value={comp.customer_note} className="h-7 text-xs"
-          onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
-      </div>
-      <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
-        <Input value={comp.internal_note} className="h-7 text-xs"
-          onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
-      </div>
+      {notesOpen && (
+        <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border/50">
+          <div className="space-y-1">
+            <Label className="text-sm text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+            {/* Textarea, not Input: these hold booking links and multi-line copy. */}
+            <Textarea value={comp.customer_note} rows={2}
+              onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-sm text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
+            <Textarea value={comp.internal_note} rows={2}
+              onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -606,6 +641,12 @@ function BasketRow({
 }) {
   const lineTotal = item.unit_price * item.quantity;
   const priceChanged = item.unit_price !== item.original_unit_price && item.original_unit_price > 0;
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = Boolean(
+    item.product_description_snapshot?.trim() ||
+    item.customer_note?.trim() ||
+    item.internal_note?.trim()
+  );
 
   function setField<K extends keyof BasketItem>(key: K, val: BasketItem[K]) {
     onChange({ ...item, [key]: val });
@@ -627,14 +668,14 @@ function BasketRow({
             <Input value={item.product_name_snapshot} placeholder="שם המוצר / שירות *"
               className="font-medium" onChange={(e) => setField("product_name_snapshot", e.target.value)} />
           ) : (
-            <p className="font-medium text-foreground">{item.product_name_snapshot}</p>
+            <p className="text-lg font-medium text-foreground">{item.product_name_snapshot}</p>
           )}
-          {item.category_snapshot && <p className="text-xs text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
+          {item.category_snapshot && <p className="text-sm text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-sm font-bold text-gray-800">{formatILS(lineTotal)}</span>
+          <span className="text-xl font-semibold text-foreground tabular-nums">{formatILS(lineTotal)}</span>
           <Button size="sm" variant="ghost" onClick={onRemove} title="הסר">
-            <Trash2 className="w-4 h-4 text-red-400" />
+            <Trash2 className="w-4 h-4 text-destructive" />
           </Button>
         </div>
       </div>
@@ -643,60 +684,44 @@ function BasketRow({
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
-            <Label className="text-xs">כמות</Label>
+            <Label className="text-sm">כמות</Label>
             <Input type="number" min={0.001} step={1} value={item.quantity}
               onChange={(e) => setField("quantity", parseFloat(e.target.value) || 1)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">מחיר יחידה (₪)</Label>
+            <Label className="text-sm">מחיר יחידה (₪)</Label>
             <Input type="number" min={0} step={0.01} value={item.unit_price}
               onChange={(e) => handlePriceChange(e.target.value)} />
             {priceChanged && !item.manual_price_override && (
-              <p className="text-xs text-orange-600">המחיר שונה מהקטלוג</p>
+              <p className="text-xs text-warning-accent">המחיר שונה מהקטלוג</p>
             )}
           </div>
           <div className="space-y-1 col-span-2 sm:col-span-1">
-            <Label className="text-xs">סה״כ</Label>
+            <Label className="text-sm">סה״כ</Label>
             <div className="h-9 flex items-center px-3 bg-muted/50 rounded border text-sm font-medium">{formatILS(lineTotal)}</div>
           </div>
         </div>
 
         {item.manual_price_override && (
           <div className="space-y-1">
-            <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
+            <Label className="text-xs text-warning-accent">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
             <Input value={item.price_override_reason} placeholder="חובה לפרט את סיבת שינוי המחיר"
               onChange={(e) => setField("price_override_reason", e.target.value)}
-              className="border-orange-200 focus-visible:ring-orange-300" />
+              className="border-warning/40 focus-visible:ring-warning/50" />
           </div>
         )}
 
-        <div className="space-y-1">
-          <Label className="text-xs">תיאור (ניתן לשינוי)</Label>
-          <Textarea value={item.product_description_snapshot} rows={2}
-            onChange={(e) => setField("product_description_snapshot", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
-          <Textarea value={item.customer_note} rows={2}
-            onChange={(e) => setField("customer_note", e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
-          <Textarea value={item.internal_note} rows={2}
-            onChange={(e) => setField("internal_note", e.target.value)} />
-        </div>
-
-        {/* Components */}
+        {/* Components sit directly under the price — they are what the customer
+            is buying. They used to be last, collapsed, below three empty fields. */}
         {item.components.length > 0 && (
-          <div>
-            <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground/70 transition-colors"
+          <div className="space-y-2">
+            <button type="button" className="flex items-center gap-1.5 text-base font-medium text-foreground hover:text-muted-foreground transition-colors"
               onClick={() => setField("components_expanded", !item.components_expanded)}>
-              {item.components_expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              {item.components.length} רכיבים
+              {item.components_expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {item.components.length === 1 ? "רכיב אחד" : `${item.components.length} רכיבים`}
             </button>
             {item.components_expanded && (
-              <div className="mt-2 space-y-2">
+              <div className="space-y-1.5">
                 {item.components.map((comp, ci) => (
                   <ComponentRow key={comp.component_id + ci} comp={comp}
                     onChange={(updated) => {
@@ -712,6 +737,38 @@ function BasketRow({
             )}
           </div>
         )}
+
+        {/* Description and notes are usually empty — collapsed so they stop
+            pushing the components off the screen. Dot marks filled content. */}
+        <div className="border-t border-border/50 pt-3 space-y-2">
+          <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setNotesOpen((v) => !v)}>
+            {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            תיאור והערות
+            {hasNotes && !notesOpen && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
+            )}
+          </button>
+          {notesOpen && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-sm">תיאור (ניתן לשינוי)</Label>
+                <Textarea value={item.product_description_snapshot} rows={2}
+                  onChange={(e) => setField("product_description_snapshot", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+                <Textarea value={item.customer_note} rows={2}
+                  onChange={(e) => setField("customer_note", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
+                <Textarea value={item.internal_note} rows={2}
+                  onChange={(e) => setField("internal_note", e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -763,8 +820,8 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-4" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 2 — סל מוצרים</h2>
-        <p className="text-sm text-muted-foreground">הוסיפו מוצרים מהקטלוג, ערכו כמויות ומחירים.</p>
+        <h2 className="text-2xl font-bold mb-1">שלב 2 — סל מוצרים</h2>
+        <p className="text-base text-muted-foreground">הוסיפו מוצרים מהקטלוג, ערכו כמויות ומחירים.</p>
       </div>
 
       {state.items.length === 0 && (
@@ -823,10 +880,10 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
                     onChange={(e) => update({ basketManualTotal: e.target.value })}
                     dir="ltr" />
                   <div className="space-y-1">
-                    <Label className="text-xs text-orange-700">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
+                    <Label className="text-xs text-warning-accent">סיבת שינוי מחיר (לא יוצג ללקוח) <span className="text-destructive">*</span></Label>
                     <Input value={state.basketOverrideNote} placeholder="חובה לפרט את סיבת שינוי הסה״כ"
                       onChange={(e) => update({ basketOverrideNote: e.target.value })}
-                      className="border-orange-200" />
+                      className="border-warning/40" />
                   </div>
                 </div>
               )}
@@ -838,7 +895,7 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               <span>{formatILS(calc.effectiveSubtotal)}</span>
             </div>
             {calc.discount > 0 && (
-              <div className="flex justify-between text-sm text-green-700">
+              <div className="flex justify-between text-sm text-success-accent">
                 <span>הנחה</span>
                 <span>-{formatILS(calc.discount)}</span>
               </div>
@@ -878,7 +935,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים והערות</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 3 — תנאים והערות</h2>
       </div>
       <div className="space-y-1 max-w-xs">
         <Label>תוקף הצעה עד תאריך</Label>
@@ -923,7 +980,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 4 — סיכום לפני שמירה</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 4 — סיכום לפני שמירה</h2>
         <p className="text-sm text-muted-foreground">אנא בדקו את הפרטים לפני שמירת ההצעה.</p>
       </div>
 
@@ -949,7 +1006,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
       <div className="rounded-lg border border-border p-4 space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">שורות הצעה ({state.items.length})</p>
         {state.items.map((item) => (
-          <div key={item.line_id} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
+          <div key={item.line_id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
             <span className="text-foreground/70">{item.product_name_snapshot || "שורה ידנית"} × {item.quantity}</span>
             <span className="font-medium">{formatILS(item.unit_price * item.quantity)}</span>
           </div>
@@ -959,7 +1016,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
       {/* Totals */}
       <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">סה״כ לפני הנחה</span><span>{formatILS(calc.effectiveSubtotal)}</span></div>
-        {calc.discount > 0 && <div className="flex justify-between text-green-700"><span>הנחה</span><span>-{formatILS(calc.discount)}</span></div>}
+        {calc.discount > 0 && <div className="flex justify-between text-success-accent"><span>הנחה</span><span>-{formatILS(calc.discount)}</span></div>}
         <div className="flex justify-between"><span className="text-muted-foreground">סה״כ אחרי הנחה</span><span>{formatILS(calc.afterDiscount)}</span></div>
         <div className="flex justify-between text-muted-foreground"><span>מע״מ 18%</span><span>{formatILS(calc.vat)}</span></div>
         <Separator />
@@ -980,7 +1037,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
         <Button onClick={onSave} disabled={isSaving || isCreating} variant="outline">
           {isSaving ? "שומר..." : "שמור כטיוטה"}
         </Button>
-        <Button onClick={onCreateQuote} disabled={isSaving || isCreating} className="bg-green-600 hover:bg-green-700 text-white">
+        <Button onClick={onCreateQuote} disabled={isSaving || isCreating} className="bg-success hover:bg-success/90 text-success-foreground">
           {isCreating ? (
             <span className="flex items-center gap-2">
               <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
@@ -1228,7 +1285,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
   return (
     <Shell title={sourceQuoteId ? "הצעה חדשה (מבוסס על קיימת)" : "הצעת מחיר חדשה"}>
       <div className="h-full overflow-y-auto px-8 py-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <StepBar current={step} />
 
           {/* Step content */}
