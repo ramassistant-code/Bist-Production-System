@@ -214,7 +214,12 @@ export default function Deals() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50 bg-muted/50">
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">מספר עסקה</th>
+                      {/* Every other column is nowrap at its content width, so the
+                          deal-number column absorbed all the slack — 424px for a
+                          13-character code — and pushed the table past its
+                          container. In RTL the overflow clips on the left, which
+                          is where the actions column lives. */}
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap w-[150px]">מספר עסקה</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם לקוח</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">מקור</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">סכום עסקה</th>
