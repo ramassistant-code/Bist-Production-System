@@ -120,7 +120,9 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     customer_note: product.quote_notes_default ?? "",
     internal_note: "",
     components: components.map(c => ({ ...c, customer_note: c.customer_note ?? "", internal_note: c.internal_note ?? "" })),
-    components_expanded: false,
+    // Open by default: what a product is made of is the point of this step,
+    // not a detail to go looking for.
+    components_expanded: true,
   };
 }
 
@@ -490,49 +492,61 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" dir="rtl">
-      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col mx-4">
+      <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col mx-4">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
-        </div>
-        <div className="px-5 py-3 border-b space-y-2">
-          <Input placeholder="חיפוש מוצר..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
-          <div className="flex gap-2">
-            <select
-              className="flex-1 border rounded-md px-2 py-1.5 text-sm bg-background"
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              dir="rtl"
-            >
-              <option value="">כל הקטגוריות</option>
-              {uniqueCategories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+          <div>
+            <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {displayed.length === activeProducts.length
+                ? `${activeProducts.length} מוצרים`
+                : `${displayed.length} מתוך ${activeProducts.length} מוצרים`}
+            </p>
           </div>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="סגור">✕</Button>
+        </div>
+        <div className="px-5 py-3 border-b flex gap-2">
+          <Input className="flex-1" placeholder="חיפוש מוצר..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+          <select
+            className="w-48 shrink-0 h-9 border border-input rounded-md px-2 text-sm bg-background"
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            dir="rtl"
+          >
+            <option value="">כל הקטגוריות</option>
+            {uniqueCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-border/30">
           {displayed.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">לא נמצאו מוצרים</p>
           )}
+          {/* Whole row is the target — the old 64px "הוסף" button sat ~400px away
+              from the product name it belonged to. */}
           {displayed.map((p) => (
-            <div key={p.id} className="flex items-start justify-between px-5 py-3 hover:bg-muted/50">
+            <button
+              key={p.id}
+              type="button"
+              disabled={adding !== null}
+              onClick={() => handleAdd(p)}
+              className="w-full text-right px-5 py-3 flex items-center gap-4 hover-elevate disabled:opacity-50"
+            >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm text-foreground">{p.name}</p>
-                <div className="flex gap-2 flex-wrap mt-0.5">
-                  {p.category && <span className="text-xs text-muted-foreground">{p.category}</span>}
-                </div>
-                {p.consumer_price && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    ₪{parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
-                  </p>
-                )}
+                <p className="font-medium text-foreground truncate">{p.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {[p.product_number, p.category, p.deliverable_type].filter(Boolean).join(" · ")}
+                </p>
               </div>
-              <Button size="sm" variant="outline" className="mr-3 shrink-0"
-                disabled={adding === p.id} onClick={() => handleAdd(p)}>
-                {adding === p.id ? "מוסיף..." : "הוסף"}
-              </Button>
-            </div>
+              <span className="shrink-0 font-semibold text-foreground tabular-nums">
+                {p.consumer_price
+                  ? `₪${parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
+                  : "—"}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground w-16 text-left">
+                {adding === p.id ? "מוסיף..." : "הוסף +"}
+              </span>
+            </button>
           ))}
         </div>
         <div className="px-5 py-3 border-t">
@@ -552,25 +566,41 @@ function ComponentRow({
   onChange: (updated: BasketComponent) => void;
   onRemove: () => void;
 }) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = Boolean(comp.customer_note?.trim() || comp.internal_note?.trim());
+
   return (
-    <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-3 border border-border/50">
-      <div className="flex items-start gap-2 flex-wrap">
-        <div className="flex-1 min-w-[160px]">
-          <p className="text-xs font-medium text-foreground/70">{comp.component_name_snapshot}</p>
+    <div className="rounded-md bg-muted/40 border border-border/50">
+      {/* One line per component. The notes underneath were forcing three rows
+          each, which made a 9-component product unreadable. */}
+      <div className="flex items-center gap-3 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground truncate">{comp.component_name_snapshot}</p>
           {comp.component_description_snapshot && (
-            <p className="text-xs text-muted-foreground mt-0.5">{comp.component_description_snapshot}</p>
+            <p className="text-xs text-muted-foreground truncate">{comp.component_description_snapshot}</p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground">כמות:</span>
-          <Input type="number" min={0} step={1} value={comp.quantity} className="w-20 h-7 text-xs"
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Label className="text-xs text-muted-foreground">כמות</Label>
+          <Input type="number" min={0} step={1} value={comp.quantity} className="w-16 text-sm"
             onChange={(e) => onChange({ ...comp, quantity: parseFloat(e.target.value) || 0 })} />
         </div>
         {comp.unit_cost_snapshot > 0 && (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
+          <span className="shrink-0 w-28 text-left text-xs text-muted-foreground whitespace-nowrap tabular-nums">
             עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
+        <button
+          type="button"
+          onClick={() => setNotesOpen((v) => !v)}
+          className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          הערות
+          {hasNotes && !notesOpen && (
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
+          )}
+        </button>
         <button
           type="button"
           onClick={onRemove}
@@ -580,16 +610,21 @@ function ComponentRow({
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-      <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערה להצעת מחיר</Label>
-        <Input value={comp.customer_note} className="h-7 text-xs"
-          onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
-      </div>
-      <div className="space-y-0.5">
-        <Label className="text-xs text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
-        <Input value={comp.internal_note} className="h-7 text-xs"
-          onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
-      </div>
+      {notesOpen && (
+        <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border/50">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+            {/* Textarea, not Input: these hold booking links and multi-line copy. */}
+            <Textarea value={comp.customer_note} rows={2}
+              onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
+            <Textarea value={comp.internal_note} rows={2}
+              onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -606,6 +641,12 @@ function BasketRow({
 }) {
   const lineTotal = item.unit_price * item.quantity;
   const priceChanged = item.unit_price !== item.original_unit_price && item.original_unit_price > 0;
+  const [notesOpen, setNotesOpen] = useState(false);
+  const hasNotes = Boolean(
+    item.product_description_snapshot?.trim() ||
+    item.customer_note?.trim() ||
+    item.internal_note?.trim()
+  );
 
   function setField<K extends keyof BasketItem>(key: K, val: BasketItem[K]) {
     onChange({ ...item, [key]: val });
@@ -632,7 +673,7 @@ function BasketRow({
           {item.category_snapshot && <p className="text-xs text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-sm font-bold text-foreground">{formatILS(lineTotal)}</span>
+          <span className="text-base font-semibold text-foreground tabular-nums">{formatILS(lineTotal)}</span>
           <Button size="sm" variant="ghost" onClick={onRemove} title="הסר">
             <Trash2 className="w-4 h-4 text-destructive" />
           </Button>
@@ -670,33 +711,17 @@ function BasketRow({
           </div>
         )}
 
-        <div className="space-y-1">
-          <Label className="text-xs">תיאור (ניתן לשינוי)</Label>
-          <Textarea value={item.product_description_snapshot} rows={2}
-            onChange={(e) => setField("product_description_snapshot", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
-          <Textarea value={item.customer_note} rows={2}
-            onChange={(e) => setField("customer_note", e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
-          <Textarea value={item.internal_note} rows={2}
-            onChange={(e) => setField("internal_note", e.target.value)} />
-        </div>
-
-        {/* Components */}
+        {/* Components sit directly under the price — they are what the customer
+            is buying. They used to be last, collapsed, below three empty fields. */}
         {item.components.length > 0 && (
-          <div>
-            <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground/70 transition-colors"
+          <div className="space-y-2">
+            <button type="button" className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-muted-foreground transition-colors"
               onClick={() => setField("components_expanded", !item.components_expanded)}>
-              {item.components_expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              {item.components.length} רכיבים
+              {item.components_expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {item.components.length === 1 ? "רכיב אחד" : `${item.components.length} רכיבים`}
             </button>
             {item.components_expanded && (
-              <div className="mt-2 space-y-2">
+              <div className="space-y-1.5">
                 {item.components.map((comp, ci) => (
                   <ComponentRow key={comp.component_id + ci} comp={comp}
                     onChange={(updated) => {
@@ -712,6 +737,38 @@ function BasketRow({
             )}
           </div>
         )}
+
+        {/* Description and notes are usually empty — collapsed so they stop
+            pushing the components off the screen. Dot marks filled content. */}
+        <div className="border-t border-border/50 pt-3 space-y-2">
+          <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setNotesOpen((v) => !v)}>
+            {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            תיאור והערות
+            {hasNotes && !notesOpen && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
+            )}
+          </button>
+          {notesOpen && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">תיאור (ניתן לשינוי)</Label>
+                <Textarea value={item.product_description_snapshot} rows={2}
+                  onChange={(e) => setField("product_description_snapshot", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+                <Textarea value={item.customer_note} rows={2}
+                  onChange={(e) => setField("customer_note", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
+                <Textarea value={item.internal_note} rows={2}
+                  onChange={(e) => setField("internal_note", e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
