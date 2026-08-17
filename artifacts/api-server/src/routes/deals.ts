@@ -119,14 +119,16 @@ async function refreshDealPaymentTotals(dealId: string, tx: DbOrTx = db): Promis
   const totalExVat  = Number(dealResult[0]?.total_amount              ?? 0);
   const totalIncVat = Number(dealResult[0]?.total_amount_including_vat ?? 0);
 
-  // Prefer VAT-inclusive comparison when available (matches DB trigger behaviour).
-  const effectiveTotal = totalIncVat > 0 ? totalIncVat : totalExVat;
-  const effectivePaid  = totalIncVat > 0 ? paidIncVat  : paidExVat;
-  const remaining      = Math.max(0, Math.round((effectiveTotal - effectivePaid) * 100) / 100);
+  // A deal is "fully paid" if EITHER comparison (ex-VAT or inc-VAT) says so.
+  // This handles older payments that lack amount_paid_including_vat, and deals
+  // that only have total_amount_including_vat (pre-VAT-migration).
+  const paidEnoughExVat  = totalExVat  > 0 && paidExVat  >= totalExVat  - 0.01;
+  const paidEnoughIncVat = totalIncVat > 0 && paidIncVat >= totalIncVat - 0.01;
+  const hasPaid          = paidExVat > 0 || paidIncVat > 0;
 
-  const payStatus = effectivePaid <= 0
+  const payStatus = !hasPaid
     ? "ממתינה לתשלום"
-    : effectiveTotal > 0 && remaining <= 0.01
+    : paidEnoughExVat || paidEnoughIncVat
       ? "שולמה במלואה"
       : "תשלום חלקי";
 
@@ -1106,6 +1108,10 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
       res.status(404).json({ error: "עסקה לא נמצאה" });
       return;
     }
+
+    // Always recompute payment_status from actual payments so a PATCH
+    // (execution_status / notes edit) cannot leave a stale value.
+    await refreshDealPaymentTotals(id);
 
     void notifySync({ action: "deal_updated", id });
     res.json({ success: true });

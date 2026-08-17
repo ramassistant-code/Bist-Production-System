@@ -674,16 +674,9 @@ function EditModal({ deal, open, onClose, onSaved }: EditModalProps) {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground/70">סטטוס תשלום</label>
-            <select
-              value={payStatus}
-              onChange={(e) => setPayStatus(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm"
-            >
-              <option value="">— ללא סטטוס תשלום —</option>
-              {PAYMENT_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+            <div className="h-9 rounded-md border border-input bg-muted/40 px-3 py-1 text-sm flex items-center text-muted-foreground">
+              {deal.payment_status || "— מחושב אוטומטית —"}
+            </div>
           </div>
 
           <div className="space-y-1.5">
