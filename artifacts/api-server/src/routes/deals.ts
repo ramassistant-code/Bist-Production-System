@@ -108,17 +108,25 @@ async function refreshDealPaymentTotals(dealId: string, tx: DbOrTx = db): Promis
   const paidIncVat = Math.round(Number(sumRow.paid_inc_vat ?? 0) * 100) / 100;
 
   const dealResult = await tx
-    .select({ total_amount: dealsTable.total_amount })
+    .select({
+      total_amount:              dealsTable.total_amount,
+      total_amount_including_vat: dealsTable.total_amount_including_vat,
+    })
     .from(dealsTable)
     .where(eq(dealsTable.id, dealId))
     .limit(1);
 
-  const totalExVat  = Number(dealResult[0]?.total_amount ?? 0);
-  const remaining   = Math.max(0, Math.round((totalExVat - paidExVat) * 100) / 100);
+  const totalExVat  = Number(dealResult[0]?.total_amount              ?? 0);
+  const totalIncVat = Number(dealResult[0]?.total_amount_including_vat ?? 0);
 
-  const payStatus = paidExVat <= 0
+  // Prefer VAT-inclusive comparison when available (matches DB trigger behaviour).
+  const effectiveTotal = totalIncVat > 0 ? totalIncVat : totalExVat;
+  const effectivePaid  = totalIncVat > 0 ? paidIncVat  : paidExVat;
+  const remaining      = Math.max(0, Math.round((effectiveTotal - effectivePaid) * 100) / 100);
+
+  const payStatus = effectivePaid <= 0
     ? "ממתינה לתשלום"
-    : totalExVat > 0 && remaining <= 0.01
+    : effectiveTotal > 0 && remaining <= 0.01
       ? "שולמה במלואה"
       : "תשלום חלקי";
 
