@@ -173,7 +173,7 @@ function StepBar({ current }: { current: number }) {
                 ${active ? "bg-primary text-primary-foreground border-primary" : done ? "bg-primary/20 text-primary border-primary/40" : "bg-muted text-muted-foreground border-border"}`}>
                 {done ? "✓" : i + 1}
               </div>
-              <span className={`text-xs hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-muted-foreground"}`}>{label}</span>
+              <span className={`text-sm hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-muted-foreground"}`}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-border"}`} />
@@ -356,7 +356,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-lg" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
         <p className="text-sm text-muted-foreground">הזינו מספר טלפון לחיפוש לקוח קיים, ליד קיים, או לפתיחת ליד חדש.</p>
       </div>
       <div className="space-y-2">
@@ -445,7 +445,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-lg" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 2 — פרטי הצעה</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 2 — פרטי הצעה</h2>
         <p className="text-sm text-muted-foreground">מספר ההצעה ייוצר אוטומטית בעת השמירה.</p>
       </div>
       <div className="space-y-4">
@@ -496,7 +496,7 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div>
             <h3 className="font-semibold">בחר מוצר מהקטלוג</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {displayed.length === activeProducts.length
                 ? `${activeProducts.length} מוצרים`
                 : `${displayed.length} מתוך ${activeProducts.length} מוצרים`}
@@ -533,17 +533,17 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
               className="w-full text-right px-5 py-3 flex items-center gap-4 hover-elevate disabled:opacity-50"
             >
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground truncate">{p.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                <p className="text-lg font-medium text-foreground truncate">{p.name}</p>
+                <p className="text-sm text-muted-foreground mt-0.5 truncate">
                   {[p.product_number, p.category, p.deliverable_type].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              <span className="shrink-0 font-semibold text-foreground tabular-nums">
+              <span className="shrink-0 text-lg font-semibold text-foreground tabular-nums">
                 {p.consumer_price
                   ? `₪${parseFloat(p.consumer_price).toLocaleString("he-IL", { maximumFractionDigits: 0 })}`
                   : "—"}
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground w-16 text-left">
+              <span className="shrink-0 text-sm text-muted-foreground w-16 text-left">
                 {adding === p.id ? "מוסיף..." : "הוסף +"}
               </span>
             </button>
@@ -575,25 +575,25 @@ function ComponentRow({
           each, which made a 9-component product unreadable. */}
       <div className="flex items-center gap-3 px-3 py-2">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground truncate">{comp.component_name_snapshot}</p>
+          <p className="text-base font-medium text-foreground truncate">{comp.component_name_snapshot}</p>
           {comp.component_description_snapshot && (
-            <p className="text-xs text-muted-foreground truncate">{comp.component_description_snapshot}</p>
+            <p className="text-sm text-muted-foreground truncate">{comp.component_description_snapshot}</p>
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <Label className="text-xs text-muted-foreground">כמות</Label>
-          <Input type="number" min={0} step={1} value={comp.quantity} className="w-16 text-sm"
+          <Label className="text-sm text-muted-foreground">כמות</Label>
+          <Input type="number" min={0} step={1} value={comp.quantity} className="w-20 h-9 text-base"
             onChange={(e) => onChange({ ...comp, quantity: parseFloat(e.target.value) || 0 })} />
         </div>
         {comp.unit_cost_snapshot > 0 && (
-          <span className="shrink-0 w-28 text-left text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+          <span className="shrink-0 w-32 text-left text-sm text-muted-foreground whitespace-nowrap tabular-nums">
             עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
         <button
           type="button"
           onClick={() => setNotesOpen((v) => !v)}
-          className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="shrink-0 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           הערות
@@ -613,13 +613,13 @@ function ComponentRow({
       {notesOpen && (
         <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border/50">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+            <Label className="text-sm text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
             {/* Textarea, not Input: these hold booking links and multi-line copy. */}
             <Textarea value={comp.customer_note} rows={2}
               onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
+            <Label className="text-sm text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
             <Textarea value={comp.internal_note} rows={2}
               onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
           </div>
@@ -668,12 +668,12 @@ function BasketRow({
             <Input value={item.product_name_snapshot} placeholder="שם המוצר / שירות *"
               className="font-medium" onChange={(e) => setField("product_name_snapshot", e.target.value)} />
           ) : (
-            <p className="font-medium text-foreground">{item.product_name_snapshot}</p>
+            <p className="text-lg font-medium text-foreground">{item.product_name_snapshot}</p>
           )}
-          {item.category_snapshot && <p className="text-xs text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
+          {item.category_snapshot && <p className="text-sm text-muted-foreground mt-0.5">{item.category_snapshot}</p>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-base font-semibold text-foreground tabular-nums">{formatILS(lineTotal)}</span>
+          <span className="text-xl font-semibold text-foreground tabular-nums">{formatILS(lineTotal)}</span>
           <Button size="sm" variant="ghost" onClick={onRemove} title="הסר">
             <Trash2 className="w-4 h-4 text-destructive" />
           </Button>
@@ -684,12 +684,12 @@ function BasketRow({
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
-            <Label className="text-xs">כמות</Label>
+            <Label className="text-sm">כמות</Label>
             <Input type="number" min={0.001} step={1} value={item.quantity}
               onChange={(e) => setField("quantity", parseFloat(e.target.value) || 1)} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">מחיר יחידה (₪)</Label>
+            <Label className="text-sm">מחיר יחידה (₪)</Label>
             <Input type="number" min={0} step={0.01} value={item.unit_price}
               onChange={(e) => handlePriceChange(e.target.value)} />
             {priceChanged && !item.manual_price_override && (
@@ -697,7 +697,7 @@ function BasketRow({
             )}
           </div>
           <div className="space-y-1 col-span-2 sm:col-span-1">
-            <Label className="text-xs">סה״כ</Label>
+            <Label className="text-sm">סה״כ</Label>
             <div className="h-9 flex items-center px-3 bg-muted/50 rounded border text-sm font-medium">{formatILS(lineTotal)}</div>
           </div>
         </div>
@@ -715,7 +715,7 @@ function BasketRow({
             is buying. They used to be last, collapsed, below three empty fields. */}
         {item.components.length > 0 && (
           <div className="space-y-2">
-            <button type="button" className="flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-muted-foreground transition-colors"
+            <button type="button" className="flex items-center gap-1.5 text-base font-medium text-foreground hover:text-muted-foreground transition-colors"
               onClick={() => setField("components_expanded", !item.components_expanded)}>
               {item.components_expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               {item.components.length === 1 ? "רכיב אחד" : `${item.components.length} רכיבים`}
@@ -741,7 +741,7 @@ function BasketRow({
         {/* Description and notes are usually empty — collapsed so they stop
             pushing the components off the screen. Dot marks filled content. */}
         <div className="border-t border-border/50 pt-3 space-y-2">
-          <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          <button type="button" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setNotesOpen((v) => !v)}>
             {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             תיאור והערות
@@ -752,17 +752,17 @@ function BasketRow({
           {notesOpen && (
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs">תיאור (ניתן לשינוי)</Label>
+                <Label className="text-sm">תיאור (ניתן לשינוי)</Label>
                 <Textarea value={item.product_description_snapshot} rows={2}
                   onChange={(e) => setField("product_description_snapshot", e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
+                <Label className="text-sm text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
                 <Textarea value={item.customer_note} rows={2}
                   onChange={(e) => setField("customer_note", e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
+                <Label className="text-sm text-muted-foreground">הערה פנימית (לא תוצג ללקוח)</Label>
                 <Textarea value={item.internal_note} rows={2}
                   onChange={(e) => setField("internal_note", e.target.value)} />
               </div>
@@ -820,8 +820,8 @@ function Step3({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-4" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 2 — סל מוצרים</h2>
-        <p className="text-sm text-muted-foreground">הוסיפו מוצרים מהקטלוג, ערכו כמויות ומחירים.</p>
+        <h2 className="text-2xl font-bold mb-1">שלב 2 — סל מוצרים</h2>
+        <p className="text-base text-muted-foreground">הוסיפו מוצרים מהקטלוג, ערכו כמויות ומחירים.</p>
       </div>
 
       {state.items.length === 0 && (
@@ -935,7 +935,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 3 — תנאים והערות</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 3 — תנאים והערות</h2>
       </div>
       <div className="space-y-1 max-w-xs">
         <Label>תוקף הצעה עד תאריך</Label>
@@ -980,7 +980,7 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
   return (
     <div className="space-y-6 max-w-2xl" dir="rtl">
       <div>
-        <h2 className="text-lg font-semibold mb-1">שלב 4 — סיכום לפני שמירה</h2>
+        <h2 className="text-2xl font-bold mb-1">שלב 4 — סיכום לפני שמירה</h2>
         <p className="text-sm text-muted-foreground">אנא בדקו את הפרטים לפני שמירת ההצעה.</p>
       </div>
 
@@ -1285,7 +1285,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
   return (
     <Shell title={sourceQuoteId ? "הצעה חדשה (מבוסס על קיימת)" : "הצעת מחיר חדשה"}>
       <div className="h-full overflow-y-auto px-8 py-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <StepBar current={step} />
 
           {/* Step content */}
