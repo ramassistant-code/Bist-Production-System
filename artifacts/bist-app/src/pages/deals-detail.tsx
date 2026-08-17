@@ -157,7 +157,7 @@ interface DealDetail {
 const EXECUTION_STATUSES = [
   "פתוחה",
   "ממתינה לתיאום",
-  "בטיפול",
+  "בעבודה",
   "הושלמה",
   "בוטלה",
 ];
@@ -173,7 +173,7 @@ const EXEC_STATUS_VARIANT: Record<
 > = {
   פתוחה: "secondary",
   "ממתינה לתיאום": "secondary",
-  בטיפול: "default",
+  בעבודה: "default",
   הושלמה: "default",
   בוטלה: "destructive",
 };
