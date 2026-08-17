@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import React from "react";
 
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { LayoutProvider } from "@/lib/layout-context";
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -124,6 +125,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
+            <LayoutProvider>
               <Switch>
                 {/* עמודים ציבוריים — ללא התחברות */}
                 <Route path="/sign/:token" component={SignPage} />
@@ -135,6 +137,7 @@ function App() {
                   </AuthGate>
                 </Route>
               </Switch>
+            </LayoutProvider>
             </AuthProvider>
           </WouterRouter>
           <Toaster />

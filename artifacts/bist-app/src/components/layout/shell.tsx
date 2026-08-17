@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 import { Sidebar } from "./sidebar";
+import { DockShell } from "./dock-shell";
+import { useLayout } from "@/lib/layout-context";
 
 interface ShellProps {
   title: string;
@@ -11,6 +13,16 @@ interface ShellProps {
 }
 
 export function Shell({ title, badge, children, noPadding }: ShellProps) {
+  const { mode } = useLayout();
+
+  if (mode === "dock") {
+    return (
+      <DockShell title={title} badge={badge} noPadding={noPadding}>
+        {children}
+      </DockShell>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden" dir="rtl">
       <Sidebar />
