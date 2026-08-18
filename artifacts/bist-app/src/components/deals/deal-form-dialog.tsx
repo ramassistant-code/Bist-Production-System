@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -302,41 +302,24 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
   }, []);
 
   // ── Combo fetch: products via API ────────────────────────────────────────────
+  // Cache product data from every fetchProducts call so onChange can be fully
+  // synchronous — no extra fetch, no setTimeout, no race with Radix closing.
+  const productCacheRef = React.useRef<Map<string, { name: string; consumer_price: string | null }>>(new Map());
 
   const fetchProducts = useCallback(async (term: string): Promise<ComboboxOption[]> => {
     const qs = `?is_active=true${term ? `&search=${encodeURIComponent(term)}` : ""}`;
     const data = await apiFetch<Array<{ id: string; name: string; consumer_price?: string | null }>>(`/api/products${qs}`);
+    data.forEach(p => productCacheRef.current.set(p.id, { name: p.name, consumer_price: p.consumer_price ?? null }));
     return data.map(p => ({
       id: p.id,
       label: p.name + (p.consumer_price ? ` (₪${Number(p.consumer_price).toLocaleString("he-IL")})` : ""),
     }));
   }, []);
 
-  const fetchProductById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
-    try {
-      const p = await apiFetch<{ id: string; name: string; consumer_price?: string | null }>(`/api/products/${id}`);
-      return { id: p.id, label: p.name + (p.consumer_price ? ` (₪${Number(p.consumer_price).toLocaleString("he-IL")})` : "") };
-    } catch { return null; }
-  }, []);
-
   // ── Line item helpers ────────────────────────────────────────────────────────
 
   function updateLine(key: string, patch: Partial<Omit<LineItem, "_key">>) {
     setLines(prev => prev.map(l => l._key === key ? { ...l, ...patch } : l));
-  }
-
-  async function selectProduct(key: string, productId: string | null) {
-    if (!productId) { updateLine(key, { product_id: null, product_name: "" }); return; }
-    try {
-      const p = await apiFetch<{ id: string; name: string; consumer_price?: string | null }>(`/api/products/${productId}`);
-      updateLine(key, {
-        product_id: productId,
-        product_name: p.name ?? "",
-        unit_price: p.consumer_price ? String(Number(p.consumer_price)) : "",
-      });
-    } catch {
-      updateLine(key, { product_id: productId, product_name: "" });
-    }
   }
 
   const isBusy = mutation.isPending;
@@ -444,19 +427,21 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
                 {lines.map(line => (
                   <div key={line._key} className="grid grid-cols-[1fr_80px_110px_90px_32px] gap-2 items-center">
-                    {/* Product combo */}
+                    {/* Product combo — onChange is fully synchronous using the
+                        cache populated by fetchProducts. No extra API call,
+                        no setTimeout, no race with Radix closing the Popover. */}
                     <ComboboxField
                       value={line.product_id}
                       onChange={(id) => {
                         if (!id) { updateLine(line._key, { product_id: null, product_name: "" }); return; }
-                        // Defer to next tick so Radix finishes closing the Popover before
-                        // we update state (avoids unhandled rejection from focus restoration).
-                        const key = line._key;
-                        setTimeout(() => {
-                          selectProduct(key, id).catch(() => {
-                            updateLine(key, { product_id: id, product_name: "" });
-                          });
-                        }, 0);
+                        const cached = productCacheRef.current.get(id);
+                        updateLine(line._key, {
+                          product_id: id,
+                          product_name: cached?.name ?? "",
+                          unit_price: cached?.consumer_price
+                            ? String(Number(cached.consumer_price))
+                            : "",
+                        });
                       }}
                       fetchOptions={fetchProducts}
                       placeholder="בחר מוצר..."
