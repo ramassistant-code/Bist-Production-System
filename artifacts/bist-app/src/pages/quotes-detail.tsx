@@ -241,7 +241,7 @@ function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: bo
             </div>
 
             {!data.phone && (
-              <p className="flex items-center gap-1.5 text-xs text-amber-500">
+              <p className="flex items-center gap-1.5 text-xs text-warning-accent">
                 <AlertCircle className="w-3.5 h-3.5" />
                 אין מספר טלפון תקין ללקוח — אפשר להעתיק את ההודעה ולשלוח ידנית.
               </p>
@@ -454,7 +454,7 @@ export default function QuotesDetail() {
               <Button
                 size="sm"
                 variant="outline"
-                className="text-green-700 border-green-200 hover:bg-green-500/10"
+                className="text-success-accent border-success/40 hover:bg-success/10"
                 onClick={() => statusMutation.mutate("approved")}
                 disabled={statusMutation.isPending || ["approved", "rejected", "cancelled"].includes(vStatus)}
               >
@@ -466,7 +466,7 @@ export default function QuotesDetail() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-green-700 border-green-200 hover:bg-green-500/10"
+                  className="text-success-accent border-success/40 hover:bg-success/10"
                   onClick={() => navigate(`/deals/${dealCheck.deal_id}`)}
                 >
                   <Handshake className="w-3.5 h-3.5 ml-1" />צפה בעסקה
@@ -479,7 +479,7 @@ export default function QuotesDetail() {
                         <Button
                           size="sm"
                           variant={canOpenDeal ? "default" : "outline"}
-                          className={canOpenDeal ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                          className={canOpenDeal ? "bg-success hover:bg-success/90 text-white" : ""}
                           disabled={!canOpenDeal}
                           onClick={() => canOpenDeal && setShowOpenDealModal(true)}
                         >
@@ -537,7 +537,7 @@ export default function QuotesDetail() {
                   variant="outline"
                   disabled={checkPaymentMutation.isPending}
                   onClick={() => checkPaymentMutation.mutate()}
-                  className="border-green-600/40 text-green-700 hover:bg-green-50"
+                  className="border-success/40 text-success-accent hover:bg-success/10"
                 >
                   {checkPaymentMutation.isPending ? (
                     <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
@@ -572,12 +572,12 @@ export default function QuotesDetail() {
 
           {/* באנר חתימה */}
           {signingInfo?.signed_at && (
-            <div className="rounded-xl border border-green-500/40 bg-green-500/8 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6" dir="rtl">
+            <div className="rounded-xl border border-success/40 bg-success/10 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6" dir="rtl">
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-2xl">✍️</span>
-                <span className="text-green-700 font-bold text-base">הלקוח חתם!</span>
+                <span className="text-success-accent font-bold text-base">הלקוח חתם!</span>
               </div>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-green-900/80">
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-success-accent">
                 <span>
                   <span className="font-medium">תאריך ושעה: </span>
                   {new Date(signingInfo.signed_at).toLocaleString("he-IL", {
@@ -608,8 +608,8 @@ export default function QuotesDetail() {
           )}
 
           {isLocked && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2">
-              <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-warning/10 border border-warning/25 rounded-lg px-4 py-2">
+              <AlertCircle className="w-4 h-4 text-warning-accent shrink-0" />
               גרסה זו נעולה לעריכה. כדי לשנות — יש ליצור גרסה חדשה.
             </div>
           )}
@@ -680,7 +680,7 @@ export default function QuotesDetail() {
                       {item.customer_note && <div className="text-xs"><span className="text-muted-foreground">הערת לקוח: </span>{item.customer_note}</div>}
                       {item.internal_note && <div className="text-xs"><span className="text-muted-foreground">הערה למחלקת אופרציה: </span>{item.internal_note}</div>}
                       {item.manual_price_override && item.price_override_reason && (
-                        <div className="text-xs text-orange-700"><span className="font-medium">סיבת שינוי מחיר: </span>{item.price_override_reason}</div>
+                        <div className="text-xs text-warning-accent"><span className="font-medium">סיבת שינוי מחיר: </span>{item.price_override_reason}</div>
                       )}
                       {item.components_snapshot && item.components_snapshot.length > 0 && (
                         <div className="mt-2">
@@ -691,7 +691,7 @@ export default function QuotesDetail() {
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                   <span className="font-medium text-foreground">{c.component_name_snapshot}</span>
                                   <span>× {c.quantity}</span>
-                                  {c.customer_note && <span className="text-amber-700 mr-auto">{c.customer_note}</span>}
+                                  {c.customer_note && <span className="text-warning-accent mr-auto">{c.customer_note}</span>}
                                 </div>
                                 {c.internal_note && (
                                   <div className="text-primary"><span className="text-muted-foreground">הערה פנימית: </span>{c.internal_note}</div>
@@ -710,7 +710,7 @@ export default function QuotesDetail() {
               {totals && (
                 <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-1.5 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">סה״כ לפני הנחה</span><span>{formatILS(totals.subtotal_before_discount)}</span></div>
-                  {(totals.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-700"><span>הנחה</span><span>-{formatILS(totals.discount_amount)}</span></div>}
+                  {(totals.discount_amount ?? 0) > 0 && <div className="flex justify-between text-success-accent"><span>הנחה</span><span>-{formatILS(totals.discount_amount)}</span></div>}
                   <div className="flex justify-between"><span className="text-muted-foreground">סה״כ אחרי הנחה</span><span>{formatILS(totals.subtotal_after_discount)}</span></div>
                   <div className="flex justify-between text-muted-foreground"><span>מע״מ {Math.round((totals.vat_rate ?? 0.18) * 100)}%</span><span>{formatILS(totals.vat_amount)}</span></div>
                   <Separator />
@@ -722,7 +722,7 @@ export default function QuotesDetail() {
                     </div>
                   )}
                   {totals.basket_total_manually_overridden && totals.basket_override_note && (
-                    <div className="text-xs text-orange-700 pt-1"><span className="font-medium">הערת שינוי סל: </span>{totals.basket_override_note}</div>
+                    <div className="text-xs text-warning-accent pt-1"><span className="font-medium">הערת שינוי סל: </span>{totals.basket_override_note}</div>
                   )}
                 </div>
               )}
@@ -787,8 +787,8 @@ export default function QuotesDetail() {
                     </div>
                     <p className="text-xs text-muted-foreground">נוצרה: {formatDate(v.created_at)}</p>
                     {v.sent_at && <p className="text-xs text-muted-foreground">נשלחה: {formatDate(v.sent_at)}</p>}
-                    {v.approved_at && <p className="text-xs text-green-700">אושרה: {formatDate(v.approved_at)}</p>}
-                    {v.locked_at && <p className="text-xs text-orange-600">ננעלה: {formatDate(v.locked_at)}</p>}
+                    {v.approved_at && <p className="text-xs text-success-accent">אושרה: {formatDate(v.approved_at)}</p>}
+                    {v.locked_at && <p className="text-xs text-warning-accent">ננעלה: {formatDate(v.locked_at)}</p>}
                   </div>
                 </div>
               ))}

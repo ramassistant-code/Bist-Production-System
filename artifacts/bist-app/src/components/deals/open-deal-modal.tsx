@@ -288,7 +288,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* ─── Guard: no party linked ──────────────────────────────────── */}
           {!quote.customer_id && !quote.lead_id && (
-            <div className="bg-destructive/10 border border-red-300 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div className="bg-destructive/10 border border-destructive/50 rounded-lg px-4 py-3 text-sm text-destructive-accent">
               ⚠️ הצעה זו אינה מקושרת ללקוח או ליד. יש לעדכן את ההצעה לפני פתיחת עסקה.
             </div>
           )}
@@ -304,14 +304,14 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
             {isLead ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">שם לקוח / ליד <span className="text-red-500">*</span></label>
+                  <label className="block text-xs text-muted-foreground mb-1">שם לקוח / ליד <span className="text-destructive-accent">*</span></label>
                   <input
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.leadName ? "border-red-400" : "border-border"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.leadName ? "border-destructive/50" : "border-border"}`}
                     value={leadName}
                     onChange={e => setLeadName(e.target.value)}
                     placeholder="שם מלא"
                   />
-                  {errors.leadName && <p className="text-xs text-red-500 mt-0.5">{errors.leadName}</p>}
+                  {errors.leadName && <p className="text-xs text-destructive-accent mt-0.5">{errors.leadName}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">שם עסק</label>
@@ -387,9 +387,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
           <section>
             <h3 className="text-sm font-semibold text-foreground/70 mb-3">איש מכירות</h3>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">איש מכירות <span className="text-red-500">*</span></label>
+              <label className="block text-xs text-muted-foreground mb-1">איש מכירות <span className="text-destructive-accent">*</span></label>
               <select
-                className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.salesperson ? "border-red-400" : "border-border"}`}
+                className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.salesperson ? "border-destructive/50" : "border-border"}`}
                 value={salespersonId}
                 onChange={e => setSalespersonId(e.target.value)}
               >
@@ -401,7 +401,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                   </option>
                 ))}
               </select>
-              {errors.salesperson && <p className="text-xs text-red-500 mt-0.5">{errors.salesperson}</p>}
+              {errors.salesperson && <p className="text-xs text-destructive-accent mt-0.5">{errors.salesperson}</p>}
             </div>
           </section>
 
@@ -417,18 +417,18 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                 <p className="text-xs text-muted-foreground mt-0.5">מחושב מגרסת ההצעה — לא ניתן לשינוי</p>
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">סכום ששולם כולל מע"מ <span className="text-red-500">*</span></label>
+                <label className="block text-xs text-muted-foreground mb-1">סכום ששולם כולל מע"מ <span className="text-destructive-accent">*</span></label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.amountPaid ? "border-red-400" : "border-border"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.amountPaid ? "border-destructive/50" : "border-border"}`}
                   value={amountPaid}
                   onChange={e => setAmountPaid(e.target.value)}
                   placeholder="0"
                   dir="ltr"
                 />
-                {errors.amountPaid && <p className="text-xs text-red-500 mt-0.5">{errors.amountPaid}</p>}
+                {errors.amountPaid && <p className="text-xs text-destructive-accent mt-0.5">{errors.amountPaid}</p>}
               </div>
             </div>
           </section>
@@ -438,7 +438,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
             <h3 className="text-sm font-semibold text-foreground/70 mb-3">אמצעי תשלום</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">סוג תשלום <span className="text-red-500">*</span></label>
+                <label className="block text-xs text-muted-foreground mb-1">סוג תשלום <span className="text-destructive-accent">*</span></label>
                 <div className="flex gap-2 flex-wrap">
                   {["cash", "credit_card", "bank_transfer"].map(pt => (
                     <button
@@ -455,21 +455,21 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                     </button>
                   ))}
                 </div>
-                {errors.paymentType && <p className="text-xs text-red-500 mt-1">{errors.paymentType}</p>}
+                {errors.paymentType && <p className="text-xs text-destructive-accent mt-1">{errors.paymentType}</p>}
               </div>
 
               {paymentType === "credit_card" && (
                 <div className="w-40">
-                  <label className="block text-xs text-muted-foreground mb-1">כמות תשלומים <span className="text-red-500">*</span></label>
+                  <label className="block text-xs text-muted-foreground mb-1">כמות תשלומים <span className="text-destructive-accent">*</span></label>
                   <input
                     type="number"
                     min="1"
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.installments ? "border-red-400" : "border-border"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors.installments ? "border-destructive/50" : "border-border"}`}
                     value={installments}
                     onChange={e => setInstallments(e.target.value)}
                     dir="ltr"
                   />
-                  {errors.installments && <p className="text-xs text-red-500 mt-0.5">{errors.installments}</p>}
+                  {errors.installments && <p className="text-xs text-destructive-accent mt-0.5">{errors.installments}</p>}
                 </div>
               )}
 
@@ -482,37 +482,37 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">שם על החשבונית <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">שם על החשבונית <span className="text-destructive-accent">*</span></label>
                     <input
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceName ? "border-red-400" : "border-border"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceName ? "border-destructive/50" : "border-border"}`}
                       value={invoiceName}
                       onChange={e => setInvoiceName(e.target.value)}
                       placeholder="שם מלא / שם חברה"
                     />
-                    {errors.invoiceName && <p className="text-xs text-red-500 mt-0.5">{errors.invoiceName}</p>}
+                    {errors.invoiceName && <p className="text-xs text-destructive-accent mt-0.5">{errors.invoiceName}</p>}
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">מספר ת.ז / ח.פ <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">מספר ת.ז / ח.פ <span className="text-destructive-accent">*</span></label>
                     <input
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceIdNumber ? "border-red-400" : "border-border"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceIdNumber ? "border-destructive/50" : "border-border"}`}
                       value={invoiceIdNumber}
                       onChange={e => setInvoiceIdNumber(e.target.value)}
                       placeholder="000000000"
                       dir="ltr"
                     />
-                    {errors.invoiceIdNumber && <p className="text-xs text-red-500 mt-0.5">{errors.invoiceIdNumber}</p>}
+                    {errors.invoiceIdNumber && <p className="text-xs text-destructive-accent mt-0.5">{errors.invoiceIdNumber}</p>}
                   </div>
                   <div className="col-span-full">
-                    <label className="block text-xs text-muted-foreground mb-1">מייל לשליחת החשבונית <span className="text-red-500">*</span></label>
+                    <label className="block text-xs text-muted-foreground mb-1">מייל לשליחת החשבונית <span className="text-destructive-accent">*</span></label>
                     <input
                       type="email"
-                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceEmail ? "border-red-400" : "border-border"}`}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-card ${errors.invoiceEmail ? "border-destructive/50" : "border-border"}`}
                       value={invoiceEmail}
                       onChange={e => setInvoiceEmail(e.target.value)}
                       placeholder="email@example.com"
                       dir="ltr"
                     />
-                    {errors.invoiceEmail && <p className="text-xs text-red-500 mt-0.5">{errors.invoiceEmail}</p>}
+                    {errors.invoiceEmail && <p className="text-xs text-destructive-accent mt-0.5">{errors.invoiceEmail}</p>}
                   </div>
                 </div>
               )}
@@ -535,24 +535,24 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
             {coordRequested && (
               <div className="mt-4 space-y-3">
-                {errors.tasks && <p className="text-xs text-red-500">{errors.tasks}</p>}
+                {errors.tasks && <p className="text-xs text-destructive-accent">{errors.tasks}</p>}
                 {tasks.map((task, i) => (
                   <div key={i} className="flex gap-2 items-start bg-muted/50 rounded-lg p-3">
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs text-muted-foreground mb-1">טקסט משימה <span className="text-red-500">*</span></label>
+                        <label className="block text-xs text-muted-foreground mb-1">טקסט משימה <span className="text-destructive-accent">*</span></label>
                         <input
-                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_text_${i}`] ? "border-red-400" : "border-border"}`}
+                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_text_${i}`] ? "border-destructive/50" : "border-border"}`}
                           value={task.task_text}
                           onChange={e => updateTask(i, "task_text", e.target.value)}
                           placeholder="תיאור המשימה"
                         />
-                        {errors[`task_text_${i}`] && <p className="text-xs text-red-500 mt-0.5">{errors[`task_text_${i}`]}</p>}
+                        {errors[`task_text_${i}`] && <p className="text-xs text-destructive-accent mt-0.5">{errors[`task_text_${i}`]}</p>}
                       </div>
                       <div>
-                        <label className="block text-xs text-muted-foreground mb-1">אחראי <span className="text-red-500">*</span></label>
+                        <label className="block text-xs text-muted-foreground mb-1">אחראי <span className="text-destructive-accent">*</span></label>
                         <select
-                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_role_${i}`] ? "border-red-400" : "border-border"}`}
+                          className={`w-full border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40 ${errors[`task_role_${i}`] ? "border-destructive/50" : "border-border"}`}
                           value={task.assignee_role}
                           onChange={e => updateTask(i, "assignee_role", e.target.value)}
                         >
@@ -561,14 +561,14 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                             <option key={val} value={val}>{label}</option>
                           ))}
                         </select>
-                        {errors[`task_role_${i}`] && <p className="text-xs text-red-500 mt-0.5">{errors[`task_role_${i}`]}</p>}
+                        {errors[`task_role_${i}`] && <p className="text-xs text-destructive-accent mt-0.5">{errors[`task_role_${i}`]}</p>}
                       </div>
                     </div>
                     {tasks.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeTask(i)}
-                        className="text-red-400 hover:text-red-600 mt-6 shrink-0"
+                        className="text-destructive-accent hover:text-destructive-accent mt-6 shrink-0"
                         aria-label="הסר משימה"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -598,7 +598,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
 
           {/* Submit error */}
           {submitError && (
-            <div className="bg-destructive/10 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div className="bg-destructive/10 border border-destructive/50 rounded-lg px-4 py-3 text-sm text-destructive-accent">
               {submitError}
             </div>
           )}
@@ -613,7 +613,7 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="bg-green-600 hover:bg-green-700 text-white px-6"
+            className="bg-success hover:bg-success/90 text-white px-6"
           >
             {submitting ? "פותח עסקה..." : "אישור פתיחת עסקה"}
           </Button>

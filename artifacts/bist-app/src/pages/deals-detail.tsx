@@ -206,19 +206,19 @@ function formatILS(val: string | number | null | undefined) {
 const CREDIT_STATUS_STYLE: Record<string, string> = {
   "ממתין":         "bg-muted text-muted-foreground",
   "בתהליך":        "bg-secondary text-secondary-foreground",
-  "ממתין ללקוח":   "bg-yellow-100 text-yellow-700",
-  "בבדיקת איכות": "bg-orange-100 text-orange-700",
-  "הושלם":         "bg-green-100 text-green-700",
-  "בוטל":          "bg-red-100 text-red-600",
+  "ממתין ללקוח":   "bg-warning/15 text-warning-accent",
+  "בבדיקת איכות": "bg-warning/15 text-warning-accent",
+  "הושלם":         "bg-success/15 text-success-accent",
+  "בוטל":          "bg-destructive/15 text-destructive-accent",
 };
 
 const PAYMENT_STATUS_STYLE: Record<string, string> = {
-  "התקבל":          "bg-green-100 text-green-700",
+  "התקבל":          "bg-success/15 text-success-accent",
   "ממתין לתשלום":   "bg-muted text-muted-foreground",
-  "חלקי":           "bg-yellow-100 text-yellow-700",
-  "נכשל":           "bg-red-100 text-red-600",
+  "חלקי":           "bg-warning/15 text-warning-accent",
+  "נכשל":           "bg-destructive/15 text-destructive-accent",
   "הוחזר":          "bg-secondary text-secondary-foreground",
-  "בוטל":           "bg-red-100 text-red-600",
+  "בוטל":           "bg-destructive/15 text-destructive-accent",
 };
 
 const PAYMENT_METHOD_ICON: Record<string, React.ReactNode> = {
@@ -363,7 +363,7 @@ function PaymentLinkModal({ dealId, open, onClose }: PaymentLinkModalProps) {
             </div>
 
             {!data.phone && (
-              <p className="flex items-center gap-1.5 text-xs text-amber-500">
+              <p className="flex items-center gap-1.5 text-xs text-warning-accent">
                 <AlertCircle className="w-3.5 h-3.5" />
                 אין מספר טלפון תקין ללקוח — אפשר להעתיק את ההודעה ולשלוח ידנית.
               </p>
@@ -506,7 +506,7 @@ function AddPaymentModal({ dealId, open, onClose, onSaved, defaultInvoice }: Add
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     paymentType === pt
                       ? "bg-primary text-white border-primary"
-                      : "bg-card text-foreground/70 border-border hover:border-gray-400"
+                      : "bg-card text-foreground/70 border-border hover:border-border"
                   }`}
                 >
                   {PAYMENT_LABELS[pt]}
@@ -1155,7 +1155,7 @@ export default function DealsDetail() {
                             </div>
                           )}
                           {item.manual_price_override && item.price_override_reason && (
-                            <div className="text-xs text-orange-700">
+                            <div className="text-xs text-warning-accent">
                               <span className="font-medium">סיבת שינוי מחיר: </span>
                               {item.price_override_reason}
                             </div>
@@ -1200,7 +1200,7 @@ export default function DealsDetail() {
                         </div>
                       )}
                       {(totals.discount_amount ?? 0) > 0 && (
-                        <div className="flex justify-between text-green-700">
+                        <div className="flex justify-between text-success-accent">
                           <span>הנחה</span>
                           <span>-{formatILS(totals.discount_amount)}</span>
                         </div>
