@@ -325,20 +325,17 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
     setLines(prev => prev.map(l => l._key === key ? { ...l, ...patch } : l));
   }
 
-  async function selectProduct(key: string, productId: string | null, label: string) {
+  async function selectProduct(key: string, productId: string | null) {
     if (!productId) { updateLine(key, { product_id: null, product_name: "" }); return; }
-    // Extract name without price suffix "(₪X)"
-    const name = label.replace(/\s*\(₪[\d,]+\)\s*$/, "").trim();
-    // Fetch real consumer_price
     try {
-      const p = await apiFetch<{ id: string; consumer_price?: string | null }>(`/api/products/${productId}`);
+      const p = await apiFetch<{ id: string; name: string; consumer_price?: string | null }>(`/api/products/${productId}`);
       updateLine(key, {
         product_id: productId,
-        product_name: name,
+        product_name: p.name ?? "",
         unit_price: p.consumer_price ? String(Number(p.consumer_price)) : "",
       });
     } catch {
-      updateLine(key, { product_id: productId, product_name: name });
+      updateLine(key, { product_id: productId, product_name: "" });
     }
   }
 
@@ -452,17 +449,16 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
                       value={line.product_id}
                       onChange={(id) => {
                         if (!id) { updateLine(line._key, { product_id: null, product_name: "" }); return; }
-                        // Defer price fetch to after Radix finishes closing the Popover.
-                        // Updating state during the close sequence causes an unhandled rejection.
+                        // Defer to next tick so Radix finishes closing the Popover before
+                        // we update state (avoids unhandled rejection from focus restoration).
                         const key = line._key;
                         setTimeout(() => {
-                          selectProduct(key, id, "").catch(() => {
+                          selectProduct(key, id).catch(() => {
                             updateLine(key, { product_id: id, product_name: "" });
                           });
                         }, 0);
                       }}
                       fetchOptions={fetchProducts}
-                      fetchById={fetchProductById}
                       placeholder="בחר מוצר..."
                       disabled={isBusy}
                     />
