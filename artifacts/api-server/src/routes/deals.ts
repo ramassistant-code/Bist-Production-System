@@ -414,7 +414,7 @@ router.post("/deals/standalone", async (req: Request, res: Response): Promise<vo
         salesperson_id:            toUuid(b["salesperson_id"]),
         quote_id:                  toUuid(b["quote_id"]),
         execution_status:          toStr(b["execution_status"]) ?? "פתוחה",
-        payment_status:            toStr(b["payment_status"]),
+        payment_status:            toStr(b["payment_status"]) ?? "ממתינה לתשלום",
         payment_type:              toStr(b["payment_type"]),
         // credit_card requires installments_count; default to 1 if omitted
         installments_count:        toStr(b["payment_type"]) === "credit_card"
