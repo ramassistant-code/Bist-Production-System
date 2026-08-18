@@ -6,7 +6,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { createPaymentLink, getClearingStatus, isInvoice4UConfigured } from "../lib/invoice4u";
-import { buildOnboardingMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
+import { buildOnboardingMessage, buildDirectSaleMessage, buildWhatsAppLink, normalizePhoneIL } from "../lib/whatsapp-link";
 import { sendSalespersonNotification, resolveSalespersonPhone } from "../lib/invoiceWebhook";
 import { sendSignedEmail } from "../lib/email";
 
@@ -66,13 +66,14 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       return;
     }
 
-    // ── 2. סכום כולל מע"מ + party_snapshot לשם איש הקשר ─────────────────────
+    // ── 2. סכום כולל מע"מ + party_snapshot + items_snapshot ──────────────────
     const verRows = await db
       .select({
         id: quoteVersionsTable.id,
         version_number: quoteVersionsTable.version_number,
         totals_snapshot: quoteVersionsTable.totals_snapshot,
         party_snapshot: quoteVersionsTable.party_snapshot,
+        items_snapshot: quoteVersionsTable.items_snapshot,
       })
       .from(quoteVersionsTable)
       .where(eq(quoteVersionsTable.id, versionId))
@@ -84,13 +85,15 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
     }
     const totals = (verRows[0]!.totals_snapshot ?? {}) as { total_with_vat?: number };
     const partySnap = (verRows[0]!.party_snapshot ?? {}) as { contact_name?: string; business_name?: string };
+    type ItemSnap = { product_name_snapshot?: string; quantity?: number; unit_price?: number };
+    const itemsSnap = (verRows[0]!.items_snapshot ?? []) as ItemSnap[];
     const sum = Number(totals.total_with_vat ?? NaN);
     if (!Number.isFinite(sum) || sum <= 0) {
       res.status(400).json({ error: "לא ניתן לקבוע סכום כולל מע\"מ עבור ההצעה" });
       return;
     }
 
-    // ── 3. איתור ה-PDF האחרון שהופק לגרסה (חובה שיהיה קיים) ──────────────────
+    // ── 3. איתור ה-PDF האחרון שהופק לגרסה ────────────────────────────────────
     const { data: doc } = await supabaseAdmin
       .from("quote_documents")
       .select("id, storage_path, revision")
@@ -100,27 +103,27 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       .limit(1)
       .maybeSingle();
 
-    if (!doc?.storage_path) {
-      res.status(409).json({ error: "צריך להפיק PDF להצעה קודם (כפתור 'פתח הצעת מחיר - PDF')" });
-      return;
-    }
-
     // ── 4. יצירת בקשת חתימה (token) ──────────────────────────────────────────
     const token = randomBytes(24).toString("base64url");
     const expiresAt = new Date(Date.now() + SIGNING_TTL_DAYS * 86_400_000).toISOString();
 
+    const insertPayload: Record<string, unknown> = {
+      token,
+      quote_id: quoteId,
+      quote_version_id: versionId,
+      customer_id: quote.customer_id ?? null,
+      status: "pending",
+      expires_at: expiresAt,
+    };
+    if (doc?.storage_path) {
+      insertPayload["pdf_document_id"] = doc.id;
+      insertPayload["unsigned_pdf_path"] = doc.storage_path;
+    }
+
     const { data: sr, error: srErr } = await supabaseAdmin
       .from("signing_requests")
-      .insert({
-        token,
-        quote_id: quoteId,
-        quote_version_id: versionId,
-        customer_id: quote.customer_id ?? null,
-        status: "pending",
-        pdf_document_id: doc.id,
-        unsigned_pdf_path: doc.storage_path,
-        expires_at: expiresAt,
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(insertPayload as any)
       .select("id")
       .single();
 
@@ -144,16 +147,32 @@ router.post("/quotes/:id/onboarding", async (req: Request, res: Response): Promi
       quote.lead_name ||
       fullName;
 
-    const message = buildOnboardingMessage({
-      customerName: greetingName,
-      signingUrl,
-      paymentUrl,
-    });
+    let message: string;
+    if (doc?.storage_path) {
+      // מצב רגיל: קיים PDF → הודעת onboarding עם חתימה + תשלום
+      message = buildOnboardingMessage({
+        customerName: greetingName,
+        signingUrl,
+        paymentUrl,
+      });
+    } else {
+      // מצב מכירה ישירה: אין PDF → רשימת מוצרים + סה"כ + לינק תשלום
+      message = buildDirectSaleMessage({
+        customerName: greetingName,
+        items: itemsSnap.map((it) => ({
+          name: it.product_name_snapshot ?? "פריט",
+          quantity: it.quantity ?? 1,
+        })),
+        totalWithVat: sum,
+        paymentUrl,
+      });
+    }
+
     const phone = normalizePhoneIL(contactPhone);
     const whatsappUrl = buildWhatsAppLink(contactPhone, message);
 
     res.json({
-      signing_url: signingUrl,
+      signing_url: doc?.storage_path ? signingUrl : null,
       payment_url: paymentUrl,
       amount: sum,
       phone,

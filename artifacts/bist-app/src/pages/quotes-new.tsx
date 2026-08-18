@@ -64,6 +64,8 @@ interface WizardState {
   newLeadName: string;
   newLeadPhone: string;
   newLeadEmail: string;
+  /** האם לשלוח הצעת מחיר (PDF + חתימה). ברירת מחדל: כן. */
+  sendQuote: boolean;
   // Step 2
   projectTitle: string;
   validUntil: string;
@@ -150,6 +152,7 @@ function newManualItem(): BasketItem {
 const initialState: WizardState = {
   phone: "", partyType: null, partyId: null, partyName: "", partyEmail: "",
   newLeadName: "", newLeadPhone: "", newLeadEmail: "",
+  sendQuote: true,
   projectTitle: "", validUntil: endOfCurrentMonth(),
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
   deliveryTerms: "",
@@ -158,12 +161,13 @@ const initialState: WizardState = {
 
 // ── Step indicators ────────────────────────────────────────────────────────
 
-const STEPS = ["זיהוי לקוח/ליד", "סל מוצרים", "תנאים והערות", "סיכום ושמירה"];
+const STEPS_FULL   = ["זיהוי לקוח/ליד", "סל מוצרים", "תנאים והערות", "סיכום ושמירה"];
+const STEPS_DIRECT = ["זיהוי לקוח/ליד", "סל מוצרים", "סיכום ושמירה"];
 
-function StepBar({ current }: { current: number }) {
+function StepBar({ current, steps }: { current: number; steps: string[] }) {
   return (
     <div className="flex items-center gap-0 mb-8" dir="rtl">
-      {STEPS.map((label, i) => {
+      {steps.map((label, i) => {
         const done = i < current;
         const active = i === current;
         return (
@@ -175,7 +179,7 @@ function StepBar({ current }: { current: number }) {
               </div>
               <span className={`text-sm hidden sm:block whitespace-nowrap ${active ? "text-primary font-medium" : done ? "text-primary/70" : "text-muted-foreground"}`}>{label}</span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`flex-1 h-0.5 mx-1 ${done ? "bg-primary/40" : "bg-border"}`} />
             )}
           </div>
@@ -358,6 +362,36 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       <div>
         <h2 className="text-2xl font-bold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
         <p className="text-sm text-muted-foreground">הזינו מספר טלפון לחיפוש לקוח קיים, ליד קיים, או לפתיחת ליד חדש.</p>
+      </div>
+
+      {/* ── שליחת הצעת מחיר ─────────────────────────────── */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+        <p className="text-sm font-medium">שליחת הצעת מחיר ללקוח</p>
+        <div className="flex gap-6">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="radio"
+              name="sendQuote"
+              checked={state.sendQuote}
+              onChange={() => update({ sendQuote: true })}
+              className="accent-primary"
+            />
+            <span>כן — שלח הצעה + PDF</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="radio"
+              name="sendQuote"
+              checked={!state.sendQuote}
+              onChange={() => update({ sendQuote: false })}
+              className="accent-primary"
+            />
+            <span>לא — מכירה ישירה בלבד</span>
+          </label>
+        </div>
+        {!state.sendQuote && (
+          <p className="text-xs text-muted-foreground">לא יופק PDF. הודעת הווטסאפ תכלול רשימת מוצרים + לינק לתשלום.</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label>מספר טלפון <span className="text-destructive">*</span></Label>
@@ -967,13 +1001,14 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
 // ── Step 5: Summary ────────────────────────────────────────────────────────
 
-function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
+function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating, sendQuote = true }: {
   state: WizardState;
   update: (p: Partial<WizardState>) => void;
   onSave: () => void;
   onCreateQuote: () => void;
   isSaving: boolean;
   isCreating: boolean;
+  sendQuote?: boolean;
 }) {
   const calc = calcBasket(state.items, state.discountAmount, state.basketManuallyOverridden, state.basketManualTotal);
 
@@ -1041,12 +1076,12 @@ function Step5({ state, update, onSave, onCreateQuote, isSaving, isCreating }: {
           {isCreating ? (
             <span className="flex items-center gap-2">
               <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-              יוצר הצעה ומייצר PDF...
+              {sendQuote ? "יוצר הצעה ומייצר PDF..." : "שומר..."}
             </span>
-          ) : "יצירת הצעת מחיר"}
+          ) : sendQuote ? "יצירת הצעת מחיר" : "שמור עסקה ישירה"}
         </Button>
       </div>
-      {isCreating && (
+      {isCreating && sendQuote && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center">
           <div className="bg-card rounded-xl border border-border shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs">
             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -1180,7 +1215,12 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
     const errs = validateStep();
     if (errs.length > 0) { setErrors(errs); return; }
     setErrors([]);
-    setStep((s) => s + 1);
+    // דלג על שלב תנאים/הערות כאשר לא שולחים הצעת מחיר
+    if (!state.sendQuote && step === 1) {
+      setStep(3);
+    } else {
+      setStep((s) => s + 1);
+    }
   }
 
   function buildPayload(sendImmediately: boolean) {
@@ -1255,10 +1295,12 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
         body: JSON.stringify(buildPayload(false)),
       });
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
-      try {
-        await customFetch(`/api/quote-versions/${data.version.id}/generate-pdf`, { method: "POST", body: JSON.stringify({ templateId: null }) });
-      } catch {
-        toast({ title: "ההצעה נוצרה, אך אירעה שגיאה בהפקת ה-PDF", variant: "destructive" });
+      if (state.sendQuote) {
+        try {
+          await customFetch(`/api/quote-versions/${data.version.id}/generate-pdf`, { method: "POST", body: JSON.stringify({ templateId: null }) });
+        } catch {
+          toast({ title: "ההצעה נוצרה, אך אירעה שגיאה בהפקת ה-PDF", variant: "destructive" });
+        }
       }
       navigate(`/quotes/${data.quote.id}`);
     } catch (err: unknown) {
@@ -1286,13 +1328,16 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
     <Shell title={sourceQuoteId ? "הצעה חדשה (מבוסס על קיימת)" : "הצעת מחיר חדשה"}>
       <div className="h-full overflow-y-auto px-8 py-6">
         <div className="max-w-5xl mx-auto">
-          <StepBar current={step} />
+          <StepBar
+            current={!state.sendQuote && step === 3 ? 2 : step}
+            steps={state.sendQuote ? STEPS_FULL : STEPS_DIRECT}
+          />
 
           {/* Step content */}
           <div className="min-h-[400px]">
             {step === 0 && <Step1 state={state} update={update} />}
             {step === 1 && <Step3 state={state} update={update} />}
-            {step === 2 && <Step4 state={state} update={update} />}
+            {step === 2 && state.sendQuote && <Step4 state={state} update={update} />}
             {step === 3 && (
               <Step5
                 state={state}
@@ -1301,6 +1346,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
                 onCreateQuote={handleCreateQuote}
                 isSaving={saveMutation.isPending}
                 isCreating={isCreatingQuote}
+                sendQuote={state.sendQuote}
               />
             )}
           </div>
@@ -1333,7 +1379,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
           )}
           {step === 3 && (
             <div className="flex justify-start mt-8 pt-4 border-t">
-              <Button variant="outline" onClick={() => setStep(2)}>
+              <Button variant="outline" onClick={() => setStep(state.sendQuote ? 2 : 1)}>
                 <ChevronRight className="w-4 h-4 ml-1" />חזרה לעריכה
               </Button>
             </div>
