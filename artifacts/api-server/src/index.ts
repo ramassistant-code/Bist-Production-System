@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { warmupPdfBrowser } from "./lib/pdf-browser";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // חימום דפדפן ה-PDF ברקע — כדי שההפקה הראשונה אחרי עליית השרת תהיה מהירה
+  warmupPdfBrowser();
 });
