@@ -444,7 +444,9 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
                       onChange={(id) => {
                         if (!id) { updateLine(line._key, { product_id: null, product_name: "" }); return; }
                         // selectProduct fetches the real price; the label is resolved via fetchProductById
-                        selectProduct(line._key, id, "");
+                        selectProduct(line._key, id, "").catch(() => {
+                          updateLine(line._key, { product_id: id, product_name: "" });
+                        });
                       }}
                       fetchOptions={fetchProducts}
                       fetchById={fetchProductById}
