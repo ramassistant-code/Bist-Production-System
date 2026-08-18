@@ -303,6 +303,13 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
     }));
   }, []);
 
+  const fetchProductById = useCallback(async (id: string): Promise<ComboboxOption | null> => {
+    try {
+      const p = await apiFetch<{ id: string; name: string; consumer_price?: string | null }>(`/api/products/${id}`);
+      return { id: p.id, label: p.name + (p.consumer_price ? ` (₪${Number(p.consumer_price).toLocaleString("he-IL")})` : "") };
+    } catch { return null; }
+  }, []);
+
   // ── Line item helpers ────────────────────────────────────────────────────────
 
   function updateLine(key: string, patch: Partial<Omit<LineItem, "_key">>) {
@@ -436,13 +443,11 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
                       value={line.product_id}
                       onChange={(id) => {
                         if (!id) { updateLine(line._key, { product_id: null, product_name: "" }); return; }
-                        // find label from options — we'll fetch price in selectProduct
-                        fetchProducts(line.product_name || "").then(opts => {
-                          const opt = opts.find(o => o.id === id);
-                          selectProduct(line._key, id, opt?.label ?? "");
-                        }).catch(() => selectProduct(line._key, id, ""));
+                        // selectProduct fetches the real price; the label is resolved via fetchProductById
+                        selectProduct(line._key, id, "");
                       }}
                       fetchOptions={fetchProducts}
+                      fetchById={fetchProductById}
                       placeholder="בחר מוצר..."
                       disabled={isBusy}
                     />
