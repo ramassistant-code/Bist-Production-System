@@ -1,5 +1,5 @@
-import { execSync } from "child_process";
 import { Router, type Request, type Response } from "express";
+import { getSharedBrowser } from "../lib/pdf-browser";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { logger } from "../lib/logger";
 import {
@@ -134,28 +134,14 @@ router.post(
       });
 
       // ── 7. Generate PDF via Playwright ────────────────────────────────────
-      // Use the nix-installed system Chromium to avoid missing shared library
-      // issues with Playwright's bundled binary on NixOS.
-      const { chromium } = await import("playwright");
-      let executablePath: string | undefined;
-      try {
-        executablePath = execSync(
-          "which chromium-browser 2>/dev/null || which chromium 2>/dev/null || echo ''",
-          { encoding: "utf-8" },
-        ).trim() || undefined;
-      } catch {
-        executablePath = undefined;
-      }
-
-      const browser = await chromium.launch({
-        executablePath,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-      });
+      // דפדפן משותף (נשאר פתוח בין הפקות) + המתנת "load" במקום "networkidle" —
+      // התוכן הוא HTML סטטי, אין צורך בהמתנה שמרנית.
+      const browser = await getSharedBrowser();
 
       let pdfBuffer: Buffer;
+      const page = await browser.newPage();
       try {
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle" });
+        await page.setContent(html, { waitUntil: "load" });
         const rawPdf = await page.pdf({
           format: "A4",
           printBackground: true,
@@ -163,7 +149,7 @@ router.post(
         });
         pdfBuffer = Buffer.from(rawPdf);
       } finally {
-        await browser.close();
+        await page.close();
       }
 
       // ── 8. Upload to Supabase Storage ─────────────────────────────────────
