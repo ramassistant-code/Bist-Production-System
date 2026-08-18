@@ -211,22 +211,17 @@ export default function Deals() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm table-fixed">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50 bg-muted/50">
-                      {/* Widths are only honoured under table-fixed (set on the
-                          table below). Under auto layout the deal-number column
-                          absorbed all the slack — 424px for a 13-character code —
-                          pushing the table 95px past its container, and in RTL
-                          that overflow clips on the left, hiding the actions. */}
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap w-[175px]">מספר עסקה</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[195px]">שם לקוח</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[140px]">מקור</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap w-[115px]">סכום עסקה</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[150px]">סטטוס</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap w-[125px]">תאריך פתיחה</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap w-[125px]">עדכון אחרון</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[105px]">פעולות</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">מספר עסקה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם לקוח</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">מקור</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">סכום עסקה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">סטטוס</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">תאריך פתיחה</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">עדכון אחרון</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -238,7 +233,7 @@ export default function Deals() {
                         <td className="px-4 py-3 font-mono font-medium text-foreground/80 whitespace-nowrap">
                           {deal.deal_number}
                         </td>
-                        <td className="px-4 py-3 text-foreground/70 truncate">
+                        <td className="px-4 py-3 text-foreground/70 max-w-[160px] truncate">
                           {getCustomerDisplayName(deal)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">

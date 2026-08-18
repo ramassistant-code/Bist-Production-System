@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { FileText, RefreshCw, Plus, Pencil, Trash2, X, KeyRound, ShieldCheck } from "lucide-react";
 import versionInfo from "@/version.json";
@@ -261,7 +260,7 @@ function SetPasswordDialog({ user, onClose, authedFetch }: {
 
           {success ? (
             <div className="space-y-3">
-              <p className="text-sm text-success-accent bg-success/10 border border-success/20 rounded-lg px-3 py-2">
+              <p className="text-sm text-green-700 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
                 הסיסמה הוגדרה בהצלחה.
               </p>
             </div>
@@ -439,9 +438,9 @@ export default function Settings() {
               </a>
             </Link>
             <Link href="/settings/vat-audit">
-              <a className="flex items-center gap-3 bg-card border border-border hover:border-warning hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
-                <div className="w-10 h-10 rounded-lg bg-warning/10 group-hover:bg-warning/20 flex items-center justify-center transition-colors">
-                  <ShieldCheck className="w-5 h-5 text-warning-accent" />
+              <a className="flex items-center gap-3 bg-card border border-border hover:border-amber-400 hover:shadow-sm rounded-xl p-4 transition-all cursor-pointer group">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 flex items-center justify-center transition-colors">
+                  <ShieldCheck className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-foreground">ביקורת מיגרציית מע״מ</div>
@@ -491,9 +490,11 @@ export default function Settings() {
                         {u.role ? (ROLE_LABELS[u.role] ?? u.role) : "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={u.is_active ? "success" : "secondary"}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          u.is_active ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                        }`}>
                           {u.is_active ? "פעיל" : "לא פעיל"}
-                        </Badge>
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">

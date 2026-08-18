@@ -139,11 +139,6 @@ export function ComboboxField({
         dir="rtl"
         align="start"
         sideOffset={4}
-        // prevent wheel events from bubbling up to Dialog's scroll container
-        onWheel={(e) => e.stopPropagation()}
-        // prevent Radix from restoring focus to the trigger when inside a Dialog
-        // (focus restoration inside a Dialog causes an unhandled null rejection)
-        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <Command shouldFilter={false}>
           <CommandInput
@@ -152,9 +147,7 @@ export function ComboboxField({
             onValueChange={handleInputChange}
             className="text-right"
           />
-          <CommandList
-            style={{ maxHeight: "240px", overflowY: "auto" }}
-          >
+          <CommandList>
             {loading && (
               <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />

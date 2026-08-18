@@ -697,11 +697,8 @@ export default function Leads() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground w-[130px]">מספר ליד</th>
-                    {/* Capped: this column was taking 397px and left the table
-                        17px from overflowing its container, which would clip the
-                        actions column off the left edge in RTL. */}
-                    <th className="text-right px-4 py-3 font-medium text-muted-foreground max-w-[280px]">שם</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">מספר ליד</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">שם</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">טלפון</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">אימייל</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">סטטוס</th>
