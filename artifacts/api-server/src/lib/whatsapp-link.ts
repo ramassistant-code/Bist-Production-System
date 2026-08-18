@@ -116,6 +116,37 @@ export function buildOnboardingMessage(input: OnboardingMessageInput): string {
   ].join("\n");
 }
 
+export interface DirectSaleMessageInput {
+  customerName: string;
+  /** רשימת המוצרים שנרכשו (ללא רכיבים). */
+  items: Array<{ name: string; quantity: number }>;
+  /** סה"כ לתשלום כולל מע"מ. */
+  totalWithVat: number;
+  /** לינק לתשלום באשראי. */
+  paymentUrl: string;
+}
+
+/**
+ * הודעת ווטסאפ למכירה ישירה (ללא הצעת מחיר + PDF).
+ * מפרטת את המוצרים שנרכשו + סכום לתשלום + לינק לתשלום.
+ */
+export function buildDirectSaleMessage(input: DirectSaleMessageInput): string {
+  const itemLines = input.items.map(
+    (it) => `• ${it.name}${it.quantity > 1 ? ` × ${it.quantity}` : ""}`,
+  );
+  const totalStr = `₪${input.totalWithVat.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return [
+    `שלום ${input.customerName}`,
+    ``,
+    `להלן המוצרים שרכשת:`,
+    ...itemLines,
+    ``,
+    `סה״כ לתשלום: ${totalStr}`,
+    `לינק לתשלום:`,
+    input.paymentUrl,
+  ].join("\n");
+}
+
 /**
  * בונה קישור שפותח את WhatsApp Web עם השיחה של הלקוח וההודעה בתיבה.
  * מחזיר null אם אין מספר טלפון תקין.
