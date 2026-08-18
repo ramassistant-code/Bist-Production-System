@@ -168,7 +168,7 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
   const totalIncVat = Math.round((totalExVat + vatAmount) * 100) / 100;
 
   const {
-    control, register, handleSubmit, watch,
+    control, register, handleSubmit, watch, reset,
     formState: { errors },
   } = useForm<DealFormValues>({
     resolver: zodResolver(dealSchema),
