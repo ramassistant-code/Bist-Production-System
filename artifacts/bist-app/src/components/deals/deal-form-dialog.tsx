@@ -572,12 +572,13 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
                 {paymentType === "credit_card" && (
                   <div className="space-y-1">
-                    <Label>מספר תשלומים</Label>
+                    <Label>מספר תשלומים <span className="text-destructive">*</span></Label>
                     <Input
                       {...register("installments_count")}
                       type="number" min="1" dir="ltr"
                       disabled={isBusy}
                       placeholder="1"
+                      defaultValue="1"
                     />
                   </div>
                 )}

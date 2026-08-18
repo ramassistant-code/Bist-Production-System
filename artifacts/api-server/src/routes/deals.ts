@@ -416,7 +416,10 @@ router.post("/deals/standalone", async (req: Request, res: Response): Promise<vo
         execution_status:          toStr(b["execution_status"]) ?? "פתוחה",
         payment_status:            toStr(b["payment_status"]),
         payment_type:              toStr(b["payment_type"]),
-        installments_count:        toNum(b["installments_count"]),
+        // credit_card requires installments_count; default to 1 if omitted
+        installments_count:        toStr(b["payment_type"]) === "credit_card"
+          ? (toNum(b["installments_count"]) ?? 1)
+          : toNum(b["installments_count"]),
         purchase_date:             toStr(b["purchase_date"]),
         next_payment_date:         toStr(b["next_payment_date"]),
         invoice_name:              toStr(b["invoice_name"]),
