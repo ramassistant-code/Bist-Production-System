@@ -409,21 +409,25 @@ router.post("/deals/standalone", async (req: Request, res: Response): Promise<vo
       .insert(dealsTable)
       .values({
         deal_number,
-        customer_id:        toUuid(b["customer_id"]),
-        lead_id:            toUuid(b["lead_id"]),
-        salesperson_id:     toUuid(b["salesperson_id"]),
-        quote_id:           toUuid(b["quote_id"]),
-        execution_status:   toStr(b["execution_status"]) ?? "פתוחה",
-        payment_status:     toStr(b["payment_status"]),
-        payment_type:       toStr(b["payment_type"]),
-        installments_count: toNum(b["installments_count"]),
-        purchase_date:      toStr(b["purchase_date"]),
-        next_payment_date:  toStr(b["next_payment_date"]),
-        invoice_name:       toStr(b["invoice_name"]),
-        invoice_id_number:  toStr(b["invoice_id_number"]),
-        invoice_email:      toStr(b["invoice_email"]),
-        what_is_included:   toStr(b["what_is_included"]),
-        special_notes:      toStr(b["special_notes"]),
+        customer_id:               toUuid(b["customer_id"]),
+        lead_id:                   toUuid(b["lead_id"]),
+        salesperson_id:            toUuid(b["salesperson_id"]),
+        quote_id:                  toUuid(b["quote_id"]),
+        execution_status:          toStr(b["execution_status"]) ?? "פתוחה",
+        payment_status:            toStr(b["payment_status"]),
+        payment_type:              toStr(b["payment_type"]),
+        installments_count:        toNum(b["installments_count"]),
+        purchase_date:             toStr(b["purchase_date"]),
+        next_payment_date:         toStr(b["next_payment_date"]),
+        invoice_name:              toStr(b["invoice_name"]),
+        invoice_id_number:         toStr(b["invoice_id_number"]),
+        invoice_email:             toStr(b["invoice_email"]),
+        what_is_included:          toStr(b["what_is_included"]),
+        special_notes:             toStr(b["special_notes"]),
+        // Products entered directly (no quote)
+        items_snapshot:            b["items_snapshot"] ?? null,
+        total_amount:              b["total_amount"] ? String(b["total_amount"]) : undefined,
+        total_amount_including_vat: b["total_amount_including_vat"] ? String(b["total_amount_including_vat"]) : undefined,
       })
       .returning();
 
@@ -1078,7 +1082,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
 
 router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> => {
   const id = String(req.params["id"]);
-  const { execution_status, payment_status, special_notes } = req.body as Record<string, string>;
+  const b = req.body as Record<string, unknown>;
+  const { execution_status, payment_status, special_notes } = b as Record<string, string>;
 
   if (execution_status !== undefined && !VALID_EXECUTION_STATUSES.includes(execution_status)) {
     res.status(400).json({ error: "ערך סטטוס ביצוע אינו תקין" });
@@ -1090,13 +1095,30 @@ router.patch("/deals/:id", async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
+  const toStr  = (v: unknown) => (v === "" || v == null ? null : String(v));
+  const toNum  = (v: unknown) => (v === "" || v == null ? null : Number(v));
+  const toUuid = (v: unknown) => { const s = toStr(v); return s && /^[0-9a-f-]{36}$/i.test(s) ? s : null; };
+
   try {
     const updateValues: Record<string, unknown> = {
       updated_at: new Date(),
     };
     if (execution_status !== undefined) updateValues.execution_status = execution_status;
-    if (payment_status !== undefined) updateValues.payment_status = payment_status;
-    if (special_notes !== undefined) updateValues.special_notes = special_notes;
+    if (payment_status   !== undefined) updateValues.payment_status   = payment_status;
+    if (special_notes    !== undefined) updateValues.special_notes    = special_notes;
+    // Additional editable fields from deal-form-dialog
+    if ("customer_id"        in b) updateValues.customer_id        = toUuid(b["customer_id"]);
+    if ("lead_id"            in b) updateValues.lead_id            = toUuid(b["lead_id"]);
+    if ("salesperson_id"     in b) updateValues.salesperson_id     = toUuid(b["salesperson_id"]);
+    if ("quote_id"           in b) updateValues.quote_id           = toUuid(b["quote_id"]);
+    if ("payment_type"       in b) updateValues.payment_type       = toStr(b["payment_type"]);
+    if ("installments_count" in b) updateValues.installments_count = toNum(b["installments_count"]);
+    if ("purchase_date"      in b) updateValues.purchase_date      = toStr(b["purchase_date"]);
+    if ("next_payment_date"  in b) updateValues.next_payment_date  = toStr(b["next_payment_date"]);
+    if ("invoice_name"       in b) updateValues.invoice_name       = toStr(b["invoice_name"]);
+    if ("invoice_id_number"  in b) updateValues.invoice_id_number  = toStr(b["invoice_id_number"]);
+    if ("invoice_email"      in b) updateValues.invoice_email      = toStr(b["invoice_email"]);
+    if ("what_is_included"   in b) updateValues.what_is_included   = toStr(b["what_is_included"]);
 
     const updated = await db
       .update(dealsTable)
