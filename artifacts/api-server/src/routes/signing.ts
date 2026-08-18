@@ -16,11 +16,14 @@ const RETURN_URL_BASE = process.env.INVOICE4U_RETURN_URL ?? "";
 const PDF_BUCKET = "quote-pdfs";
 const SIGNING_TTL_DAYS = Number(process.env.SIGNING_TOKEN_TTL_DAYS ?? 14);
 
-// בסיס הכתובת לבניית לינק החתימה הציבורי. עדיף להגדיר PUBLIC_APP_URL במפורש;
-// אחרת נגזר מכותרת ה-Host של הבקשה.
+// בסיס הכתובת לבניית לינק החתימה הציבורי.
+// ב-production: משתמש ב-PUBLIC_APP_URL אם מוגדר.
+// ב-development: תמיד גוזר מ-Host של הבקשה (dev-server → dev DB, לא production).
 function publicBaseUrl(req: Request): string {
-  const env = (process.env.PUBLIC_APP_URL ?? "").trim();
-  if (env) return env.replace(/\/+$/, "");
+  if (process.env.NODE_ENV !== "development") {
+    const env = (process.env.PUBLIC_APP_URL ?? "").trim();
+    if (env) return env.replace(/\/+$/, "");
+  }
   return `https://${req.get("host")}`.replace(/\/+$/, "");
 }
 
