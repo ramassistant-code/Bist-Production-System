@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -153,6 +153,15 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
 
   // ── Line items (create mode only) ─────────────────────────────────────────
   const [lines, setLines] = useState<LineItem[]>([newLine()]);
+
+  // Reset form and lines every time the dialog opens (Dialog stays mounted when closed)
+  useEffect(() => {
+    if (open) {
+      setLines([newLine()]);
+      reset(toFormValues(deal));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const totalExVat  = lines.reduce((s, l) => s + lineTotal(l), 0);
   const vatAmount   = Math.round(totalExVat * VAT_RATE * 100) / 100;
@@ -443,10 +452,14 @@ export default function DealFormDialog({ open, onClose, onSuccess, deal }: DealF
                       value={line.product_id}
                       onChange={(id) => {
                         if (!id) { updateLine(line._key, { product_id: null, product_name: "" }); return; }
-                        // selectProduct fetches the real price; the label is resolved via fetchProductById
-                        selectProduct(line._key, id, "").catch(() => {
-                          updateLine(line._key, { product_id: id, product_name: "" });
-                        });
+                        // Defer price fetch to after Radix finishes closing the Popover.
+                        // Updating state during the close sequence causes an unhandled rejection.
+                        const key = line._key;
+                        setTimeout(() => {
+                          selectProduct(key, id, "").catch(() => {
+                            updateLine(key, { product_id: id, product_name: "" });
+                          });
+                        }, 0);
                       }}
                       fetchOptions={fetchProducts}
                       fetchById={fetchProductById}
