@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { customFetch } from "@workspace/api-client-react";
-import { Eye, ChevronRight, ChevronLeft, Search, X, Plus } from "lucide-react";
-import DealFormDialog from "@/components/deals/deal-form-dialog";
+import { Eye, ChevronRight, ChevronLeft, Search, X } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,8 +98,6 @@ export default function Deals() {
   const [executionStatus, setExecutionStatus] = useState("");
   const [page, setPage] = useState(1);
   const [inputValue, setInputValue] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-
   const handleSearch = useCallback(() => {
     setSearch(inputValue);
     setPage(1);
@@ -147,10 +144,6 @@ export default function Deals() {
                 </p>
               )}
             </div>
-            <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
-              <Plus className="w-4 h-4" />
-              עסקה חדשה
-            </Button>
           </div>
 
           {/* Filters */}
@@ -285,13 +278,6 @@ export default function Deals() {
               </div>
             )}
           </div>
-
-      {/* Create dialog */}
-      <DealFormDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSuccess={() => { setCreateOpen(false); }}
-      />
 
           {/* Pagination */}
           {totalPages > 1 && (
