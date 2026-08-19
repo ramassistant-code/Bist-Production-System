@@ -31,7 +31,8 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(process.env.SUPABASE_URL ?? ""),
     "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ""),
-    "import.meta.env.VITE_APP_ENV": JSON.stringify(process.env.VITE_APP_ENV ?? "TEST"),
+    // התגית "סביבת פיתוח" מוצגת רק כשהמשתנה VITE_APP_ENV מוגדר במפורש כ-TEST
+    "import.meta.env.VITE_APP_ENV": JSON.stringify(process.env.VITE_APP_ENV ?? ""),
   },
   plugins: [
     react(),
