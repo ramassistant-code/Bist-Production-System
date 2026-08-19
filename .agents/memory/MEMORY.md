@@ -1,8 +1,5 @@
 - [Phase 2 payment+credits pattern](phase2-payment-credits.md) — deal creation creates payment + credits after the DB transaction; both idempotent via source_key unique partial index + onConflictDoNothing()
 - [party_snapshot customer resolution](party-snapshot-customer-resolve.md) — party_snapshot uses source_id (not customer_id) when party_type==="customer"; fallback to quote.customer_id
-- [refresh_deal_payment_totals migration](refresh-deal-payment-totals.md) — migrated to update amount_paid_including_vat + use COALESCE(total_amount_including_vat, total_amount)
+- [refresh_deal_payment_totals](refresh-deal-payment-totals.md) — dual ex/inc-VAT OR comparison; called on POST payment + PATCH deal; rounding guard caps ex-VAT at remaining to avoid DB constraint
 - [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
 - [bist-app mutation pattern](bist-app-mutation-pattern.md) — RLS blocks anon Supabase for app_users/lookup tables; use apiFetch+Express for mutations that need number generation; use Supabase directly when RLS allows
-- [Supabase connection quirks](supabase-connection.md) — connect via pooler aws-0-ap-southeast-1; SUPABASE_POOLER_HOST override gets wiped by merges, re-verify after every merge
-- [Invoice4U clearing status](invoice4u-clearing.md) — verify payments via GetClearingLogById {clearingLogId, token}; the ByI4UClearingLogId endpoint doesn't exist (404 → "טרם זוהה תשלום")
-- [Monday sync architecture](monday-sync.md) — sync failures are silent by design; check SYNC_API_KEY secret + outbound_enabled flags in monday_export_targets before debugging code

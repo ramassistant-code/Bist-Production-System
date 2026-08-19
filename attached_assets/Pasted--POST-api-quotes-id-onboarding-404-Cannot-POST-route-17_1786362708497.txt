@@ -1,0 +1,53 @@
+הבעיה: קריאת הפרונטאנד ל־POST /api/quotes/:id/onboarding מחזירה 404 (Cannot POST). 
+הקוד של ה־route כבר קיים ב־repo אך השרת שרץ לא מכיר אותו.
+
+הקשר טכני (אל תשנה לוגיקה — רק ודא בנייה, רישום, והפעלה מחדש):
+- ה־route מוגדר בקובץ: artifacts/api-server/src/routes/signing.ts
+  (מגדיר: POST /quotes/:id/onboarding, GET /public/signing/:token, POST /public/signing/:token)
+- הוא אמור להיות מיובא ורשום ב־artifacts/api-server/src/routes/index.ts:
+    import signingRouter from "./signing";
+    ...
+    router.use(signingRouter);
+- ה־router הראשי מותקן תחת /api ב־artifacts/api-server/src/app.ts:
+    app.use("/api", router);
+  כך שהנתיב המלא הוא /api/quotes/:id/onboarding.
+- השרת רץ מקוד מהודר: artifacts/api-server/dist/index.mjs (נבנה ע"י node ./build.mjs / pnpm build).
+  הסיבה הסבירה ל־404: ה־dist לא נבנה מחדש אחרי המיזוג האחרון, ולכן ה־route החדש לא נמצא ב־bundle שרץ.
+
+מה לעשות:
+1. ודא ש־artifacts/api-server/src/routes/index.ts אכן מייבא ורושם את signingRouter (import + router.use). אם חסר — הוסף.
+2. בנה מחדש את ה־api-server:  cd artifacts/api-server && pnpm build
+3. ודא שה־route נכנס ל־bundle:  grep -c "quotes/:id/onboarding\|/public/signing" artifacts/api-server/dist/index.mjs  (צריך להיות > 0; אם 0 — הבנייה לא כללה את הקובץ, בדוק שהקובץ signing.ts קיים ומיובא).
+4. הפעל מחדש את השרת (Stop + Run של ה־workflow של ה־api-server) כך שיטען את ה־dist החדש.
+5. אמת מול השרת החי:  curl -i -X POST "http://localhost:$PORT/api/quotes/PUT-A-REAL-QUOTE-ID/onboarding" -H "Content-Type: application/json" -d '{}'
+   - אם חוזר 404 עדיין → ה־route לא נרשם/לא נבנה. חזור לשלב 1–3.
+   - אם חוזר 503 → חסר INVOICE4U_API_KEY ב־Secrets.
+   - אם חוזר 500 עם הודעה על signing_requests → צריך ליצור את הטבלה signing_requests ב־Supabase (ראה למטה).
+   - אם חוזר 200 עם signing_url + payment_url → תוקן.
+
+תלויות נוספות שצריכות להתקיים (אל תדרוס אם כבר קיימות):
+- טבלה signing_requests ב־Supabase (הגישה אליה דרך supabaseAdmin/service role, לא drizzle):
+  create table if not exists public.signing_requests (
+    id uuid primary key default gen_random_uuid(),
+    token text not null unique,
+    quote_id uuid not null,
+    quote_version_id uuid not null,
+    customer_id uuid,
+    status text not null default 'pending',
+    pdf_document_id uuid,
+    unsigned_pdf_path text,
+    signed_pdf_path text,
+    signer_name text,
+    signer_id_number text,
+    signed_at timestamptz,
+    signed_ip text,
+    signed_user_agent text,
+    notified_at timestamptz,
+    expires_at timestamptz not null,
+    created_at timestamptz not null default now()
+  );
+  create index if not exists signing_requests_token_idx on public.signing_requests (token);
+  create index if not exists signing_requests_version_idx on public.signing_requests (quote_version_id);
+- משתנה סביבה PUBLIC_APP_URL (הבסיס לבניית לינק החתימה; אם חסר נגזר מכתובת הבקשה).
+
+בסיום דווח: (א) האם signingRouter היה רשום, (ב) פלט ה־grep על dist, (ג) קוד הסטטוס שחזר מ־curl, (ד) האם הטבלה signing_requests קיימת.

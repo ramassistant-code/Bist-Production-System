@@ -1,0 +1,77 @@
+מטרה: התראת WhatsApp אוטומטית לאיש המכירות כשלקוח משלם בלינק האשראי — בשתי דרכים
+משלימות: (1) event-driven דרך דף תודה (ReturnUrl), (2) כפתור ידני "בדוק תשלום" במסך
+ההצעה, לכיסוי מקרה שבו הלקוח סגר את הדפדפן לפני ההפניה. שתי הדרכים משתמשות באותה
+לוגיקת אימות+שליחה. אין poller/setInterval.
+
+אל תיגע בסכמה: אל תריץ drizzle-kit push, אל תיצור/תשנה migrations או קבצי schema.
+העמודות כבר קיימות ב-signing_requests (גישה דרך supabaseAdmin):
+  clearing_id text, payment_status text default 'pending', paid_amount numeric,
+  payment_notified_at timestamptz.
+
+רקע קוד קיים:
+- artifacts/api-server/src/lib/invoice4u.ts — createPaymentLink מחזיר { url, clearingId }.
+- artifacts/api-server/src/routes/signing.ts — POST /quotes/:id/onboarding; יש publicBaseUrl(req).
+- artifacts/api-server/src/lib/invoiceWebhook.ts — sendWhatsAppNotification(message) → n8n.
+- עמוד ציבורי לדוגמה: artifacts/bist-app/src/pages/sign.tsx, מחוץ ל-AuthGate ב-App.tsx.
+- מסך ההצעה: artifacts/bist-app/src/pages/quotes-detail.tsx (כבר יש בו כפתור "שלח ללקוח"
+  ו-OnboardingModal; customFetch, useToast, useMutation זמינים).
+
+משימות:
+
+1) invoice4u.ts — getClearingStatus(clearingId):
+   POST https://api.invoice4u.co.il/Services/ApiService.svc/GetClearingLogById
+   עם { clearingLogId: clearingId, token: process.env.INVOICE4U_API_KEY }.
+   אמת אמפירית מבנה בקשה (אולי { request: {...} }) ועטיפת תשובה (אולי "d"); רשום ללוג
+   תשובה גולמית בכישלון. החזר { isSuccess, amount, confirmationNumber, raw }. אל תזרוק.
+
+2) signing.ts — POST /quotes/:id/onboarding:
+   א. returnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`.
+   ב. אחרי createPaymentLink מוצלח: update signing_requests set clearing_id=result.clearingId,
+      payment_status='pending' לשורה שנוצרה. clearingId ריק → logger.warn.
+
+3) signing.ts — פונקציה פנימית משותפת (לא endpoint):
+   async function verifyAndNotifyPayment(sr):  // sr = שורת signing_requests
+     - אם sr.payment_status === 'paid' → return { status:'paid', amount: sr.paid_amount }.
+     - אם אין sr.clearing_id → return { status:'no_link' }.
+     - const st = await getClearingStatus(sr.clearing_id).
+     - אם !st.isSuccess → return { status:'pending' }.
+     - עדכון atomic למניעת כפילות:
+         update signing_requests set payment_status='paid', paid_amount=st.amount,
+         payment_notified_at=now() where id=sr.id and payment_notified_at is null  (עם select id).
+       * אם הוחזרה שורה (אנחנו ראשונים): טען quote_number (quotes) ו-customer_name (customers)
+         לפי sr, ושלח sendWhatsAppNotification:
+         "💰 התקבל תשלום על הצעה {quote_number} — {customer_name}, סכום {amount}₪".
+       * אם לא הוחזרה שורה: כבר טופל — אל תשלח.
+     - return { status:'paid', amount: st.amount }.
+
+4) signing.ts — endpoint ציבורי POST /public/payment-return/:token:
+   טען signing_request לפי token (404 אם אין) → קרא verifyAndNotifyPayment → החזר את התוצאה.
+
+5) signing.ts — endpoint POST /quotes/:id/check-payment (למסך ההצעה):
+   מצא את שורת signing_requests האחרונה של ה-quote (quote_id = :id, clearing_id not null,
+   order by created_at desc, limit 1). אם אין → return { status:'no_link' }.
+   אחרת → קרא verifyAndNotifyPayment על אותה שורה והחזר את התוצאה.
+
+6) Frontend — דף תודה ציבורי artifacts/bist-app/src/pages/payment-done.tsx:
+   מחוץ ל-AuthGate (הוסף <Route path="/payment-done" component={PaymentDone} /> באותו Switch
+   של /sign/:token ב-App.tsx). קרא token מ-query (URLSearchParams). ב-mount: POST ל-
+   `${apiBase}/api/public/payment-return/${token}`. מצבים: "מאמת תשלום…"; status='paid' →
+   "✅ התשלום התקבל, תודה!"; אחרת → "טרם זוהה תשלום. אם שילמת, נסה שוב בעוד רגע." RTL, סגנון כמו sign.tsx.
+
+7) Frontend — כפתור "בדוק תשלום" ב-quotes-detail.tsx:
+   ליד "שלח ללקוח". onClick → mutation ל-POST /api/quotes/:id/check-payment. תוצאה:
+   - status='paid' → toast הצלחה "התקבל תשלום ({amount}₪)" + invalidate של ה-query של ההצעה.
+   - status='pending' → toast "טרם זוהה תשלום עבור ההצעה".
+   - status='no_link' → toast "לא נמצא לינק תשלום להצעה זו (שלח קודם ללקוח)".
+   הצג מצב טעינה בזמן הבדיקה.
+
+אל תבנה poller/מתזמן. אל תשנה סכמה.
+
+אימות:
+- תשלום אמיתי (סכום קטן): (א) דף /payment-done מציג "התקבל" ונשלחת התראה אחת;
+  (ב) לחיצה על "בדוק תשלום" אחרי תשלום מחזירה 'paid' ולא שולחת התראה כפולה (idempotent);
+  (ג) לחיצה לפני תשלום מחזירה 'pending'.
+- רשום ללוג תשובה גולמית מ-GetClearingLogById.
+
+בסיום דווח: (א) מבנה בקשה/תשובה של GetClearingLogById, (ב) ש-clearing_id נשמר וה-ReturnUrl
+תקין, (ג) ששני המסלולים (דף תודה + כפתור) עובדים ושולחים התראה אחת בלבד.

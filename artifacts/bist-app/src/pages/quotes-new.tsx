@@ -367,7 +367,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       {/* ── שליחת הצעת מחיר ─────────────────────────────── */}
       <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
         <p className="text-sm font-medium">שליחת הצעת מחיר ללקוח</p>
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2 cursor-pointer text-sm">
             <input
               type="radio"
@@ -719,8 +719,8 @@ function BasketRow({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <Label className="text-sm">כמות</Label>
-            <Input type="number" min={0.001} step={1} value={item.quantity}
-              onChange={(e) => setField("quantity", parseFloat(e.target.value) || 1)} />
+            <Input type="number" min={1} step={1} value={item.quantity}
+              onChange={(e) => setField("quantity", parseInt(e.target.value, 10) || 1)} />
           </div>
           <div className="space-y-1">
             <Label className="text-sm">מחיר יחידה (₪)</Label>

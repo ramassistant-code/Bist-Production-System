@@ -1,0 +1,53 @@
+מטרה: להוסיף מסך מקדים לפרטי חשבונית לפני הסליקה, ולגרום ל-Invoice4U להפיק ולשלוח
+חשבונית למייל הלקוח בסיום התשלום. אל תיגע בסכמה (העמודות נוספו ידנית): signing_requests
+כוללת invoice_name, invoice_tax_id, invoice_email, clearing_id, payment_status,
+paid_amount, payment_notified_at. גישה דרך supabaseAdmin בלבד.
+
+1) invoice4u.ts — הרחב createPaymentLink:
+   הוסף ל-CreatePaymentLinkInput: isDocCreate?: boolean, docHeadline?: string, docComments?: string.
+   בגוף הבקשה, כאשר isDocCreate: הוסף IsDocCreate: true, DocLanguage: "he",
+   ו-DocHeadline/DocComments אם ניתנו. (Email ו-FullName כבר נשלחים.)
+   שמור על "לעולם לא לזרוק" והחזרת { ok, url, clearingId, error, raw }.
+
+2) signing.ts — POST /quotes/:id/onboarding:
+   הסר את קריאת createPaymentLink כאן. במקום paymentUrl של uPay, השתמש:
+   paymentUrl = `${publicBaseUrl(req)}/pay/${token}` (המסך המקדים). שאר הזרימה (יצירת
+   signing_requests + signingUrl + buildOnboardingMessage + whatsapp_url) נשארת.
+
+3) signing.ts — GET /public/pay/:token (ציבורי):
+   טען signing_request לפי token. אם payment_status==='paid' → החזר { status:'paid' }.
+   טען מה-quote/לקוח פרה-פיל: invoice_name (customers.invoice_name || customers.name),
+   invoice_tax_id (customers.tax_id), invoice_email (customers.invoice_email || customers.email).
+   טען סכום כולל מע"מ מ-quote_versions.totals_snapshot.total_with_vat, ו-quote_number.
+   החזר { status:'pending', quote_number, amount, invoice_name, invoice_tax_id, invoice_email }.
+
+4) signing.ts — POST /public/pay/:token (ציבורי):
+   גוף: { invoice_name, invoice_tax_id, invoice_email }. ולידציה: invoice_name לא ריק,
+   invoice_email תקין. טען signing_request + סכום (total_with_vat) + quote_number.
+   קרא createPaymentLink({
+     sum, fullName: invoice_name, email: invoice_email, phone: <customer phone אם יש>,
+     installments: 1, description: `תשלום עבור הצעה ${quote_number}`,
+     externalId: quote_number, returnUrl: `${publicBaseUrl(req)}/payment-done?token=${token}`,
+     isDocCreate: true, docHeadline: `הצעה ${quote_number}`,
+     docComments: invoice_tax_id ? `ת.ז/ח.פ: ${invoice_tax_id}` : undefined
+   }).
+   אם !ok → 502. אחרת: update signing_requests set invoice_name, invoice_tax_id,
+   invoice_email, clearing_id=result.clearingId, payment_status='pending' where token=...;
+   החזר { clearing_url: result.url }.
+
+5) Frontend — artifacts/bist-app/src/pages/pay.tsx (במתכונת sign.tsx, מחוץ ל-AuthGate):
+   ב-mount: GET /api/public/pay/:token → מלא טופס עם invoice_name, invoice_tax_id,
+   invoice_email (ניתנים לעריכה) + הצגת הסכום. אם status==='paid' → הצג "התשלום כבר בוצע".
+   כפתור "המשך לתשלום": POST /api/public/pay/:token עם הערכים → קבל { clearing_url } →
+   window.location.href = clearing_url. מצבי טעינה/שגיאה. RTL, סגנון כמו sign.tsx.
+
+6) App.tsx — הוסף <Route path="/pay/:token" component={PayPage} /> בתוך ה-Switch הציבורי
+   (מעל fallback ה-AuthGate), וייבא PayPage.
+
+אל תשנה סכמה. אל תבנה poller.
+
+אימות (חשוב): צור לינק דרך "שלח ללקוח", פתח את לינק ה-/pay, ודא שהפרטים מלאים מראש
+וניתנים לעריכה, לחץ "המשך לתשלום", ודא הפניה לדף סליקת uPay על הסכום כולל מע"מ, בצע
+תשלום קטן, וּודא ש**מגיעה חשבונית למייל שהוזן**. רשום ללוג את התשובה הגולמית מ-Invoice4U
+(כדי לאשר ש-IsDocCreate התקבל). דווח: מבנה הבקשה/תשובה, האם הגיעה חשבונית למייל, והאם
+הת.ז מופיעה על המסמך.

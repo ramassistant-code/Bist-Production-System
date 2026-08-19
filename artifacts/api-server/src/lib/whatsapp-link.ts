@@ -93,8 +93,9 @@ export interface OnboardingMessageInput {
  * (ללא העברה בנקאית / "מה קורה אחרי" — הוסרו לפי הטמפלט העדכני.)
  */
 export function buildOnboardingMessage(input: OnboardingMessageInput): string {
+  const firstName = input.customerName.trim().split(/\s+/)[0] || "לקוח";
   return [
-    `היי ${input.customerName} שמחתי להכיר :)`,
+    `שלום ${firstName}`,
     ``,
     `שולח מסודר את השלבים להתקדמות:`,
     `1. חתימה על הצעת מחיר`,
@@ -132,17 +133,15 @@ export interface DirectSaleMessageInput {
  */
 export function buildDirectSaleMessage(input: DirectSaleMessageInput): string {
   const itemLines = input.items.map(
-    (it) => `• ${it.name}${it.quantity > 1 ? ` × ${it.quantity}` : ""}`,
+    (it) => `- ${it.name} x ${it.quantity}`,
   );
   const totalStr = `₪${input.totalWithVat.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return [
-    `שלום ${input.customerName}`,
-    ``,
-    `להלן המוצרים שרכשת:`,
+    `קישור לתשלום עבור מוצרים:`,
     ...itemLines,
     ``,
-    `סה״כ לתשלום: ${totalStr}`,
-    `לינק לתשלום:`,
+    `סה"כ לתשלום ${totalStr} כולל מע"מ`,
+    `לינק`,
     input.paymentUrl,
   ].join("\n");
 }

@@ -18,9 +18,14 @@ localPort = 24171
 run = "pnpm --filter @workspace/bist-app run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/bist-app", "run", "build" ]
 publicDir = "artifacts/bist-app/dist/public"
 serve = "static"
+
+[services.production.build]
+args = [ "pnpm", "--filter", "@workspace/bist-app", "run", "build:production" ]
+
+[services.production.build.env]
+VITE_APP_ENV = "PROD"
 
 [[services.production.rewrites]]
 from = "/*"
@@ -29,3 +34,4 @@ to = "/index.html"
 [services.env]
 PORT = "24171"
 BASE_PATH = "/"
+VITE_APP_ENV = "TEST"

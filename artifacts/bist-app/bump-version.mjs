@@ -1,7 +1,8 @@
 /**
  * bump-version.mjs
- * Runs automatically before every production build (via "prebuild" script).
- * Increments the build counter and updates src/version.json.
+ * Runs only for a production publish.
+ * Uses a millisecond release ID so every publish gets a newer version even when
+ * the deployment starts from a clean copy of the repository.
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -9,12 +10,13 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const versionFile = resolve(__dirname, "src/version.json");
-
+const versionFile = process.env.VERSION_FILE ?? resolve(__dirname, "src/version.json");
 const v = JSON.parse(readFileSync(versionFile, "utf8"));
-v.build = (v.build ?? 0) + 1;
+const publishedAt = new Date();
+
+v.build = publishedAt.getTime();
 v.version = `1.0.${v.build}`;
-v.builtAt = new Date().toISOString().split("T")[0];
+v.builtAt = publishedAt.toISOString();
 
 writeFileSync(versionFile, JSON.stringify(v, null, 2) + "\n");
 console.log(`✓ Version bumped → ${v.version} (build ${v.build}, ${v.builtAt})`);
