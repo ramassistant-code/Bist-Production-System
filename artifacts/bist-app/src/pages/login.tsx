@@ -2,7 +2,6 @@ import { useState, FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import versionInfo from "@/version.json";
-import { isTestEnvironment } from "@/lib/environment";
 
 const API_BASE = `${import.meta.env.BASE_URL}api`;
 
@@ -98,14 +97,7 @@ export default function Login() {
           <div className="text-4xl font-black tracking-tight text-foreground">
             BI<span className="text-primary">S</span>T
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-lg font-bold text-foreground">מערכת הפקות</h1>
-            {isTestEnvironment && (
-              <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-300">
-                סביבת פיתוח
-              </span>
-            )}
-          </div>
+          <h1 className="text-lg font-bold text-foreground">מערכת הפקות</h1>
           <p className="text-sm text-muted-foreground">התחברות למערכת</p>
         </div>
 

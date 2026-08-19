@@ -2,7 +2,6 @@ import { Link, useLocation } from "wouter";
 import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { isTestEnvironment } from "@/lib/environment";
 
 const NAV_ITEMS = [
   { name: "לידים", href: "/leads", icon: Target },
@@ -27,11 +26,6 @@ export function Sidebar() {
         </span>
         <div className="flex flex-col items-start">
           <span className="text-sidebar-foreground/60 text-sm font-medium">מערכת הפקות</span>
-          {isTestEnvironment && (
-            <span className="mt-1 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-              סביבת פיתוח
-            </span>
-          )}
         </div>
       </div>
       <nav className="flex-1 py-5 px-3 space-y-0.5 overflow-y-auto">
