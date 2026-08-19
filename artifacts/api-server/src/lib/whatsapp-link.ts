@@ -137,8 +137,6 @@ export function buildDirectSaleMessage(input: DirectSaleMessageInput): string {
   );
   const totalStr = `₪${input.totalWithVat.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return [
-    `שלום ${input.customerName}`,
-    ``,
     `קישור לתשלום עבור מוצרים:`,
     ...itemLines,
     ``,
