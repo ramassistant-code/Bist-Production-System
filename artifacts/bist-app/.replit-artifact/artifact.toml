@@ -34,4 +34,4 @@ to = "/index.html"
 [services.env]
 PORT = "24171"
 BASE_PATH = "/"
-VITE_APP_ENV = "TEST"
+VITE_APP_ENV = "PROD"
