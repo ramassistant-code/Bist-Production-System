@@ -367,7 +367,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       {/* ── שליחת הצעת מחיר ─────────────────────────────── */}
       <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
         <p className="text-sm font-medium">שליחת הצעת מחיר ללקוח</p>
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2 cursor-pointer text-sm">
             <input
               type="radio"
