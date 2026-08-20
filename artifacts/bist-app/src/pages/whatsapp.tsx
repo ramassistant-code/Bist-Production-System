@@ -343,7 +343,7 @@ function MessageBubble({ msg, onSaved }: { msg: WaMessage; onSaved: () => void }
 
 export default function WhatsApp() {
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<"pending" | "all">("all");
+  const [filter, setFilter] = useState<"pending" | "reviewed" | "all">("all");
   const [category, setCategory] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -373,8 +373,8 @@ export default function WhatsApp() {
 
   // Messages for selected conversation
   const { data: messages = [], isLoading: msgsLoading } = useQuery<WaMessage[]>({
-    queryKey: ["wa-messages", selectedId],
-    queryFn: () => apiFetch(`/api/whatsapp/conversations/${selectedId}`),
+    queryKey: ["wa-messages", selectedId, filter],
+    queryFn: () => apiFetch(`/api/whatsapp/conversations/${selectedId}?filter=${filter}`),
     enabled: !!selectedId,
   });
 
@@ -432,7 +432,7 @@ export default function WhatsApp() {
 
           {/* Filter toggle */}
           <div className="flex rounded-lg border border-zinc-700 overflow-hidden text-sm">
-            {(["pending", "all"] as const).map((f) => (
+            {(["pending", "reviewed", "all"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => { setFilter(f); setSelectedId(null); }}
@@ -441,7 +441,7 @@ export default function WhatsApp() {
                   filter === f ? "bg-primary text-white" : "text-zinc-400 hover:bg-zinc-800"
                 )}
               >
-                {f === "pending" ? "ממתין לביקורת" : "הכל"}
+                {f === "pending" ? "ממתינות" : f === "reviewed" ? "נבדקו" : "הכל"}
               </button>
             ))}
           </div>
@@ -466,7 +466,13 @@ export default function WhatsApp() {
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center space-y-3">
                 <div className="text-4xl">🎉</div>
-                <div className="text-sm text-zinc-500">אין הודעות שממתינות לביקורת</div>
+                <div className="text-sm text-zinc-500">
+                  {filter === "pending"
+                    ? "אין הודעות שממתינות לביקורת"
+                    : filter === "reviewed"
+                      ? "אין הודעות שנבדקו"
+                      : "אין הודעות"}
+                </div>
               </div>
             ) : (
               conversations.map((conv) => (

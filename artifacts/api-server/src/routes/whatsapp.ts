@@ -49,17 +49,24 @@ router.get("/whatsapp/categories", async (_req: Request, res: Response): Promise
 });
 
 // ── GET /whatsapp/conversations ──────────────────────────────────────────────
-// Query params: filter=pending|all, category=<string>
+// Query params: filter=pending|reviewed|all, category=<string>
 router.get("/whatsapp/conversations", async (req: Request, res: Response): Promise<void> => {
   try {
     const filter   = (req.query["filter"]   as string | undefined) ?? "pending";
     const category = (req.query["category"] as string | undefined) ?? "";
     const showAll  = filter === "all";
+    const showReviewed = filter === "reviewed";
 
     // Build query using sql.raw() to avoid nested sql-template issues in Drizzle
     const pendingStatuses = `review_status IN ('pending', 'unprocessed')`;
-    const whereFilter = showAll ? `TRUE` : pendingStatuses;
-    const havingClause = showAll ? `` : `HAVING COUNT(*) FILTER (WHERE ${pendingStatuses}) > 0`;
+    const whereFilter = showAll
+      ? `TRUE`
+      : showReviewed
+        ? `review_status = 'reviewed'`
+        : pendingStatuses;
+    const havingClause = showAll || showReviewed
+      ? ``
+      : `HAVING COUNT(*) FILTER (WHERE ${pendingStatuses}) > 0`;
 
     // category comes from our own DB enum via /whatsapp/categories — safe to inline after sanitizing
     const safeCat = category.replace(/'/g, "''");
@@ -106,6 +113,10 @@ router.get("/whatsapp/conversations", async (req: Request, res: Response): Promi
 router.get("/whatsapp/conversations/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const filter = (req.query["filter"] as string | undefined) ?? "all";
+    const statusFilter = filter === "reviewed"
+      ? sql`AND review_status = 'reviewed'`
+      : sql``;
     const rows = await db.execute(sql`
       SELECT
         id, created_at, wa_message_id, received_at, customer_wa_id, customer_name,
@@ -115,7 +126,7 @@ router.get("/whatsapp/conversations/:id", async (req: Request, res: Response): P
         editor_score, editor_corrected_reply, editor_notes,
         review_status, reviewed_at
       FROM whatsapp_messages
-      WHERE COALESCE(customer_wa_id, customer_name) = ${id}
+      WHERE COALESCE(customer_wa_id, customer_name) = ${id} ${statusFilter}
       ORDER BY received_at ASC
     `);
     res.json(rows.rows);

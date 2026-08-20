@@ -532,6 +532,9 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
                 פתיחת משימות מיוחדות לתיאום
               </span>
             </label>
+            <p className="text-xs text-muted-foreground mt-1 mr-7">
+              כל משימה תיפתח בסטטוס „לעשות” ותהיה מקושרת לעסקה שתיפתח.
+            </p>
 
             {coordRequested && (
               <div className="mt-4 space-y-3">

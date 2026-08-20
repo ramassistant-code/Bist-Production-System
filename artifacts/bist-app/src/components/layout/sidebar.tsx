@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, LogOut } from "lucide-react";
+import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, ClipboardList, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { isTestEnvironment } from "@/lib/environment";
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { name: "רכיבים", href: "/components", icon: Layers },
   { name: "הצעות מחיר", href: "/quotes", icon: FileSignature },
   { name: "עסקאות", href: "/deals", icon: Handshake },
+  { name: "משימות", href: "/tasks", icon: ClipboardList },
   { name: "וואטסאפ עורך", href: "/production", icon: MessageCircle },
   { name: "הגדרות", href: "/settings", icon: Settings },
 ];
