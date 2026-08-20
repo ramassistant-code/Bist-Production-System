@@ -123,7 +123,7 @@ function UserFormDialog({ user, onClose, onSaved, authedFetch }: UserFormDialogP
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form id="user-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1">
               <label className="block text-sm font-medium">שם מלא</label>
@@ -213,7 +213,7 @@ function UserFormDialog({ user, onClose, onSaved, authedFetch }: UserFormDialogP
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
+            form="user-form"
             disabled={saving}
             className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground rounded-lg transition-colors"
           >

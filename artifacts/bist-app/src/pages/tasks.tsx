@@ -7,6 +7,7 @@ import {
   ArrowUpDown,
   ClipboardList,
   Eye,
+  ExternalLink,
   Search,
   X,
 } from "lucide-react";
@@ -289,7 +290,21 @@ export default function Tasks() {
                         <td className="px-4 py-3 max-w-[360px]">
                           <div className="font-medium text-foreground line-clamp-2">{task.task_text}</div>
                         </td>
-                        <td className="px-4 py-3 font-mono text-foreground/80 whitespace-nowrap">{task.deal_number ?? "—"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {task.deal_id ? (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/deals/${task.deal_id}`)}
+                              className="inline-flex items-center gap-1 font-mono text-primary hover:underline underline-offset-4"
+                              title={`פתיחת עסקה ${task.deal_number ?? ""}`}
+                            >
+                              {task.deal_number ?? "עסקה"}
+                              <ExternalLink className="w-3.5 h-3.5" aria-hidden />
+                            </button>
+                          ) : (
+                            <span className="font-mono text-foreground/80">—</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-foreground/70 whitespace-nowrap">{task.customer_name ?? "—"}</td>
                         <td className="px-4 py-3 text-foreground/70 whitespace-nowrap">{task.assignee_role || "—"}</td>
                         <td className="px-4 py-3">
@@ -342,7 +357,18 @@ export default function Tasks() {
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">מספר עסקה</div>
-                    <div className="font-mono">{selectedTask.deal_number ?? "—"}</div>
+                    {selectedTask.deal_id ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/deals/${selectedTask.deal_id}`)}
+                        className="inline-flex items-center gap-1 font-mono text-primary hover:underline underline-offset-4"
+                      >
+                        {selectedTask.deal_number ?? "עסקה"}
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden />
+                      </button>
+                    ) : (
+                      <div className="font-mono">—</div>
+                    )}
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">לקוח</div>
@@ -357,12 +383,14 @@ export default function Tasks() {
                     <div>{formatDate(selectedTask.updated_at)}</div>
                   </div>
                 </div>
-                <div className="flex justify-start">
-                  <Button type="button" variant="outline" onClick={() => navigate(`/deals/${selectedTask.deal_id}`)}>
-                    <Eye className="w-4 h-4 ml-2" />
-                    צפייה בעסקה
-                  </Button>
-                </div>
+                {selectedTask.deal_id && (
+                  <div className="flex justify-start">
+                    <Button type="button" variant="outline" onClick={() => navigate(`/deals/${selectedTask.deal_id}`)}>
+                      <Eye className="w-4 h-4 ml-2" />
+                      צפייה בעסקה
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}

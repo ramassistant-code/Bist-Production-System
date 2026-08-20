@@ -280,6 +280,12 @@ router.post("/admin/users", async (req: Request, res: Response): Promise<void> =
     res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "Failed to create user");
+    const code = (err as { code?: string }).code;
+    const message = err instanceof Error ? err.message : "";
+    if (code === "23505" || (message.includes("duplicate key") && message.includes("email"))) {
+      res.status(409).json({ error: "כתובת המייל כבר רשומה עבור משתמש אחר" });
+      return;
+    }
     res.status(500).json({ error: "שגיאת שרת" });
   }
 });

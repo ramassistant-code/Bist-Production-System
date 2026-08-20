@@ -17,6 +17,7 @@ import type { Product } from "@workspace/api-client-react";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface BasketComponent {
+  line_id: string;
   component_id: string;
   component_name_snapshot: string;
   component_description_snapshot: string;
@@ -105,7 +106,7 @@ function formatILS(n: number) {
   return `₪${n.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function newBasketItem(product: Product, components: Array<{ component_id: string; component_name_snapshot: string; component_description_snapshot: string; quantity: number; unit_cost_snapshot: number; customer_note?: string; internal_note?: string }>): BasketItem {
+function newBasketItem(product: Product, components: Array<Omit<BasketComponent, "line_id">>): BasketItem {
   return {
     line_id: crypto.randomUUID(),
     source_type: "product",
@@ -121,7 +122,12 @@ function newBasketItem(product: Product, components: Array<{ component_id: strin
     price_override_reason: "",
     customer_note: product.quote_notes_default ?? "",
     internal_note: "",
-    components: components.map(c => ({ ...c, customer_note: c.customer_note ?? "", internal_note: c.internal_note ?? "" })),
+    components: components.map((component) => ({
+      ...component,
+      line_id: crypto.randomUUID(),
+      customer_note: component.customer_note ?? "",
+      internal_note: component.internal_note ?? "",
+    })),
     // Open by default: what a product is made of is the point of this step,
     // not a detail to go looking for.
     components_expanded: true,
@@ -594,13 +600,14 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 // ── Component Row ──────────────────────────────────────────────────────────
 
 function ComponentRow({
-  comp, onChange, onRemove,
+  comp, notesOpen, onToggleNotes, onChange, onRemove,
 }: {
   comp: BasketComponent;
+  notesOpen: boolean;
+  onToggleNotes: () => void;
   onChange: (updated: BasketComponent) => void;
   onRemove: () => void;
 }) {
-  const [notesOpen, setNotesOpen] = useState(false);
   const hasNotes = Boolean(comp.customer_note?.trim() || comp.internal_note?.trim());
 
   return (
@@ -626,7 +633,7 @@ function ComponentRow({
         )}
         <button
           type="button"
-          onClick={() => setNotesOpen((v) => !v)}
+          onClick={onToggleNotes}
           className="shrink-0 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -676,6 +683,7 @@ function BasketRow({
   const lineTotal = item.unit_price * item.quantity;
   const priceChanged = item.unit_price !== item.original_unit_price && item.original_unit_price > 0;
   const [notesOpen, setNotesOpen] = useState(false);
+  const [openComponentNotes, setOpenComponentNotes] = useState<string[]>([]);
   const hasNotes = Boolean(
     item.product_description_snapshot?.trim() ||
     item.customer_note?.trim() ||
@@ -690,6 +698,14 @@ function BasketRow({
     const newPrice = parseFloat(val) || 0;
     const overridden = newPrice !== item.original_unit_price && item.original_unit_price > 0;
     onChange({ ...item, unit_price: newPrice, manual_price_override: overridden });
+  }
+
+  function toggleComponentNotes(componentLineId: string) {
+    setOpenComponentNotes((openIds) =>
+      openIds.includes(componentLineId)
+        ? openIds.filter((openId) => openId !== componentLineId)
+        : [...openIds, componentLineId],
+    );
   }
 
   return (
@@ -757,7 +773,11 @@ function BasketRow({
             {item.components_expanded && (
               <div className="space-y-1.5">
                 {item.components.map((comp, ci) => (
-                  <ComponentRow key={comp.component_id + ci} comp={comp}
+                  <ComponentRow
+                    key={comp.line_id}
+                    comp={comp}
+                    notesOpen={openComponentNotes.includes(comp.line_id)}
+                    onToggleNotes={() => toggleComponentNotes(comp.line_id)}
                     onChange={(updated) => {
                       const comps = [...item.components];
                       comps[ci] = updated;
@@ -765,7 +785,9 @@ function BasketRow({
                     }}
                     onRemove={() => {
                       setField("components", item.components.filter((_, i) => i !== ci));
-                    }} />
+                      setOpenComponentNotes((openIds) => openIds.filter((openId) => openId !== comp.line_id));
+                    }}
+                  />
                 ))}
               </div>
             )}
@@ -1168,6 +1190,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
           customer_note: String(it.customer_note ?? ""),
           internal_note: String(it.internal_note ?? ""),
           components: ((it.components_snapshot as Array<Record<string, unknown>>) ?? []).map((c) => ({
+            line_id: crypto.randomUUID(),
             component_id: String(c.component_id ?? ""),
             component_name_snapshot: String(c.component_name_snapshot ?? ""),
             component_description_snapshot: String(c.component_description_snapshot ?? ""),
