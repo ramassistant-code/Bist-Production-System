@@ -16,6 +16,7 @@ import lookupsRouter from "./lookups";
 import whatsappRouter from "./whatsapp";
 import paymentsRouter from "./payments";
 import signingRouter from "./signing";
+import coordinationTasksRouter from "./coordination-tasks";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(lookupsRouter);
 router.use(whatsappRouter);
 router.use(paymentsRouter);
 router.use(signingRouter);
+router.use(coordinationTasksRouter);
 
 export default router;
