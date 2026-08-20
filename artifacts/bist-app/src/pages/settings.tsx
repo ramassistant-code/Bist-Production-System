@@ -17,14 +17,14 @@ interface AppUser {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  // ערכים עבריים (החדשים)
+  // ערכי תצוגה בעברית
   "מנהל": "מנהל",
   "מכירות": "מכירות",
   "מנהל סטודיו": "מנהל סטודיו",
   "עורך": "עורך",
   "מנהל משרד": "מנהל משרד",
   "מנהל עריכה": "מנהל עריכה",
-  // ערכים אנגליים (לגאסי — משתמשים ישנים שנשמרו לפני המעבר לעברית)
+  // ערכי enum שנשמרים במסד הנתונים
   admin: "מנהל",
   sales: "מכירות",
   studio_manager: "מנהל סטודיו",
@@ -34,12 +34,12 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_OPTIONS = [
-  { value: "מנהל", label: "מנהל" },
-  { value: "מכירות", label: "מכירות" },
-  { value: "מנהל סטודיו", label: "מנהל סטודיו" },
-  { value: "עורך", label: "עורך" },
-  { value: "מנהל משרד", label: "מנהל משרד" },
-  { value: "מנהל עריכה", label: "מנהל עריכה" },
+  { value: "admin", label: "מנהל" },
+  { value: "sales", label: "מכירות" },
+  { value: "studio_manager", label: "מנהל סטודיו" },
+  { value: "editor", label: "עורך" },
+  { value: "office_manager", label: "מנהל משרד" },
+  { value: "editing_manager", label: "מנהל עריכה" },
 ];
 
 function useAuthedFetch() {

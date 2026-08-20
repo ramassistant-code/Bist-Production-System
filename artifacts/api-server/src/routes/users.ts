@@ -10,6 +10,26 @@ import { notifySync } from "../lib/syncClient";
 
 const router: IRouter = Router();
 
+const ROLE_VALUE_BY_LABEL: Record<string, string> = {
+  "מנהל": "admin",
+  "מכירות": "sales",
+  "מנהל סטודיו": "studio_manager",
+  "עורך": "editor",
+  "מנהל משרד": "office_manager",
+  "מנהל עריכה": "editing_manager",
+};
+const VALID_ROLE_VALUES = new Set(["admin", "sales", "studio_manager", "editor", "office_manager", "editing_manager"]);
+
+function normalizeRole(role: string | null | undefined): string | null {
+  const value = role?.trim() ?? "";
+  if (!value) return null;
+  return ROLE_VALUE_BY_LABEL[value] ?? value;
+}
+
+function isValidRole(role: string | null): boolean {
+  return role === null || VALID_ROLE_VALUES.has(role);
+}
+
 async function getAuthenticatedUser(req: Request): Promise<{ id: string; email: string } | null> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -263,12 +283,18 @@ router.post("/admin/users", async (req: Request, res: Response): Promise<void> =
       res.status(400).json({ error: "כתובת אימייל לא תקינה" }); return;
     }
 
+    const normalizedRole = normalizeRole(role);
+    if (!isValidRole(normalizedRole)) {
+      res.status(400).json({ error: "תפקיד משתמש לא תקין" });
+      return;
+    }
+
     const [created] = await db.insert(appUsersTable).values({
       id: crypto.randomUUID(),
       full_name: full_name?.trim() || null,
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
-      role: role || null,
+      role: normalizedRole,
       is_active: is_active !== false,
       created_at: new Date(),
       updated_at: new Date(),
@@ -308,7 +334,14 @@ router.patch("/admin/users/:id", async (req: Request, res: Response): Promise<vo
       patch["email"] = email.trim().toLowerCase();
     }
     if (phone !== undefined) patch["phone"] = phone?.trim() || null;
-    if (role !== undefined) patch["role"] = role || null;
+    if (role !== undefined) {
+      const normalizedRole = normalizeRole(role);
+      if (!isValidRole(normalizedRole)) {
+        res.status(400).json({ error: "תפקיד משתמש לא תקין" });
+        return;
+      }
+      patch["role"] = normalizedRole;
+    }
     if (is_active !== undefined) patch["is_active"] = is_active;
 
     const [updated] = await db.update(appUsersTable)
