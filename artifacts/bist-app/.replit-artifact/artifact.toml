@@ -25,7 +25,7 @@ serve = "static"
 args = [ "pnpm", "--filter", "@workspace/bist-app", "run", "build:production" ]
 
 [services.production.build.env]
-VITE_APP_ENV = "PROD"
+VITE_APP_ENV = "TEST"
 
 [[services.production.rewrites]]
 from = "/*"
