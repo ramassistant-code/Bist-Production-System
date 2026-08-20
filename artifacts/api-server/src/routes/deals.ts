@@ -1023,7 +1023,7 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             deal_id: result.dealId,
             task_text: t.task_text.trim(),
             assignee_role: t.assignee_role.trim(),
-            status: "open",
+            status: "לעשות",
           }))
         );
       }

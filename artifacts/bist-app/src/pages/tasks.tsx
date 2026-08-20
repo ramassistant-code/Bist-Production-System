@@ -45,7 +45,8 @@ type SortKey = "task_text" | "deal_number" | "customer_name" | "assignee_role" |
 type SortDirection = "asc" | "desc";
 
 const STATUS_LABELS: Record<string, string> = {
-  open: "פתוחה",
+  open: "לעשות",
+  לעשות: "לעשות",
   pending: "ממתינה",
   in_progress: "בטיפול",
   completed: "הושלמה",
@@ -59,6 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "success" | "warning" | "info"> = {
   open: "info",
+  לעשות: "info",
   pending: "secondary",
   in_progress: "warning",
   completed: "success",

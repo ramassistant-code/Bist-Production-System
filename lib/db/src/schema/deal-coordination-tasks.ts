@@ -5,7 +5,7 @@ export const dealCoordinationTasksTable = pgTable("deal_coordination_tasks", {
   deal_id: uuid("deal_id").notNull(),
   task_text: text("task_text").notNull(),
   assignee_role: text("assignee_role").notNull(),
-  status: text("status").default("open"),
+  status: text("status").default("לעשות"),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   completed_at: timestamp("completed_at", { withTimezone: true }),
