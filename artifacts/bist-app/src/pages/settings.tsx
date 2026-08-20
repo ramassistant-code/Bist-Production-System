@@ -17,14 +17,14 @@ interface AppUser {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  // ערכים עבריים (החדשים)
+  // ערכי תצוגה בעברית
   "מנהל": "מנהל",
   "מכירות": "מכירות",
   "מנהל סטודיו": "מנהל סטודיו",
   "עורך": "עורך",
   "מנהל משרד": "מנהל משרד",
   "מנהל עריכה": "מנהל עריכה",
-  // ערכים אנגליים (לגאסי — משתמשים ישנים שנשמרו לפני המעבר לעברית)
+  // ערכי enum שנשמרים במסד הנתונים
   admin: "מנהל",
   sales: "מכירות",
   studio_manager: "מנהל סטודיו",
@@ -34,12 +34,12 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_OPTIONS = [
-  { value: "מנהל", label: "מנהל" },
-  { value: "מכירות", label: "מכירות" },
-  { value: "מנהל סטודיו", label: "מנהל סטודיו" },
-  { value: "עורך", label: "עורך" },
-  { value: "מנהל משרד", label: "מנהל משרד" },
-  { value: "מנהל עריכה", label: "מנהל עריכה" },
+  { value: "admin", label: "מנהל" },
+  { value: "sales", label: "מכירות" },
+  { value: "studio_manager", label: "מנהל סטודיו" },
+  { value: "editor", label: "עורך" },
+  { value: "office_manager", label: "מנהל משרד" },
+  { value: "editing_manager", label: "מנהל עריכה" },
 ];
 
 function useAuthedFetch() {
@@ -123,7 +123,7 @@ function UserFormDialog({ user, onClose, onSaved, authedFetch }: UserFormDialogP
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form id="user-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1">
               <label className="block text-sm font-medium">שם מלא</label>
@@ -213,7 +213,7 @@ function UserFormDialog({ user, onClose, onSaved, authedFetch }: UserFormDialogP
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
+            form="user-form"
             disabled={saving}
             className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground rounded-lg transition-colors"
           >
