@@ -20,6 +20,7 @@ export interface AppUser {
   full_name: string | null;
   role: string | null;
   is_active: boolean;
+  phone?: string | null;
 }
 
 interface AuthContextValue {

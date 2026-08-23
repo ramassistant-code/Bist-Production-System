@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { customFetch } from "@workspace/api-client-react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, type AppUser } from "@/lib/auth-context";
 import OpenDealModal from "@/components/deals/open-deal-modal";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -163,7 +163,14 @@ interface OnboardingResponse {
   whatsapp_url: string | null;
 }
 
-function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: boolean; onClose: () => void }) {
+function OnboardingModal({ quoteId, open, onClose, salespersonName, salespersonPhone, defaultInstallmentsCount }: {
+  quoteId: string;
+  open: boolean;
+  onClose: () => void;
+  salespersonName: string | null;
+  salespersonPhone: string | null;
+  defaultInstallmentsCount: number;
+}) {
   const { toast } = useToast();
   const [data, setData] = useState<OnboardingResponse | null>(null);
   const [message, setMessage] = useState("");
@@ -242,6 +249,21 @@ function OnboardingModal({ quoteId, open, onClose }: { quoteId: string; open: bo
               />
             </div>
 
+            {/* פרטי איש מכירות + תשלומים */}
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm space-y-1">
+              {salespersonName && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">איש מכירות:</span>
+                  <span className="font-medium">{salespersonName}</span>
+                  {salespersonPhone && <span className="text-muted-foreground">{salespersonPhone}</span>}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">מספר תשלומים:</span>
+                <span className="font-medium">{defaultInstallmentsCount}</span>
+              </div>
+            </div>
+
             {!data.phone && (
               <p className="flex items-center gap-1.5 text-xs text-warning-accent">
                 <AlertCircle className="w-3.5 h-3.5" />
@@ -282,6 +304,12 @@ export default function QuotesDetail() {
   const [showOpenDealModal, setShowOpenDealModal] = useState(false);
   const [lastPdfUrl, setLastPdfUrl] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  const { data: allUsers = [] } = useQuery<AppUser[]>({
+    queryKey: ["users"],
+    queryFn: () => customFetch<AppUser[]>("/api/users"),
+    staleTime: 60_000,
+  });
 
   const checkPaymentMutation = useMutation<{ status: string; amount?: number }, Error>({
     mutationFn: () =>
@@ -411,6 +439,7 @@ export default function QuotesDetail() {
   }
 
   const { quote, currentVersion: verData, versions, signingInfo } = data;
+  const salesperson = allUsers.find(u => u.id === quote.salesperson_id) ?? null;
   const party = verData?.party_snapshot;
   const totals = verData?.totals_snapshot;
   const terms = verData?.terms_snapshot;
@@ -816,7 +845,14 @@ export default function QuotesDetail() {
       />
     )}
 
-    <OnboardingModal quoteId={id} open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
+    <OnboardingModal
+      quoteId={id}
+      open={onboardingOpen}
+      onClose={() => setOnboardingOpen(false)}
+      salespersonName={salesperson?.full_name ?? null}
+      salespersonPhone={salesperson?.phone ?? null}
+      defaultInstallmentsCount={quote.default_installments_count ?? 1}
+    />
     </>
   );
 }

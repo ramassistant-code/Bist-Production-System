@@ -251,10 +251,22 @@ router.get("/public/pay/:token", async (req: Request, res: Response): Promise<vo
       amount = totals.total_with_vat != null ? Number(totals.total_with_vat) : null;
     }
 
+    // מספר תשלומים מהעסקה
+    let numInstallments = 1;
+    if (sr.quote_version_id) {
+      const { data: dealRow } = await supabaseAdmin
+        .from("deals")
+        .select("installments_count")
+        .eq("quote_version_id", String(sr.quote_version_id))
+        .maybeSingle();
+      if (dealRow?.installments_count) numInstallments = Number(dealRow.installments_count);
+    }
+
     res.json({
       status: "pending",
       quote_number: quote?.quote_number ?? null,
       amount,
+      num_installments: numInstallments,
       invoice_name: invoiceName,
       invoice_tax_id: invoiceTaxId,
       invoice_email: invoiceEmail,
@@ -351,6 +363,17 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       customerPhone = (c?.phone as string | null) ?? null;
     }
 
+    // מספר תשלומים מהעסקה (fallback: 1)
+    let dealInstallments = 1;
+    if (sr.quote_version_id) {
+      const { data: dealRow } = await supabaseAdmin
+        .from("deals")
+        .select("installments_count")
+        .eq("quote_version_id", String(sr.quote_version_id))
+        .maybeSingle();
+      if (dealRow?.installments_count) dealInstallments = Number(dealRow.installments_count);
+    }
+
     // יצירת לינק סליקה עם IsDocCreate=true (Invoice4U יפיק חשבונית וישלח למייל)
     const returnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
     const result = await createPaymentLink({
@@ -358,7 +381,7 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       fullName: invoiceName,
       email: invoiceEmail,
       phone: customerPhone,
-      installments: 1,
+      installments: dealInstallments,
       description: `תשלום עבור הצעה ${quoteNumber}`.trim(),
       externalId: quoteNumber || String(sr.quote_id),
       returnUrl,
