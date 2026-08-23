@@ -328,13 +328,14 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       return;
     }
 
-    // טעינת סכום + מספר הצעה
+    // טעינת סכום + מספר הצעה + מספר תשלומים
     const { data: quote } = await supabaseAdmin
       .from("quotes")
-      .select("quote_number")
+      .select("quote_number, default_installments_count")
       .eq("id", String(sr.quote_id))
       .maybeSingle();
     const quoteNumber = quote?.quote_number ?? "";
+    const installments = Math.min(12, Math.max(1, Number(quote?.default_installments_count) || 1));
 
     let sum: number | null = null;
     if (sr.quote_version_id) {
@@ -363,17 +364,6 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       customerPhone = (c?.phone as string | null) ?? null;
     }
 
-    // מספר תשלומים מהעסקה (fallback: 1)
-    let dealInstallments = 1;
-    if (sr.quote_version_id) {
-      const { data: dealRow } = await supabaseAdmin
-        .from("deals")
-        .select("installments_count")
-        .eq("quote_version_id", String(sr.quote_version_id))
-        .maybeSingle();
-      if (dealRow?.installments_count) dealInstallments = Number(dealRow.installments_count);
-    }
-
     // יצירת לינק סליקה עם IsDocCreate=true (Invoice4U יפיק חשבונית וישלח למייל)
     const returnUrl = `${publicBaseUrl(req)}/payment-done?token=${token}`;
     const result = await createPaymentLink({
@@ -381,7 +371,7 @@ router.post("/public/pay/:token", async (req: Request, res: Response): Promise<v
       fullName: invoiceName,
       email: invoiceEmail,
       phone: customerPhone,
-      installments: dealInstallments,
+      installments,
       description: `תשלום עבור הצעה ${quoteNumber}`.trim(),
       externalId: quoteNumber || String(sr.quote_id),
       returnUrl,
