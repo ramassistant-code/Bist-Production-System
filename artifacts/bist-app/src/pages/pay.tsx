@@ -8,6 +8,7 @@ interface PayData {
   status: "pending" | "paid" | string;
   quote_number: string | null;
   amount: number | null;
+  num_installments?: number;
   invoice_name: string;
   invoice_tax_id: string;
   invoice_email: string;
@@ -133,6 +134,11 @@ export default function PayPage() {
                     <p className="text-sm text-muted-foreground mb-1">סכום לתשלום</p>
                     <p className="text-3xl font-black text-primary">{fmtILS(data.amount)}</p>
                     <p className="text-xs text-muted-foreground mt-1">כולל מע״מ</p>
+                    {data.num_installments != null && data.num_installments > 1 && (
+                      <p className="text-sm font-medium text-primary mt-2">
+                        {data.num_installments} תשלומים שווים
+                      </p>
+                    )}
                   </div>
                 )}
 
