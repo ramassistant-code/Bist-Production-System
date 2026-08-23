@@ -322,8 +322,11 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
   // ── Load users for salesperson dropdown ──────────────────────────────────
   const { data: users = [] } = useQuery<AppUser[]>({
-    queryKey: ["users"],
-    queryFn: () => customFetch<AppUser[]>("/api/users"),
+    queryKey: ["users", "salesperson"],
+    queryFn: async () => {
+      const all = await customFetch<AppUser[]>("/api/users");
+      return all.filter(u => u.role === "sales" || u.role === "admin");
+    },
     staleTime: 60_000,
   });
 
