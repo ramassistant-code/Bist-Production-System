@@ -600,20 +600,19 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 // ── Component Row ──────────────────────────────────────────────────────────
 
 function ComponentRow({
-  comp, notesOpen, onToggleNotes, onChange, onRemove,
+  comp, customerNoteOpen, onToggleCustomerNote, onChange, onRemove,
 }: {
   comp: BasketComponent;
-  notesOpen: boolean;
-  onToggleNotes: () => void;
+  customerNoteOpen: boolean;
+  onToggleCustomerNote: () => void;
   onChange: (updated: BasketComponent) => void;
   onRemove: () => void;
 }) {
-  const hasNotes = Boolean(comp.customer_note?.trim() || comp.internal_note?.trim());
+  const hasCustomerNote = Boolean(comp.customer_note?.trim());
 
   return (
     <div className="rounded-md bg-muted/40 border border-border/50">
-      {/* One line per component. The notes underneath were forcing three rows
-          each, which made a 9-component product unreadable. */}
+      {/* Header row: name, quantity, cost, customer-note toggle, remove */}
       <div className="flex items-center gap-3 px-3 py-2">
         <div className="min-w-0 flex-1">
           <p className="text-base font-medium text-foreground truncate">{comp.component_name_snapshot}</p>
@@ -631,14 +630,15 @@ function ComponentRow({
             עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
+        {/* Toggle only the customer-facing note — internal note is always visible below */}
         <button
           type="button"
-          onClick={onToggleNotes}
+          onClick={onToggleCustomerNote}
           className="shrink-0 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          {notesOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          הערות
-          {hasNotes && !notesOpen && (
+          {customerNoteOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          הערה ללקוח
+          {hasCustomerNote && !customerNoteOpen && (
             <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden />
           )}
         </button>
@@ -651,21 +651,29 @@ function ComponentRow({
           <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
-      {notesOpen && (
-        <div className="px-3 pb-3 pt-2 space-y-2 border-t border-border/50">
+
+      {/* Customer note — toggled */}
+      {customerNoteOpen && (
+        <div className="px-3 pb-2 pt-1 border-t border-border/50">
           <div className="space-y-1">
             <Label className="text-sm text-muted-foreground">הערה להצעת מחיר (תוצג ללקוח)</Label>
             {/* Textarea, not Input: these hold booking links and multi-line copy. */}
             <Textarea value={comp.customer_note} rows={2}
               onChange={(e) => onChange({ ...comp, customer_note: e.target.value })} />
           </div>
-          <div className="space-y-1">
-            <Label className="text-sm text-muted-foreground">הערות לאופרציה (לא יוצג ללקוח)</Label>
-            <Textarea value={comp.internal_note} rows={2}
-              onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
-          </div>
         </div>
       )}
+
+      {/* Internal / ops note — always visible so each component gets its own field */}
+      <div className="px-3 pb-2 pt-1 border-t border-border/50">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">הערה פנימית לאופרציה (לא תוצג ללקוח)</Label>
+          <Textarea value={comp.internal_note} rows={1}
+            placeholder="הערה פנימית לרכיב זה..."
+            className="resize-none text-sm"
+            onChange={(e) => onChange({ ...comp, internal_note: e.target.value })} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -683,7 +691,7 @@ function BasketRow({
   const lineTotal = item.unit_price * item.quantity;
   const priceChanged = item.unit_price !== item.original_unit_price && item.original_unit_price > 0;
   const [notesOpen, setNotesOpen] = useState(false);
-  const [openComponentNotes, setOpenComponentNotes] = useState<string[]>([]);
+  const [openComponentCustomerNotes, setOpenComponentCustomerNotes] = useState<string[]>([]);
   const hasNotes = Boolean(
     item.product_description_snapshot?.trim() ||
     item.customer_note?.trim() ||
@@ -700,8 +708,8 @@ function BasketRow({
     onChange({ ...item, unit_price: newPrice, manual_price_override: overridden });
   }
 
-  function toggleComponentNotes(componentLineId: string) {
-    setOpenComponentNotes((openIds) =>
+  function toggleComponentCustomerNote(componentLineId: string) {
+    setOpenComponentCustomerNotes((openIds) =>
       openIds.includes(componentLineId)
         ? openIds.filter((openId) => openId !== componentLineId)
         : [...openIds, componentLineId],
@@ -735,8 +743,8 @@ function BasketRow({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <Label className="text-sm">כמות</Label>
-            <Input type="number" min={1} step={1} value={item.quantity}
-              onChange={(e) => setField("quantity", parseInt(e.target.value, 10) || 1)} />
+            <Input type="number" min={0.5} step={0.5} value={item.quantity}
+              onChange={(e) => setField("quantity", parseFloat(e.target.value) || 1)} />
           </div>
           <div className="space-y-1">
             <Label className="text-sm">מחיר יחידה (₪)</Label>
@@ -776,8 +784,8 @@ function BasketRow({
                   <ComponentRow
                     key={comp.line_id}
                     comp={comp}
-                    notesOpen={openComponentNotes.includes(comp.line_id)}
-                    onToggleNotes={() => toggleComponentNotes(comp.line_id)}
+                    customerNoteOpen={openComponentCustomerNotes.includes(comp.line_id)}
+                    onToggleCustomerNote={() => toggleComponentCustomerNote(comp.line_id)}
                     onChange={(updated) => {
                       const comps = [...item.components];
                       comps[ci] = updated;
@@ -785,7 +793,7 @@ function BasketRow({
                     }}
                     onRemove={() => {
                       setField("components", item.components.filter((_, i) => i !== ci));
-                      setOpenComponentNotes((openIds) => openIds.filter((openId) => openId !== comp.line_id));
+                      setOpenComponentCustomerNotes((openIds) => openIds.filter((openId) => openId !== comp.line_id));
                     }}
                   />
                 ))}
