@@ -11,6 +11,8 @@ export const quotesTable = pgTable("quotes", {
   operation_notes: text("operation_notes"),
   internal_notes: text("internal_notes"),
   status: text("status").default("draft"),
+  salesperson_id: uuid("salesperson_id"),
+  default_installments_count: integer("default_installments_count").default(1).notNull(),
   // legacy versioning columns — do not use in new logic
   quote_version_group_id: uuid("quote_version_group_id"),
   version_number: integer("version_number"),

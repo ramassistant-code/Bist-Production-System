@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
+import type { AppUser } from "@/lib/auth-context";
 import { customFetch, useListProducts, useGetProduct } from "@workspace/api-client-react";
 import type { Product } from "@workspace/api-client-react";
 
@@ -80,6 +82,8 @@ interface WizardState {
   deliveryTerms: string;
   customerNotes: string;
   internalNotes: string;
+  salespersonId: string;
+  defaultInstallmentsCount: number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -163,6 +167,7 @@ const initialState: WizardState = {
   items: [], discountAmount: "", basketManuallyOverridden: false, basketManualTotal: "", basketOverrideNote: "",
   deliveryTerms: "",
   customerNotes: "", internalNotes: "",
+  salespersonId: "", defaultInstallmentsCount: 1,
 };
 
 // ── Step indicators ────────────────────────────────────────────────────────
@@ -308,11 +313,27 @@ function NameSearchDialog({ open, onClose, onSelect }: {
 // ── Step 1: Party lookup ───────────────────────────────────────────────────
 
 function Step1({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
+  const { appUser } = useAuth();
   const [lookupDone, setLookupDone] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
   const [isLooking, setIsLooking] = useState(false);
   const [nameSearchOpen, setNameSearchOpen] = useState(false);
+
+  // ── Load users for salesperson dropdown ──────────────────────────────────
+  const { data: users = [] } = useQuery<AppUser[]>({
+    queryKey: ["users"],
+    queryFn: () => customFetch<AppUser[]>("/api/users"),
+    staleTime: 60_000,
+  });
+
+  // Default salesperson to the logged-in user once the list loads
+  useEffect(() => {
+    if (!state.salespersonId && appUser?.id && users.some(u => u.id === appUser.id)) {
+      update({ salespersonId: appUser.id });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appUser?.id, users]);
 
   async function doLookup(phoneOverride?: string) {
     const phone = phoneOverride ?? state.phone;
@@ -368,6 +389,38 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       <div>
         <h2 className="text-2xl font-bold mb-1">שלב 1 — זיהוי לקוח / ליד</h2>
         <p className="text-sm text-muted-foreground">הזינו מספר טלפון לחיפוש לקוח קיים, ליד קיים, או לפתיחת ליד חדש.</p>
+      </div>
+
+      {/* ── איש מכירות + תשלומים ─────────────────────────── */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+        <div className="space-y-1">
+          <Label>איש מכירות <span className="text-destructive">*</span></Label>
+          <select
+            value={state.salespersonId}
+            onChange={(e) => update({ salespersonId: e.target.value })}
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="">— בחר איש מכירות —</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.full_name ?? u.email}{u.id === appUser?.id ? " (אתה)" : ""}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">אליו תשלח הודעת WhatsApp לאחר אישור תשלום</p>
+        </div>
+        <div className="space-y-1">
+          <Label>מספר תשלומים ברירת מחדל (עבור לינק אשראי)</Label>
+          <Input
+            type="number"
+            min={1}
+            step={1}
+            value={state.defaultInstallmentsCount}
+            onChange={(e) => update({ defaultInstallmentsCount: parseInt(e.target.value, 10) || 1 })}
+            className="w-32"
+          />
+          <p className="text-xs text-muted-foreground">יטען כברירת מחדל בפתיחת עסקה</p>
+        </div>
       </div>
 
       {/* ── שליחת הצעת מחיר ─────────────────────────────── */}
@@ -1217,6 +1270,7 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
   function validateStep(): string[] {
     const errs: string[] = [];
     if (step === 0) {
+      if (!state.salespersonId) errs.push("יש לבחור איש מכירות");
       if (!state.partyType) errs.push("יש לחפש טלפון ולזהות לקוח/ליד");
       if (state.partyType === "new" && !state.newLeadName.trim()) errs.push("חובה להזין שם ליד חדש");
     }
@@ -1294,6 +1348,8 @@ export default function QuotesNew({ sourceQuoteId }: QuotesNewProps) {
       delivery_terms: state.deliveryTerms || undefined,
       customer_notes: state.customerNotes || undefined,
       internal_notes: state.internalNotes || undefined,
+      salesperson_id: state.salespersonId || undefined,
+      default_installments_count: state.defaultInstallmentsCount,
       generate_pdf: sendImmediately,
       send_immediately: sendImmediately,
     };

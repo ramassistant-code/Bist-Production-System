@@ -437,6 +437,8 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
       operation_notes: body.operation_notes ?? null,
       internal_notes: body.internal_notes ?? null,
       status: body.send_immediately ? QUOTE_STATUS_HE["sent"] : QUOTE_STATUS_HE["draft"],
+      salesperson_id: body.salesperson_id ?? null,
+      default_installments_count: body.default_installments_count ?? 1,
     }).returning();
 
     const [insertedVersion] = await db.insert(quoteVersionsTable).values({
@@ -842,6 +844,8 @@ interface CreateQuoteBody {
   internal_notes?: string;
   generate_pdf?: boolean;
   send_immediately?: boolean;
+  salesperson_id?: string;
+  default_installments_count?: number;
 }
 
 export default router;

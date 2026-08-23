@@ -98,6 +98,8 @@ interface QuoteRow {
   lead_name?: string;
   lead_phone?: string;
   created_at: string;
+  salesperson_id: string | null;
+  default_installments_count: number;
 }
 interface SigningInfo {
   id: string;

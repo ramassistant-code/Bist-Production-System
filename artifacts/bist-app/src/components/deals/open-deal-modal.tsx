@@ -38,6 +38,8 @@ interface QuoteRow {
   customer_phone?: string;
   lead_name?: string;
   lead_phone?: string;
+  salesperson_id?: string | null;
+  default_installments_count?: number;
 }
 
 interface AppUser {
@@ -147,12 +149,27 @@ export default function OpenDealModal({ quote, version, currentUser, onClose, on
     if (customerBilling.invoice_email) setInvoiceEmail(customerBilling.invoice_email);
   }, [customerBilling]);
 
-  // Set default salesperson to current user — only after users list is loaded
+  // Prefer quote's salesperson, fall back to logged-in user — after users load
   useEffect(() => {
-    if (currentUser?.id && !salespersonId && users.some(u => u.id === currentUser.id)) {
-      setSalespersonId(currentUser.id);
+    if (!salespersonId && users.length > 0) {
+      const fromQuote = quote.salesperson_id && users.some(u => u.id === quote.salesperson_id)
+        ? quote.salesperson_id
+        : null;
+      const fromUser = currentUser?.id && users.some(u => u.id === currentUser.id)
+        ? currentUser.id
+        : null;
+      const preferred = fromQuote ?? fromUser ?? "";
+      if (preferred) setSalespersonId(preferred);
     }
-  }, [currentUser?.id, users]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote.salesperson_id, currentUser?.id, users]);
+
+  // Pre-fill installments from quote default
+  useEffect(() => {
+    const def = quote.default_installments_count;
+    if (def && def > 1) setInstallments(String(def));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote.default_installments_count]);
 
   // ── Task helpers ────────────────────────────────────────────────────────
   function addTask() {
