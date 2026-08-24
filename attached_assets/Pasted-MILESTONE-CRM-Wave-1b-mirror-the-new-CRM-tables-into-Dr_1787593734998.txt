@@ -1,0 +1,61 @@
+MILESTONE: CRM Wave 1b - mirror the new CRM tables into Drizzle.
+
+CONTEXT
+12 new crm_* tables were created directly in Supabase. This project keeps
+lib/db/src/schema as a hand-maintained mirror of the live database.
+drizzle-kit push is FORBIDDEN - see replit.md and drizzle.config.ts.
+
+The exact CREATE TABLE statements are committed in this repo at
+lib/db/sql/crm/ (files 01 through 06). READ THEM FIRST. Mirror them
+faithfully - column names, types, nullability and defaults must match
+exactly. Do not guess a column; if something is unclear, read the SQL again.
+
+Ignore everything in those files after the `commit;` line - that is a manual
+verification block, not schema.
+
+ENUMS - READ THIS
+The live database has 9 enum types (user_role, quote_status, task_status,
+deal_payment_status, deal_execution_status, credit_status, payment_method,
+payment_purpose, payment_record_status). Most contain Hebrew values. The
+existing Drizzle files map every one of them as text() - a known, deliberate
+drift. Do NOT "fix" those mappings and do NOT introduce pgEnum anywhere.
+
+The new crm_* tables intentionally use text + CHECK constraints instead of
+enums, so an admin can add a status or a rejection reason without DDL.
+Mirror them as text() with no enum types.
+
+BUILD
+1. Create lib/db/src/schema/crm/ with one file per table, following the
+   existing style of lib/db/src/schema/leads.ts:
+   crm-lead-statuses.ts, crm-rejection-reasons.ts, crm-funnels.ts,
+   crm-funnel-cost-history.ts, crm-ads.ts, crm-leads.ts, crm-inquiries.ts,
+   crm-lead-notes.ts, crm-lead-tasks.ts, crm-call-logs.ts,
+   crm-rep-availability.ts, crm-audit-log.ts
+
+2. For crm_leads, crm_inquiries, crm_lead_notes and crm_lead_tasks also
+   export drizzle-zod insert/update schemas built from an explicit
+   USER_EDITABLE_FIELDS allowlist, exactly like leads.ts does.
+   These columns must NOT be user-editable anywhere:
+   - crm_leads: capture_attempts, is_active_customer, legacy_lead_id, source
+   - crm_inquiries: inquiry_number, raw_payload
+   - crm_lead_tasks: whatsapp_sent_at, completed_at
+   All ids and timestamps are likewise not editable.
+
+3. Add a barrel lib/db/src/schema/crm/index.ts and re-export it from
+   lib/db/src/schema/index.ts.
+
+4. Export the inferred Select/Insert types for every table.
+
+ABSOLUTE RULES
+- Do NOT run drizzle-kit push, drizzle-kit generate, or any DDL.
+- Do NOT modify any existing schema file.
+- Do NOT touch any route, any page, or the OpenAPI spec. This milestone is
+  types only.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- Importing the new tables from @workspace/db/schema resolves.
+- git diff shows changes only under lib/db/src/schema/.
+
+REPORT
+What was built, files changed, how to test, known limitations.
