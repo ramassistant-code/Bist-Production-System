@@ -68,6 +68,8 @@ export interface Lead {
   answer_status?: string | null;
   capture_attempt_status?: string | null;
   lead_source?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   activity_field?: string | null;
   followup_at?: string | null;
   followup_note?: string | null;
@@ -85,8 +87,6 @@ export interface Lead {
   monday_board_id?: string | null;
   monday_item_id?: string | null;
   monday_group_id?: string | null;
-  ad_name?: string | null;
-  referral_name?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   deleted_at?: string | null;
@@ -100,6 +100,8 @@ export interface CreateLeadBody {
   answer_status?: string | null;
   capture_attempt_status?: string | null;
   lead_source?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   activity_field?: string | null;
   followup_at?: string | null;
   followup_note?: string | null;
@@ -116,6 +118,8 @@ export interface UpdateLeadBody {
   status?: string | null;
   answer_status?: string | null;
   lead_source?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   activity_field?: string | null;
   followup_at?: string | null;
   followup_note?: string | null;
@@ -211,7 +215,6 @@ export interface ProductComponentRow {
   component_name?: string | null;
   component_number?: string | null;
   component_deliverable?: string | null;
-  component_internal_notes?: string | null;
   component_quote_description_default?: string | null;
   component_quote_notes_default?: string | null;
   created_at: string;
@@ -245,6 +248,8 @@ export interface CreateProductBody {
   consumer_price?: string | null;
   product_explanation?: string | null;
   sales_notes?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
 }
 
@@ -278,9 +283,9 @@ export interface Component {
   category?: string | null;
   deliverable?: string | null;
   internal_notes?: string | null;
-  cost?: string | null;
   quote_description_default?: string | null;
   quote_notes_default?: string | null;
+  cost?: string | null;
   is_active?: boolean | null;
   created_at: string;
   updated_at: string;
@@ -289,16 +294,153 @@ export interface Component {
 
 export interface CreateComponentBody {
   name: string;
+  category?: string | null;
+  deliverable?: string | null;
+  internal_notes?: string | null;
   quote_description_default?: string | null;
   quote_notes_default?: string | null;
+  cost?: string | null;
   is_active?: boolean | null;
 }
 
 export interface UpdateComponentBody {
   name?: string;
+  category?: string | null;
+  deliverable?: string | null;
+  internal_notes?: string | null;
   quote_description_default?: string | null;
   quote_notes_default?: string | null;
+  cost?: string | null;
   is_active?: boolean | null;
+}
+
+export interface CrmFunnel {
+  id: string;
+  name: string;
+  /** @nullable */
+  current_cost_per_lead?: string | null;
+  /** @nullable */
+  cost_updated_at?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmFunnelInput {
+  /** @minLength 1 */
+  name: string;
+  /** @nullable */
+  current_cost_per_lead: string | null;
+  is_active?: boolean;
+}
+
+export interface CrmFunnelUpdate {
+  id: string;
+  /** @minLength 1 */
+  name?: string;
+  /** @nullable */
+  current_cost_per_lead?: string | null;
+  is_active?: boolean;
+}
+
+export interface CrmFunnelCostHistory {
+  id: string;
+  funnel_id: string;
+  cost_per_lead: string;
+  valid_from: string;
+  /** @nullable */
+  valid_to?: string | null;
+  /** @nullable */
+  updated_by?: string | null;
+  created_at: string;
+}
+
+export interface CrmAd {
+  id: string;
+  facebook_ad_id: string;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  ad_url?: string | null;
+  /** @nullable */
+  funnel_id?: string | null;
+  /** @nullable */
+  last_synced_at?: string | null;
+  fetch_failed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmAdLink {
+  /** @nullable */
+  funnel_id: string | null;
+}
+
+export interface CrmLead {
+  id: string;
+  name: string;
+  phone_e164: string;
+  /** @nullable */
+  phone_raw?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  sales_rep_id?: string | null;
+  status_code: string;
+  is_active_customer: boolean;
+  /** @nullable */
+  answer_status?: string | null;
+  capture_attempts: number;
+  /** @nullable */
+  rejection_reason_code?: string | null;
+  /** @nullable */
+  rejection_detail?: string | null;
+  pending_reassignment: boolean;
+  /** @nullable */
+  legacy_lead_id?: string | null;
+  /** @nullable */
+  linked_customer_id?: string | null;
+  source: string;
+  /** @nullable */
+  source_ref?: string | null;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  deleted_at?: string | null;
+}
+
+export interface CrmLeadInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  phone: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  answer_status?: string | null;
+  /** @nullable */
+  rejection_reason_code?: string | null;
+  /** @nullable */
+  rejection_detail?: string | null;
+  /** @nullable */
+  source_ref?: string | null;
+}
+
+export interface CrmLeadUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  phone?: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  answer_status?: string | null;
+  /** @nullable */
+  rejection_reason_code?: string | null;
+  /** @nullable */
+  rejection_detail?: string | null;
+  /** @nullable */
+  source_ref?: string | null;
 }
 
 export type ListLeadsParams = {
@@ -319,4 +461,53 @@ search?: string;
 category?: string;
 is_active?: boolean;
 };
+
+export type ListCrmLeadsParams = {
+view?: ListCrmLeadsView;
+status?: string;
+sales_rep?: string;
+funnel?: string;
+search?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type ListCrmLeadsView = typeof ListCrmLeadsView[keyof typeof ListCrmLeadsView];
+
+
+export const ListCrmLeadsView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type GetCrmLeadParams = {
+view?: GetCrmLeadView;
+};
+
+export type GetCrmLeadView = typeof GetCrmLeadView[keyof typeof GetCrmLeadView];
+
+
+export const GetCrmLeadView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type UpdateCrmLeadParams = {
+view?: UpdateCrmLeadView;
+};
+
+export type UpdateCrmLeadView = typeof UpdateCrmLeadView[keyof typeof UpdateCrmLeadView];
+
+
+export const UpdateCrmLeadView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
 

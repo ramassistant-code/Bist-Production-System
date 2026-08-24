@@ -18,6 +18,8 @@ export interface Lead {
   answer_status?: string | null;
   capture_attempt_status?: string | null;
   lead_source?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   activity_field?: string | null;
   followup_at?: string | null;
   followup_note?: string | null;
@@ -35,8 +37,6 @@ export interface Lead {
   monday_board_id?: string | null;
   monday_item_id?: string | null;
   monday_group_id?: string | null;
-  ad_name?: string | null;
-  referral_name?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   deleted_at?: string | null;

@@ -11,6 +11,8 @@ export interface UpdateComponentBody {
   category?: string | null;
   deliverable?: string | null;
   internal_notes?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   cost?: string | null;
   is_active?: boolean | null;
 }

@@ -17,6 +17,8 @@ export interface ProductComponentRow {
   component_name?: string | null;
   component_number?: string | null;
   component_deliverable?: string | null;
+  component_quote_description_default?: string | null;
+  component_quote_notes_default?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -26,19 +26,31 @@ import type {
   CreateCustomerBody,
   CreateLeadBody,
   CreateProductBody,
+  CrmAd,
+  CrmAdLink,
+  CrmFunnel,
+  CrmFunnelCostHistory,
+  CrmFunnelInput,
+  CrmFunnelUpdate,
+  CrmLead,
+  CrmLeadInput,
+  CrmLeadUpdate,
   Customer,
   DashboardStats,
   DbCheckStatus,
   ErrorResponse,
+  GetCrmLeadParams,
   HealthStatus,
   Lead,
   ListComponentsParams,
+  ListCrmLeadsParams,
   ListLeadsParams,
   ListProductsParams,
   Product,
   ProductComponentRow,
   ProductWithComponents,
   UpdateComponentBody,
+  UpdateCrmLeadParams,
   UpdateCustomerBody,
   UpdateLeadBody,
   UpdateProductBody,
@@ -1812,5 +1824,852 @@ export const useUpdateComponent = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpdateComponentMutationOptions(options));
+    }
+
+export const getListCrmFunnelsUrl = () => {
+
+
+
+
+  return `/api/crm/funnels`
+}
+
+/**
+ * @summary List CRM funnels
+ */
+export const listCrmFunnels = async ( options?: RequestInit): Promise<CrmFunnel[]> => {
+
+  return customFetch<CrmFunnel[]>(getListCrmFunnelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmFunnelsQueryKey = () => {
+    return [
+    `/api/crm/funnels`
+    ] as const;
+    }
+
+
+export const getListCrmFunnelsQueryOptions = <TData = Awaited<ReturnType<typeof listCrmFunnels>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmFunnelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmFunnels>>> = ({ signal }) => listCrmFunnels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnels>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmFunnelsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmFunnels>>>
+export type ListCrmFunnelsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List CRM funnels
+ */
+
+export function useListCrmFunnels<TData = Awaited<ReturnType<typeof listCrmFunnels>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnels>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmFunnelsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCrmFunnelUrl = () => {
+
+
+
+
+  return `/api/crm/funnels`
+}
+
+/**
+ * @summary Create a CRM funnel
+ */
+export const createCrmFunnel = async (crmFunnelInput: CrmFunnelInput, options?: RequestInit): Promise<CrmFunnel> => {
+
+  return customFetch<CrmFunnel>(getCreateCrmFunnelUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmFunnelInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmFunnelMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmFunnel>>, TError,{data: BodyType<CrmFunnelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmFunnel>>, TError,{data: BodyType<CrmFunnelInput>}, TContext> => {
+
+const mutationKey = ['createCrmFunnel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmFunnel>>, {data: BodyType<CrmFunnelInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrmFunnel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmFunnelMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmFunnel>>>
+    export type CreateCrmFunnelMutationBody = BodyType<CrmFunnelInput>
+    export type CreateCrmFunnelMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a CRM funnel
+ */
+export const useCreateCrmFunnel = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmFunnel>>, TError,{data: BodyType<CrmFunnelInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmFunnel>>,
+        TError,
+        {data: BodyType<CrmFunnelInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCrmFunnelMutationOptions(options));
+    }
+
+export const getUpdateCrmFunnelUrl = () => {
+
+
+
+
+  return `/api/crm/funnels`
+}
+
+/**
+ * @summary Update a CRM funnel
+ */
+export const updateCrmFunnel = async (crmFunnelUpdate: CrmFunnelUpdate, options?: RequestInit): Promise<CrmFunnel> => {
+
+  return customFetch<CrmFunnel>(getUpdateCrmFunnelUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmFunnelUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmFunnelMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmFunnel>>, TError,{data: BodyType<CrmFunnelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmFunnel>>, TError,{data: BodyType<CrmFunnelUpdate>}, TContext> => {
+
+const mutationKey = ['updateCrmFunnel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmFunnel>>, {data: BodyType<CrmFunnelUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateCrmFunnel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmFunnelMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmFunnel>>>
+    export type UpdateCrmFunnelMutationBody = BodyType<CrmFunnelUpdate>
+    export type UpdateCrmFunnelMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a CRM funnel
+ */
+export const useUpdateCrmFunnel = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmFunnel>>, TError,{data: BodyType<CrmFunnelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmFunnel>>,
+        TError,
+        {data: BodyType<CrmFunnelUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmFunnelMutationOptions(options));
+    }
+
+export const getListCrmFunnelCostHistoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/funnels/${id}/cost-history`
+}
+
+/**
+ * @summary List a CRM funnel cost history
+ */
+export const listCrmFunnelCostHistory = async (id: string, options?: RequestInit): Promise<CrmFunnelCostHistory[]> => {
+
+  return customFetch<CrmFunnelCostHistory[]>(getListCrmFunnelCostHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmFunnelCostHistoryQueryKey = (id: string,) => {
+    return [
+    `/api/crm/funnels/${id}/cost-history`
+    ] as const;
+    }
+
+
+export const getListCrmFunnelCostHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listCrmFunnelCostHistory>>, TError = ErrorType<ErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnelCostHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmFunnelCostHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmFunnelCostHistory>>> = ({ signal }) => listCrmFunnelCostHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnelCostHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmFunnelCostHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmFunnelCostHistory>>>
+export type ListCrmFunnelCostHistoryQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List a CRM funnel cost history
+ */
+
+export function useListCrmFunnelCostHistory<TData = Awaited<ReturnType<typeof listCrmFunnelCostHistory>>, TError = ErrorType<ErrorResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmFunnelCostHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmFunnelCostHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCrmAdsUrl = () => {
+
+
+
+
+  return `/api/crm/ads`
+}
+
+/**
+ * @summary List CRM ads
+ */
+export const listCrmAds = async ( options?: RequestInit): Promise<CrmAd[]> => {
+
+  return customFetch<CrmAd[]>(getListCrmAdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmAdsQueryKey = () => {
+    return [
+    `/api/crm/ads`
+    ] as const;
+    }
+
+
+export const getListCrmAdsQueryOptions = <TData = Awaited<ReturnType<typeof listCrmAds>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmAdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmAds>>> = ({ signal }) => listCrmAds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmAds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmAds>>>
+export type ListCrmAdsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List CRM ads
+ */
+
+export function useListCrmAds<TData = Awaited<ReturnType<typeof listCrmAds>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmAdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListUnlinkedCrmAdsUrl = () => {
+
+
+
+
+  return `/api/crm/ads/unlinked`
+}
+
+/**
+ * @summary List CRM ads without a funnel
+ */
+export const listUnlinkedCrmAds = async ( options?: RequestInit): Promise<CrmAd[]> => {
+
+  return customFetch<CrmAd[]>(getListUnlinkedCrmAdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUnlinkedCrmAdsQueryKey = () => {
+    return [
+    `/api/crm/ads/unlinked`
+    ] as const;
+    }
+
+
+export const getListUnlinkedCrmAdsQueryOptions = <TData = Awaited<ReturnType<typeof listUnlinkedCrmAds>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUnlinkedCrmAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUnlinkedCrmAdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUnlinkedCrmAds>>> = ({ signal }) => listUnlinkedCrmAds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUnlinkedCrmAds>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUnlinkedCrmAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listUnlinkedCrmAds>>>
+export type ListUnlinkedCrmAdsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List CRM ads without a funnel
+ */
+
+export function useListUnlinkedCrmAds<TData = Awaited<ReturnType<typeof listUnlinkedCrmAds>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUnlinkedCrmAds>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUnlinkedCrmAdsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLinkCrmAdUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/ads/${id}`
+}
+
+/**
+ * @summary Link or unlink a CRM ad from a funnel
+ */
+export const linkCrmAd = async (id: string,
+    crmAdLink: CrmAdLink, options?: RequestInit): Promise<CrmAd> => {
+
+  return customFetch<CrmAd>(getLinkCrmAdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmAdLink)
+  }
+);}
+
+
+
+
+
+export const getLinkCrmAdMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkCrmAd>>, TError,{id: string;data: BodyType<CrmAdLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkCrmAd>>, TError,{id: string;data: BodyType<CrmAdLink>}, TContext> => {
+
+const mutationKey = ['linkCrmAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkCrmAd>>, {id: string;data: BodyType<CrmAdLink>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkCrmAd(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkCrmAdMutationResult = NonNullable<Awaited<ReturnType<typeof linkCrmAd>>>
+    export type LinkCrmAdMutationBody = BodyType<CrmAdLink>
+    export type LinkCrmAdMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Link or unlink a CRM ad from a funnel
+ */
+export const useLinkCrmAd = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkCrmAd>>, TError,{id: string;data: BodyType<CrmAdLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkCrmAd>>,
+        TError,
+        {id: string;data: BodyType<CrmAdLink>},
+        TContext
+      > => {
+      return useMutation(getLinkCrmAdMutationOptions(options));
+    }
+
+export const getListCrmLeadsUrl = (params?: ListCrmLeadsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads?${stringifiedParams}` : `/api/crm/leads`
+}
+
+/**
+ * @summary List CRM leads within the caller scope
+ */
+export const listCrmLeads = async (params?: ListCrmLeadsParams, options?: RequestInit): Promise<CrmLead[]> => {
+
+  return customFetch<CrmLead[]>(getListCrmLeadsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmLeadsQueryKey = (params?: ListCrmLeadsParams,) => {
+    return [
+    `/api/crm/leads`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCrmLeadsQueryOptions = <TData = Awaited<ReturnType<typeof listCrmLeads>>, TError = ErrorType<ErrorResponse>>(params?: ListCrmLeadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmLeadsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmLeads>>> = ({ signal }) => listCrmLeads(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmLeads>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmLeadsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmLeads>>>
+export type ListCrmLeadsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List CRM leads within the caller scope
+ */
+
+export function useListCrmLeads<TData = Awaited<ReturnType<typeof listCrmLeads>>, TError = ErrorType<ErrorResponse>>(
+ params?: ListCrmLeadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmLeads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmLeadsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCrmLeadUrl = () => {
+
+
+
+
+  return `/api/crm/leads`
+}
+
+/**
+ * @summary Create a manually entered CRM lead
+ */
+export const createCrmLead = async (crmLeadInput: CrmLeadInput, options?: RequestInit): Promise<CrmLead> => {
+
+  return customFetch<CrmLead>(getCreateCrmLeadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmLeadMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLead>>, TError,{data: BodyType<CrmLeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmLead>>, TError,{data: BodyType<CrmLeadInput>}, TContext> => {
+
+const mutationKey = ['createCrmLead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmLead>>, {data: BodyType<CrmLeadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrmLead(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmLeadMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmLead>>>
+    export type CreateCrmLeadMutationBody = BodyType<CrmLeadInput>
+    export type CreateCrmLeadMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a manually entered CRM lead
+ */
+export const useCreateCrmLead = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLead>>, TError,{data: BodyType<CrmLeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmLead>>,
+        TError,
+        {data: BodyType<CrmLeadInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCrmLeadMutationOptions(options));
+    }
+
+export const getGetCrmLeadUrl = (id: string,
+    params?: GetCrmLeadParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}?${stringifiedParams}` : `/api/crm/leads/${id}`
+}
+
+/**
+ * @summary Get a CRM lead within the caller scope
+ */
+export const getCrmLead = async (id: string,
+    params?: GetCrmLeadParams, options?: RequestInit): Promise<CrmLead> => {
+
+  return customFetch<CrmLead>(getGetCrmLeadUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCrmLeadQueryKey = (id: string,
+    params?: GetCrmLeadParams,) => {
+    return [
+    `/api/crm/leads/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCrmLeadQueryOptions = <TData = Awaited<ReturnType<typeof getCrmLead>>, TError = ErrorType<ErrorResponse>>(id: string,
+    params?: GetCrmLeadParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmLead>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCrmLeadQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrmLead>>> = ({ signal }) => getCrmLead(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrmLead>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCrmLeadQueryResult = NonNullable<Awaited<ReturnType<typeof getCrmLead>>>
+export type GetCrmLeadQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a CRM lead within the caller scope
+ */
+
+export function useGetCrmLead<TData = Awaited<ReturnType<typeof getCrmLead>>, TError = ErrorType<ErrorResponse>>(
+ id: string,
+    params?: GetCrmLeadParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmLead>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCrmLeadQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCrmLeadUrl = (id: string,
+    params?: UpdateCrmLeadParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}?${stringifiedParams}` : `/api/crm/leads/${id}`
+}
+
+/**
+ * @summary Update an editable CRM lead field
+ */
+export const updateCrmLead = async (id: string,
+    crmLeadUpdate: CrmLeadUpdate,
+    params?: UpdateCrmLeadParams, options?: RequestInit): Promise<CrmLead> => {
+
+  return customFetch<CrmLead>(getUpdateCrmLeadUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmLeadMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLead>>, TError,{id: string;data: BodyType<CrmLeadUpdate>;params?: UpdateCrmLeadParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmLead>>, TError,{id: string;data: BodyType<CrmLeadUpdate>;params?: UpdateCrmLeadParams}, TContext> => {
+
+const mutationKey = ['updateCrmLead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmLead>>, {id: string;data: BodyType<CrmLeadUpdate>;params?: UpdateCrmLeadParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  updateCrmLead(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmLeadMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmLead>>>
+    export type UpdateCrmLeadMutationBody = BodyType<CrmLeadUpdate>
+    export type UpdateCrmLeadMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update an editable CRM lead field
+ */
+export const useUpdateCrmLead = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLead>>, TError,{id: string;data: BodyType<CrmLeadUpdate>;params?: UpdateCrmLeadParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmLead>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadUpdate>;params?: UpdateCrmLeadParams},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmLeadMutationOptions(options));
     }
 

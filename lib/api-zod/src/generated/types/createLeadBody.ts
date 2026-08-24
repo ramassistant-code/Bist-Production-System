@@ -14,6 +14,8 @@ export interface CreateLeadBody {
   answer_status?: string | null;
   capture_attempt_status?: string | null;
   lead_source?: string | null;
+  ad_name?: string | null;
+  referral_name?: string | null;
   activity_field?: string | null;
   followup_at?: string | null;
   followup_note?: string | null;

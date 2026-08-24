@@ -13,5 +13,7 @@ export interface CreateProductBody {
   consumer_price?: string | null;
   product_explanation?: string | null;
   sales_notes?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
 }

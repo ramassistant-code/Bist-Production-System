@@ -262,6 +262,8 @@ export const ListLeadsResponseItem = zod.object({
   "answer_status": zod.string().nullish(),
   "capture_attempt_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -297,6 +299,8 @@ export const CreateLeadBody = zod.object({
   "answer_status": zod.string().nullish(),
   "capture_attempt_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -318,6 +322,8 @@ export const CreateLeadResponse = zod.object({
   "answer_status": zod.string().nullish(),
   "capture_attempt_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -360,6 +366,8 @@ export const GetLeadResponse = zod.object({
   "answer_status": zod.string().nullish(),
   "capture_attempt_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -397,6 +405,8 @@ export const UpdateLeadBody = zod.object({
   "status": zod.string().nullish(),
   "answer_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -418,6 +428,8 @@ export const UpdateLeadResponse = zod.object({
   "answer_status": zod.string().nullish(),
   "capture_attempt_status": zod.string().nullish(),
   "lead_source": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "referral_name": zod.string().nullish(),
   "activity_field": zod.string().nullish(),
   "followup_at": zod.string().nullish(),
   "followup_note": zod.string().nullish(),
@@ -460,6 +472,8 @@ export const ListProductsResponseItem = zod.object({
   "production_cost": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
@@ -478,6 +492,8 @@ export const CreateProductBody = zod.object({
   "consumer_price": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish()
 })
 
@@ -491,6 +507,8 @@ export const CreateProductResponse = zod.object({
   "production_cost": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
@@ -515,6 +533,8 @@ export const GetProductResponse = zod.object({
   "production_cost": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
@@ -530,6 +550,8 @@ export const GetProductResponse = zod.object({
   "component_name": zod.string().nullish(),
   "component_number": zod.string().nullish(),
   "component_deliverable": zod.string().nullish(),
+  "component_quote_description_default": zod.string().nullish(),
+  "component_quote_notes_default": zod.string().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string()
 })),
@@ -551,6 +573,8 @@ export const UpdateProductBody = zod.object({
   "consumer_price": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish()
 })
 
@@ -564,6 +588,8 @@ export const UpdateProductResponse = zod.object({
   "production_cost": zod.string().nullish(),
   "product_explanation": zod.string().nullish(),
   "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
@@ -595,6 +621,8 @@ export const AddProductComponentResponse = zod.object({
   "component_name": zod.string().nullish(),
   "component_number": zod.string().nullish(),
   "component_deliverable": zod.string().nullish(),
+  "component_quote_description_default": zod.string().nullish(),
+  "component_quote_notes_default": zod.string().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string()
 })
@@ -624,6 +652,8 @@ export const UpdateProductComponentResponse = zod.object({
   "component_name": zod.string().nullish(),
   "component_number": zod.string().nullish(),
   "component_deliverable": zod.string().nullish(),
+  "component_quote_description_default": zod.string().nullish(),
+  "component_quote_notes_default": zod.string().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string()
 })
@@ -656,6 +686,8 @@ export const ListComponentsResponseItem = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
@@ -673,6 +705,8 @@ export const CreateComponentBody = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish()
 })
@@ -684,6 +718,8 @@ export const CreateComponentResponse = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
@@ -706,6 +742,8 @@ export const GetComponentResponse = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
@@ -726,6 +764,8 @@ export const UpdateComponentBody = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish()
 })
@@ -737,11 +777,326 @@ export const UpdateComponentResponse = zod.object({
   "category": zod.string().nullish(),
   "deliverable": zod.string().nullish(),
   "internal_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
   "cost": zod.string().nullish(),
   "is_active": zod.boolean().nullish(),
   "created_at": zod.string(),
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()
+})
+
+
+/**
+ * @summary List CRM funnels
+ */
+export const ListCrmFunnelsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "current_cost_per_lead": zod.string().nullish(),
+  "cost_updated_at": zod.coerce.date().nullish(),
+  "is_active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+export const ListCrmFunnelsResponse = zod.array(ListCrmFunnelsResponseItem)
+
+
+/**
+ * @summary Create a CRM funnel
+ */
+
+
+
+export const CreateCrmFunnelBody = zod.object({
+  "name": zod.string().min(1),
+  "current_cost_per_lead": zod.string().nullable(),
+  "is_active": zod.boolean().optional()
+})
+
+export const CreateCrmFunnelResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "current_cost_per_lead": zod.string().nullish(),
+  "cost_updated_at": zod.coerce.date().nullish(),
+  "is_active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a CRM funnel
+ */
+
+
+
+export const UpdateCrmFunnelBody = zod.object({
+  "id": zod.string(),
+  "name": zod.string().min(1).optional(),
+  "current_cost_per_lead": zod.string().nullish(),
+  "is_active": zod.boolean().optional()
+})
+
+export const UpdateCrmFunnelResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "current_cost_per_lead": zod.string().nullish(),
+  "cost_updated_at": zod.coerce.date().nullish(),
+  "is_active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary List a CRM funnel cost history
+ */
+export const ListCrmFunnelCostHistoryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ListCrmFunnelCostHistoryResponseItem = zod.object({
+  "id": zod.string(),
+  "funnel_id": zod.string(),
+  "cost_per_lead": zod.string(),
+  "valid_from": zod.coerce.date(),
+  "valid_to": zod.coerce.date().nullish(),
+  "updated_by": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+})
+export const ListCrmFunnelCostHistoryResponse = zod.array(ListCrmFunnelCostHistoryResponseItem)
+
+
+/**
+ * @summary List CRM ads
+ */
+export const ListCrmAdsResponseItem = zod.object({
+  "id": zod.string(),
+  "facebook_ad_id": zod.string(),
+  "name": zod.string().nullish(),
+  "ad_url": zod.string().nullish(),
+  "funnel_id": zod.string().nullish(),
+  "last_synced_at": zod.coerce.date().nullish(),
+  "fetch_failed": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+export const ListCrmAdsResponse = zod.array(ListCrmAdsResponseItem)
+
+
+/**
+ * @summary List CRM ads without a funnel
+ */
+export const ListUnlinkedCrmAdsResponseItem = zod.object({
+  "id": zod.string(),
+  "facebook_ad_id": zod.string(),
+  "name": zod.string().nullish(),
+  "ad_url": zod.string().nullish(),
+  "funnel_id": zod.string().nullish(),
+  "last_synced_at": zod.coerce.date().nullish(),
+  "fetch_failed": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+export const ListUnlinkedCrmAdsResponse = zod.array(ListUnlinkedCrmAdsResponseItem)
+
+
+/**
+ * @summary Link or unlink a CRM ad from a funnel
+ */
+export const LinkCrmAdParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const LinkCrmAdBody = zod.object({
+  "funnel_id": zod.string().nullable()
+})
+
+export const LinkCrmAdResponse = zod.object({
+  "id": zod.string(),
+  "facebook_ad_id": zod.string(),
+  "name": zod.string().nullish(),
+  "ad_url": zod.string().nullish(),
+  "funnel_id": zod.string().nullish(),
+  "last_synced_at": zod.coerce.date().nullish(),
+  "fetch_failed": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary List CRM leads within the caller scope
+ */
+export const listCrmLeadsQueryViewDefault = `rep`;
+export const listCrmLeadsQueryLimitMax = 500;
+
+export const listCrmLeadsQueryOffsetMin = 0;
+
+
+
+export const ListCrmLeadsQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(listCrmLeadsQueryViewDefault),
+  "status": zod.coerce.string().optional(),
+  "sales_rep": zod.coerce.string().optional(),
+  "funnel": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().min(1).max(listCrmLeadsQueryLimitMax).optional(),
+  "offset": zod.coerce.number().min(listCrmLeadsQueryOffsetMin).optional()
+})
+
+export const ListCrmLeadsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone_e164": zod.string(),
+  "phone_raw": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "sales_rep_id": zod.string().nullish(),
+  "status_code": zod.string(),
+  "is_active_customer": zod.boolean(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempts": zod.number(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "pending_reassignment": zod.boolean(),
+  "legacy_lead_id": zod.string().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "deleted_at": zod.coerce.date().nullish()
+})
+export const ListCrmLeadsResponse = zod.array(ListCrmLeadsResponseItem)
+
+
+/**
+ * @summary Create a manually entered CRM lead
+ */
+
+
+
+
+export const CreateCrmLeadBody = zod.object({
+  "name": zod.string().min(1),
+  "phone": zod.string().min(1),
+  "email": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "source_ref": zod.string().nullish()
+})
+
+export const CreateCrmLeadResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone_e164": zod.string(),
+  "phone_raw": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "sales_rep_id": zod.string().nullish(),
+  "status_code": zod.string(),
+  "is_active_customer": zod.boolean(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempts": zod.number(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "pending_reassignment": zod.boolean(),
+  "legacy_lead_id": zod.string().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "deleted_at": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Get a CRM lead within the caller scope
+ */
+export const GetCrmLeadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getCrmLeadQueryViewDefault = `rep`;
+
+export const GetCrmLeadQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(getCrmLeadQueryViewDefault)
+})
+
+export const GetCrmLeadResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone_e164": zod.string(),
+  "phone_raw": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "sales_rep_id": zod.string().nullish(),
+  "status_code": zod.string(),
+  "is_active_customer": zod.boolean(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempts": zod.number(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "pending_reassignment": zod.boolean(),
+  "legacy_lead_id": zod.string().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "deleted_at": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Update an editable CRM lead field
+ */
+export const UpdateCrmLeadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateCrmLeadQueryViewDefault = `rep`;
+
+export const UpdateCrmLeadQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(updateCrmLeadQueryViewDefault)
+})
+
+
+
+
+
+export const UpdateCrmLeadBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "phone": zod.string().min(1).optional(),
+  "email": zod.string().nullish(),
+  "answer_status": zod.string().nullish(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "source_ref": zod.string().nullish()
+})
+
+export const UpdateCrmLeadResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone_e164": zod.string(),
+  "phone_raw": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "sales_rep_id": zod.string().nullish(),
+  "status_code": zod.string(),
+  "is_active_customer": zod.boolean(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempts": zod.number(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "pending_reassignment": zod.boolean(),
+  "legacy_lead_id": zod.string().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "deleted_at": zod.coerce.date().nullish()
 })
 
 

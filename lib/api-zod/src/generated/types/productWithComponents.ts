@@ -17,6 +17,8 @@ export interface ProductWithComponents {
   production_cost?: string | null;
   product_explanation?: string | null;
   sales_notes?: string | null;
+  quote_description_default?: string | null;
+  quote_notes_default?: string | null;
   is_active?: boolean | null;
   created_at: string;
   updated_at: string;

@@ -17,6 +17,7 @@ import whatsappRouter from "./whatsapp";
 import paymentsRouter from "./payments";
 import signingRouter from "./signing";
 import coordinationTasksRouter from "./coordination-tasks";
+import crmRouter from "./crm";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(whatsappRouter);
 router.use(paymentsRouter);
 router.use(signingRouter);
 router.use(coordinationTasksRouter);
+router.use("/crm", crmRouter);
 
 export default router;

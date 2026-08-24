@@ -18,6 +18,8 @@ tags:
     description: Component management
   - name: leads
     description: Lead management
+  - name: crm
+    description: CRM operations with scoped lead access
   - name: stats
     description: Dashboard statistics
 paths:
@@ -745,6 +747,406 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /crm/funnels:
+    get:
+      operationId: listCrmFunnels
+      tags: [crm]
+      summary: List CRM funnels
+      responses:
+        "200":
+          description: CRM funnels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmFunnel"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createCrmFunnel
+      tags: [crm]
+      summary: Create a CRM funnel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmFunnelInput"
+      responses:
+        "201":
+          description: Created CRM funnel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmFunnel"
+        "400":
+          description: Invalid funnel data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCrmFunnel
+      tags: [crm]
+      summary: Update a CRM funnel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmFunnelUpdate"
+      responses:
+        "200":
+          description: Updated CRM funnel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmFunnel"
+        "400":
+          description: Invalid funnel update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Funnel not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/funnels/{id}/cost-history:
+    get:
+      operationId: listCrmFunnelCostHistory
+      tags: [crm]
+      summary: List a CRM funnel cost history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Funnel cost history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmFunnelCostHistory"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/ads:
+    get:
+      operationId: listCrmAds
+      tags: [crm]
+      summary: List CRM ads
+      responses:
+        "200":
+          description: CRM ads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmAd"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/ads/unlinked:
+    get:
+      operationId: listUnlinkedCrmAds
+      tags: [crm]
+      summary: List CRM ads without a funnel
+      responses:
+        "200":
+          description: Unlinked CRM ads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmAd"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/ads/{id}:
+    patch:
+      operationId: linkCrmAd
+      tags: [crm]
+      summary: Link or unlink a CRM ad from a funnel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmAdLink"
+      responses:
+        "200":
+          description: Updated CRM ad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmAd"
+        "400":
+          description: Invalid ad link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Administrator role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Ad not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads:
+    get:
+      operationId: listCrmLeads
+      tags: [crm]
+      summary: List CRM leads within the caller scope
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: sales_rep
+          in: query
+          schema:
+            type: string
+        - name: funnel
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: CRM leads
+          headers:
+            X-Total-Count:
+              description: Total number of CRM leads matching the requested filters and scope
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmLead"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createCrmLead
+      tags: [crm]
+      summary: Create a manually entered CRM lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadInput"
+      responses:
+        "201":
+          description: Created CRM lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLead"
+        "400":
+          description: Invalid CRM lead data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads/{id}:
+    get:
+      operationId: getCrmLead
+      tags: [crm]
+      summary: Get a CRM lead within the caller scope
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      responses:
+        "200":
+          description: CRM lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLead"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCrmLead
+      tags: [crm]
+      summary: Update an editable CRM lead field
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadUpdate"
+      responses:
+        "200":
+          description: Updated CRM lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLead"
+        "400":
+          description: Invalid CRM lead update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -895,6 +1297,12 @@ components:
         lead_source:
           type: string
           nullable: true
+        ad_name:
+          type: string
+          nullable: true
+        referral_name:
+          type: string
+          nullable: true
         activity_field:
           type: string
           nullable: true
@@ -983,6 +1391,12 @@ components:
         lead_source:
           type: string
           nullable: true
+        ad_name:
+          type: string
+          nullable: true
+        referral_name:
+          type: string
+          nullable: true
         activity_field:
           type: string
           nullable: true
@@ -1025,6 +1439,12 @@ components:
           type: string
           nullable: true
         lead_source:
+          type: string
+          nullable: true
+        ad_name:
+          type: string
+          nullable: true
+        referral_name:
           type: string
           nullable: true
         activity_field:
@@ -1232,6 +1652,12 @@ components:
         sales_notes:
           type: string
           nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
+          type: string
+          nullable: true
         is_active:
           type: boolean
           nullable: true
@@ -1274,6 +1700,12 @@ components:
           type: string
           nullable: true
         sales_notes:
+          type: string
+          nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
           type: string
           nullable: true
         is_active:
@@ -1331,6 +1763,12 @@ components:
         component_deliverable:
           type: string
           nullable: true
+        component_quote_description_default:
+          type: string
+          nullable: true
+        component_quote_notes_default:
+          type: string
+          nullable: true
         created_at:
           type: string
         updated_at:
@@ -1362,6 +1800,12 @@ components:
         sales_notes:
           type: string
           nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
+          type: string
+          nullable: true
         is_active:
           type: boolean
           nullable: true
@@ -1386,6 +1830,12 @@ components:
           type: string
           nullable: true
         sales_notes:
+          type: string
+          nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
           type: string
           nullable: true
         is_active:
@@ -1434,6 +1884,12 @@ components:
         internal_notes:
           type: string
           nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
+          type: string
+          nullable: true
         cost:
           type: string
           nullable: true
@@ -1468,6 +1924,12 @@ components:
         internal_notes:
           type: string
           nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
+          type: string
+          nullable: true
         cost:
           type: string
           nullable: true
@@ -1491,9 +1953,217 @@ components:
         internal_notes:
           type: string
           nullable: true
+        quote_description_default:
+          type: string
+          nullable: true
+        quote_notes_default:
+          type: string
+          nullable: true
         cost:
           type: string
           nullable: true
         is_active:
           type: boolean
           nullable: true
+
+    CrmFunnel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        current_cost_per_lead:
+          type: [string, "null"]
+        cost_updated_at:
+          type: [string, "null"]
+          format: date-time
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, name, is_active, created_at, updated_at]
+
+    CrmFunnelInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        current_cost_per_lead:
+          type: [string, "null"]
+        is_active:
+          type: boolean
+      required: [name, current_cost_per_lead]
+
+    CrmFunnelUpdate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          minLength: 1
+        current_cost_per_lead:
+          type: [string, "null"]
+        is_active:
+          type: boolean
+      required: [id]
+
+    CrmFunnelCostHistory:
+      type: object
+      properties:
+        id:
+          type: string
+        funnel_id:
+          type: string
+        cost_per_lead:
+          type: string
+        valid_from:
+          type: string
+          format: date
+        valid_to:
+          type: [string, "null"]
+          format: date
+        updated_by:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+      required: [id, funnel_id, cost_per_lead, valid_from, created_at]
+
+    CrmAd:
+      type: object
+      properties:
+        id:
+          type: string
+        facebook_ad_id:
+          type: string
+        name:
+          type: [string, "null"]
+        ad_url:
+          type: [string, "null"]
+        funnel_id:
+          type: [string, "null"]
+        last_synced_at:
+          type: [string, "null"]
+          format: date-time
+        fetch_failed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, facebook_ad_id, fetch_failed, created_at, updated_at]
+
+    CrmAdLink:
+      type: object
+      properties:
+        funnel_id:
+          type: [string, "null"]
+      required: [funnel_id]
+
+    CrmLead:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone_e164:
+          type: string
+        phone_raw:
+          type: [string, "null"]
+        email:
+          type: [string, "null"]
+        sales_rep_id:
+          type: [string, "null"]
+        status_code:
+          type: string
+        is_active_customer:
+          type: boolean
+        answer_status:
+          type: [string, "null"]
+        capture_attempts:
+          type: integer
+        rejection_reason_code:
+          type: [string, "null"]
+        rejection_detail:
+          type: [string, "null"]
+        pending_reassignment:
+          type: boolean
+        legacy_lead_id:
+          type: [string, "null"]
+        linked_customer_id:
+          type: [string, "null"]
+        source:
+          type: string
+        source_ref:
+          type: [string, "null"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: [string, "null"]
+          format: date-time
+      required:
+        - id
+        - name
+        - phone_e164
+        - status_code
+        - is_active_customer
+        - capture_attempts
+        - pending_reassignment
+        - source
+        - created_at
+        - updated_at
+
+    CrmLeadInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: [string, "null"]
+        answer_status:
+          type: [string, "null"]
+        rejection_reason_code:
+          type: [string, "null"]
+        rejection_detail:
+          type: [string, "null"]
+        source_ref:
+          type: [string, "null"]
+      required: [name, phone]
+
+    CrmLeadUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        phone:
+          type: string
+          minLength: 1
+        email:
+          type: [string, "null"]
+        answer_status:
+          type: [string, "null"]
+        rejection_reason_code:
+          type: [string, "null"]
+        rejection_detail:
+          type: [string, "null"]
+        source_ref:
+          type: [string, "null"]

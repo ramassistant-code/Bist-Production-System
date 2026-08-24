@@ -7,6 +7,7 @@ import { logger } from "../lib/logger";
 import { sendLoginCodeEmail } from "../lib/email";
 import { createHmac, randomInt } from "node:crypto";
 import { notifySync } from "../lib/syncClient";
+import { getAuthenticatedUser } from "../middlewares/require-auth";
 
 const router: IRouter = Router();
 
@@ -28,15 +29,6 @@ function normalizeRole(role: string | null | undefined): string | null {
 
 function isValidRole(role: string | null): boolean {
   return role === null || VALID_ROLE_VALUES.has(role);
-}
-
-async function getAuthenticatedUser(req: Request): Promise<{ id: string; email: string } | null> {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7);
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !data.user) return null;
-  return { id: data.user.id, email: data.user.email ?? "" };
 }
 
 // GET /auth/me — verify JWT and return active app_users row
