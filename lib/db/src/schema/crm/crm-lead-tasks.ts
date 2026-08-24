@@ -23,9 +23,12 @@ const USER_EDITABLE_FIELDS = {
   description: true,
   due_at: true,
   status: true,
-  source: true,
   snoozed_until: true,
 } as const;
+
+// source ('manual' | 'status_auto') is set by whichever code path creates the
+// task and feeds reporting (spec 3.6). A user relabelling an auto-created task
+// as manual would corrupt those numbers, so it stays out of the allowlist.
 
 export const insertCrmLeadTaskSchema = createInsertSchema(crmLeadTasksTable)
   .pick(USER_EDITABLE_FIELDS);

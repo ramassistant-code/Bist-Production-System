@@ -30,13 +30,18 @@ const USER_EDITABLE_FIELDS = {
   phone_e164: true,
   phone_raw: true,
   email: true,
-  status_code: true,
   answer_status: true,
   rejection_reason_code: true,
   rejection_detail: true,
-  pending_reassignment: true,
   source_ref: true,
 } as const;
+
+// status_code is deliberately NOT editable here. Status changes must go through
+// the status machine (PATCH /api/crm/leads/:id/status), which enforces the
+// blocking rules: "pipe" and "long_followup" require a task with a due date,
+// "not_relevant" requires a reason, and "paid" is automatic only.
+// pending_reassignment is set by the system when a rep is deactivated (spec 5.5)
+// and cleared by bulk reassignment - never by a user.
 
 export const insertCrmLeadSchema = createInsertSchema(crmLeadsTable)
   .pick(USER_EDITABLE_FIELDS);
