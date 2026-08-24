@@ -1,0 +1,96 @@
+MILESTONE: CRM Wave 2a - CRM API skeleton with per-rep row scoping.
+
+CONTEXT
+The crm_* tables exist and are mirrored in Drizzle. requireAuth populates
+req.appUser. Now we add the CRM API. This is a NEW, ISOLATED module: it must
+not modify anything in the existing leads / quotes / deals / payments flow.
+
+BUILD
+1. Create artifacts/api-server/src/services/crm/scope.ts
+   Export `leadScope(req, viewMode)` returning a Drizzle condition:
+   - role "sales"                  -> crm_leads.sales_rep_id = req.appUser.id
+   - role "admin" | "sales_manager":
+       viewMode "rep"     -> same as sales (their own leads only)
+       viewMode "manager" -> no restriction
+   - any other role -> a condition that matches nothing.
+   viewMode comes from the `view` query parameter, default "rep".
+   THIS IS THE ONLY PLACE THAT DECIDES VISIBILITY. Every list and detail
+   query must go through it - never inline the rule anywhere else.
+
+2. Create artifacts/api-server/src/services/crm/legacy-read.ts
+   This is the ONLY file in the whole CRM module allowed to query the
+   pre-existing tables (deals, payments, products, customers, leads).
+   READ ONLY - it must never write to them.
+   Export: dealsForCustomer(customerId), paymentsForDeal(dealId),
+   productsForCustomer(customerId).
+   Reason: when the deals module is eventually replaced, this is one file to
+   swap instead of a hunt across the codebase. No SELECT against a legacy
+   table may appear anywhere else in services/crm or routes/crm.
+
+   Also export the single source of truth for "this deal is paid":
+     export const PAID_STATUSES = ['שולמה במלואה', 'שולם'] as const;
+     export function isDealPaid(deal): boolean   // membership test only
+
+   Two facts from the live database that this encodes - do not "improve" on
+   them:
+   (a) deals.payment_status is an enum containing TWO values meaning paid in
+       full. The app writes 'שולמה במלואה'; the Monday sync writes 'שולם'.
+       Matching only the first silently misses 22% of paid deals.
+   (b) Do NOT compute paid-ness from amounts. 145 of 150 paid deals show
+       paid_amount = 0 because Monday payment rows were never imported, and
+       the real calculation in refreshDealPaymentTotals checks both ex-VAT
+       and inc-VAT totals to support pre-VAT-migration deals. Reimplementing
+       that here would create a second source of truth for money.
+
+   dealsForCustomer must also return a boolean `amounts_trustworthy`, false
+   when the deal has a monday_item_id and no rows in payments. The lead card
+   uses it to avoid showing "₪0 paid" on a deal that was in fact paid.
+
+3. Create artifacts/api-server/src/services/crm/phone.ts
+   Export `toE164(raw)` -> "+9725XXXXXXXX" | null, and `digitsOnly(raw)`.
+   Base it on the logic in lib/whatsapp-link.ts normalizePhoneIL, but write
+   a NEW file. Do NOT modify or move normalizePhoneIL - it is used by live
+   payment flows.
+
+4. Create routes under artifacts/api-server/src/routes/crm/ :
+   - funnels.ts  GET/POST/PATCH /crm/funnels        (requireRole admin)
+                 GET /crm/funnels/:id/cost-history  (requireRole admin)
+   - ads.ts      GET /crm/ads, GET /crm/ads/unlinked,
+                 PATCH /crm/ads/:id  (link to funnel, requireRole admin)
+   - leads.ts    GET /crm/leads   - list, uses leadScope, supports
+                   status/sales_rep/funnel filters, search, limit/offset,
+                   X-Total-Count header (copy the shape of routes/leads.ts)
+                 GET /crm/leads/:id - detail, 404 if outside scope
+                 POST /crm/leads    - manual create
+                 PATCH /crm/leads/:id - update, via updateCrmLeadSchema.
+                   Note status_code is already excluded from that schema on
+                   purpose - status changes will go through the status
+                   machine in a later milestone. If a caller sends
+                   status_code anyway, respond 400
+                   "שינוי סטטוס יתווסף בשלב הבא" rather than ignoring it
+                   silently.
+   - index.ts    a router that mounts all of the above.
+
+5. Mount in routes/index.ts under the /crm prefix. This is the ONLY change
+   to an existing file in this milestone.
+
+6. Add every endpoint to lib/api-spec/openapi.yaml, then run
+   `pnpm --filter @workspace/api-spec run codegen`.
+
+DO NOT TOUCH
+- routes/leads.ts, quotes.ts, deals.ts, payments.ts, customers.ts
+- lib/whatsapp-link.ts, lib/invoiceWebhook.ts
+- any existing page
+- any DB schema
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- A user with role "sales" calling GET /api/crm/leads sees only rows where
+  sales_rep_id is their own id, even with ?view=manager.
+- An admin with ?view=manager sees all rows; with ?view=rep sees only theirs.
+- GET /api/crm/leads/:id for a lead outside the caller's scope returns 404,
+  not 403 - do not leak existence.
+- The generated hooks useListCrmLeads / getListCrmLeadsQueryKey exist.
+
+REPORT
+What was built, files changed, how to test, known limitations.
