@@ -23,6 +23,8 @@
 | 7 | `07_add_sales_manager_role.sql` | `ALTER TYPE user_role ADD VALUE 'sales_manager'`. **בלתי הפיך** — ראו אזהרה בקובץ |
 | 8 | `08_verify_role_enum.sql` | אימות ל-07. בהרצה **נפרדת** |
 | 9 | `09_role_enum_usage.sql` | אילו עמודות משתמשות ב-enum הזה |
+| 10 | `10_crm_inquiries_source_ref.sql` | `source` + `source_ref` על `crm_inquiries` ואינדקס ייחודי חלקי. חוסם פניות כפולות מ-retry של מטא. **לפני גל 4** |
+| — | `90_dev_scope_test_seed.sql` | לידי בדיקה לאימות ה-scope של גל 2א. **פיתוח בלבד** |
 | — | `99_rollback.sql` | ביטול מלא של 01–06. **לא להריץ אחרי הקשירה בגל 7ב** |
 
 כל קובץ עטוף ב-`BEGIN/COMMIT`. שאילתות הבדיקה נמצאות **אחרי** ה-`COMMIT`,
