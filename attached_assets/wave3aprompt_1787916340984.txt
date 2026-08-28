@@ -1,0 +1,162 @@
+MILESTONE: CRM Wave 3a - status machine, notes and tasks. Backend only.
+
+CONTEXT
+Pull main first. Waves 2a, 2a-bis and 2b are done and the scoping has been
+verified at runtime. This milestone adds the first WRITES beyond the plain
+lead create/update: the status machine, notes, tasks, and the reminder feed.
+No UI in this milestone - the screens come in 3b.
+
+READ BEFORE YOU WRITE - this is the rule that broke wave 2b
+Never guess a column name. Every table you touch has an exact definition in
+lib/db/src/schema/crm/ and lib/db/src/schema/. Open the file and read it.
+In wave 2b four payment column names were invented, none of them existed,
+and the lead card silently displayed 0 for every amount. If a field you
+expect is not in the schema file, it does not exist - report it, do not
+improvise a fallback chain.
+
+TWO TRAPS THIS CODEBASE HAS ALREADY SPRUNG
+1. A bare router.use(guard) inside a router that is mounted with no path
+   runs for EVERY request entering the parent router, not only the ones
+   matching its own routes. That is how requireRole("admin") on the funnels
+   router 403'd the entire CRM API. Always scope it:
+   router.use("/prefix", guard).
+2. A raw sql template column inside a Drizzle subquery needs an explicit
+   .as("name"), or the outer query references an identifier that does not
+   exist and the SQL fails at runtime while typecheck passes.
+
+THE STATUS CODES - there are exactly seven, in crm_lead_statuses
+  new | no_answer | pipe | long_followup | paid | not_relevant | wrong_number
+Key all logic off the code. Never off the Hebrew label - an admin renaming a
+label must not change behaviour, and a status an admin adds later gets no
+special behaviour at all.
+
+BUILD
+
+1. services/crm/status-machine.ts
+   Export applyStatusChange({ leadId, toStatus, actorId, task, rejection }).
+   It runs inside ONE db.transaction. Rules, all enforced server-side:
+
+   - pipe and long_followup are BLOCKING. The request must carry a task
+     { title, due_at }. Missing -> 400 { error: "חובה ליצור משימה עם תאריך" }.
+     due_at in the past -> 400 { error: "לא ניתן להזין תאריך שעבר" }.
+     The status update and the task insert are in the SAME transaction: if
+     the task insert fails the status does not change. The task gets
+     assigned_user_id = the lead's sales_rep_id and source = 'status_auto'.
+
+   - not_relevant is BLOCKING. Requires a rejection_reason_code that exists
+     in crm_rejection_reasons with is_active true. If that row has
+     requires_detail true, rejection_detail is required too. Missing either
+     -> 400 with a Hebrew message naming exactly what is missing.
+     Store both on the lead.
+
+   - paid is AUTOMATIC ONLY. Any manual transition responds 400
+     { error: "סטטוס זה מתעדכן אוטומטית בעת קליטת תשלום" }.
+
+   - new is not manually selectable. It is set at intake and by the
+     returning-lead flow in wave 4. Manual change -> 400
+     { error: "לא ניתן להחזיר ליד לסטטוס חדש" }.
+
+   - no_answer and wrong_number: plain update, no extra requirements.
+     Leave a comment on wrong_number noting that wave 4 RoundRobin must
+     exclude those leads from assignment. Do not implement that here.
+
+   - An unknown code, or one whose row has is_active false -> 400.
+
+   Every transition writes one crm_audit_log row:
+     entity_type 'crm_lead', entity_id the lead id, action 'status_changed',
+     actor_user_id the actor, details { from, to } plus the reason code when
+     there is one. Write that row from the application - do not rely on a
+     database trigger for it.
+
+2. PATCH /api/crm/leads/:id/status
+   Wires to the service. Must compose leadScope exactly like the existing
+   lead handlers, and return 404 - not 403 - when the lead is out of scope.
+   Body: { status_code, task?: { title, due_at }, rejection_reason_code?,
+   rejection_detail? }.
+   Leave the existing guard in PATCH /api/crm/leads/:id that rejects
+   status_code, but change its message to
+   { error: "שינוי סטטוס מתבצע דרך PATCH /api/crm/leads/:id/status" }.
+   Do NOT add status_code to USER_EDITABLE_FIELDS in the Drizzle schema.
+
+3. GET /api/crm/rejection-reasons
+   crm_rejection_reasons where is_active, ordered by sort_order, returning
+   { code, label, requires_detail, sort_order }. No endpoint exists today
+   and 3b cannot build the reason picker without it.
+
+4. Notes
+   POST  /api/crm/leads/:id/notes   body { content }
+   PATCH /api/crm/notes/:id         body { content }
+   - Both respect leadScope through the note's lead.
+   - The author is crm_lead_notes.user_id, set from the caller.
+   - Editing is allowed ONLY by the author AND only within 15 minutes of
+     created_at. Otherwise 403 { error: "לא ניתן לערוך הערה לאחר 15 דקות" }.
+     Set edited_at on a successful edit. There is no updated_at column.
+   - Notes are never deleted. Do not add a delete endpoint.
+
+5. Tasks
+   POST  /api/crm/leads/:id/tasks   body { title, description?, due_at }
+   PATCH /api/crm/tasks/:id         body { status?, snoozed_until? }
+   - due_at is required on create and a past date is rejected.
+   - PATCH marks done (status 'done') or snoozes (snoozed_until).
+   - Do NOT set completed_at yourself. The BEFORE UPDATE trigger
+     crm_lead_tasks_completion already stamps it when status becomes 'done'
+     and clears it when status returns to 'open', and it also sets
+     updated_at. Writing it from the app fights the trigger.
+   - Both respect leadScope through the task's lead.
+
+6. GET /api/crm/tasks/mine
+   Open tasks assigned to the CALLER - assigned_user_id = the current user,
+   status 'open', due_at in the past, and snoozed_until null or in the past.
+   Ordered by due_at ascending. This is the feed the reminder modal polls in
+   3b, so keep the payload small: the task plus the lead's id, name and
+   phone. This endpoint is scoped by assigned_user_id, NOT by leadScope - a
+   rep's own task is theirs regardless of the view mode.
+
+7. Three fixes left over from wave 2b, all under artifacts/bist-app/
+   These are the only frontend changes allowed in this milestone.
+   a. pages/crm/leads.tsx maps sales_rep_id through useActiveSalesUsers,
+      which filters out inactive users - so a lead assigned to a rep who has
+      left renders as "לא הוקצה". That is exactly the pending_reassignment
+      population and it must not look unassigned. Fetch all users for the
+      name lookup and keep the is_active filter only for the rep FILTER
+      dropdown.
+   b. Same file: the funnel column renders crmEmpty(lead.source) as a
+      subtitle, printing raw English - "manual", "crm". Either map the known
+      values to Hebrew or drop the subtitle. Do not print the raw value.
+   c. pages/crm/use-crm-view.ts restores a manager's saved mode on every
+      login. The requirement is that a manager always STARTS in
+      "מצב איש מכירות" and the choice persists only within the session.
+      Use sessionStorage, or clear the stored value on sign-in.
+
+8. OpenAPI and codegen
+   Add every new path and schema to lib/api-spec/openapi.yaml, then run
+   pnpm --filter @workspace/api-spec run codegen
+   Commit the regenerated client. Do not hand-edit generated files.
+
+DO NOT TOUCH
+- routes/leads.ts (the legacy one), quotes.ts, deals.ts, payments.ts,
+  customers.ts, products.ts, whatsapp-link.ts, invoiceWebhook.ts
+- services/crm/scope.ts - the policy is correct and runtime-verified
+- lib/db/src/schema/** - do not change it at all. The mirror matches the
+  database. Never run drizzle-kit push.
+- Any page or component outside pages/crm/. Item 7 is the whole of the
+  frontend work in this milestone.
+
+ACCEPTANCE
+- pnpm run typecheck passes in all packages.
+- Changing to pipe without a task returns 400 and the lead's status in the
+  database is unchanged.
+- A task insert that fails rolls the status back - verify the lead row.
+- not_relevant with a reason whose requires_detail is true and no detail
+  returns 400.
+- Manual change to paid or to new returns 400.
+- A note edited at 16 minutes returns 403; a note edited by a different
+  user returns 403 at any age.
+- A rep changing the status of another rep's lead gets 404.
+- GET /api/crm/tasks/mine returns nothing for a task snoozed into the
+  future, and returns it again once snoozed_until has passed.
+
+REPORT
+What was built, files changed, the exact Hebrew error string for each 400
+you added, how you tested the transaction rollback, and anything you needed
+but could not do without touching a forbidden file.
