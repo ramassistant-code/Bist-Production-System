@@ -1,0 +1,138 @@
+MILESTONE: CRM Wave 2b - CRM screens (read only).
+
+CONTEXT
+Pull main first. Wave 2a-bis shipped the read endpoints and the generated
+client already contains every hook you need. This milestone is FRONTEND
+ONLY. No status machine, no assignment, no notifications, no writes to
+leads except the create/update that already exist.
+
+ROLES
+Read the current user with useAuth() from src/lib/auth-context.tsx, which
+exposes appUser.role - a nullable string. The roles in app_users are
+"admin", "sales_manager", "sales", "studio_manager", "editor",
+"office_manager", "editing_manager". Treat isManager as
+role === "admin" || role === "sales_manager".
+Do NOT create a new auth hook and do NOT edit auth-context.tsx.
+
+THE API YOU HAVE - use these exact names, do not invent any
+  useListCrmLeads(params)            -> CrmLeadListItem[]
+  useListCrmLeadStatuses(params)     -> CrmLeadStatusSummary[]
+  useGetCrmLead(id, params)          -> CrmLead
+  useGetCrmLeadContext(id, params)   -> CrmLeadContext
+  useCreateCrmLead / useUpdateCrmLead
+  useListCrmFunnels / useCreateCrmFunnel / useUpdateCrmFunnel
+  useListCrmFunnelCostHistory(funnelId)
+  useListCrmAds / useListUnlinkedCrmAds / useLinkCrmAd
+Cache keys come from the matching getListCrmLeadsQueryKey(),
+getListCrmLeadStatusesQueryKey(), getGetCrmLeadContextQueryKey() and so on.
+Never write a query key as a string literal.
+
+SHAPES
+  CrmLeadListItem = CrmLead plus:
+      funnel_id        string | null   - funnel of the most recent inquiry
+      funnel_name      string | null
+      last_inquiry_at  Date   | null
+      inquiry_count    number         - 0 when the lead has no inquiries
+  CrmLeadStatusSummary = { code, label, sort_order, lead_count }
+  CrmLeadContext = { inquiries, notes, tasks, call_logs, deals, products }
+      deals[] carry payments[] and amounts_trustworthy: boolean
+
+TWO THINGS THAT HAVE NO GENERATED HOOK
+1. Rep names. /api/users is not in the OpenAPI spec. Fetch it exactly the
+   way pages/leads.tsx:245 already does - apiFetch from "@/lib/api-fetch" -
+   and filter to role "sales", "sales_manager" or "admin". Those Hebrew
+   role strings in the old file are legacy; app_users.role holds the
+   English values. Do NOT add /users to openapi.yaml.
+2. Rejection reasons. No endpoint exists yet. You do not need one in this
+   milestone - status changing is Wave 3.
+
+BUILD - all new files under artifacts/bist-app/src/pages/crm/
+1. leads.tsx at route /crm/leads
+   - One tab per row from useListCrmLeadStatuses, ordered by sort_order,
+     with lead_count as the badge. "חדש" is the default tab. A status with
+     lead_count 0 still gets a tab.
+   - Pass the SAME view param to useListCrmLeadStatuses and to
+     useListCrmLeads. If they disagree the badge will contradict the list.
+   - Columns: name, phone, funnel_name, last_inquiry_at, capture_attempts,
+     assigned rep name, and badges "לקוח פעיל" (is_active_customer) and
+     "השאיר פרטים שוב" (inquiry_count > 1).
+   - Search plus filters by funnel and by rep, using the existing query
+     params search / funnel / sales_rep / status.
+   - A view-mode toggle in the page header, rendered ONLY when isManager:
+     "מצב איש מכירות" / "מצב מנהל". Persist in localStorage, default to
+     "מצב איש מכירות" on every login, pass it as the `view` query param.
+     The toggle is a convenience, never a security boundary - the server
+     is the only enforcement point.
+   - Clicking a row opens /crm/leads/:id.
+
+2. lead-card.tsx at route /crm/leads/:id - one screen, no inner navigation.
+   Load useGetCrmLead for the header and useGetCrmLeadContext for the rest.
+   A 404 from either means the lead is not visible to this user: show
+   "הליד לא נמצא" and a link back to /crm/leads. Do not show a raw error.
+   Sections in this order:
+     header      name, phone, email, status label, rep, badges
+     source      funnel, ad name and ad_url link, free_text, inquiry date
+     inquiries   the full history, newest first, numbered by inquiry_number
+     call log    call_logs - empty for now, render the empty state
+     notes       notes - READ ONLY, no compose box in this milestone
+     tasks       tasks - READ ONLY, no create button in this milestone
+     deals       deals, READ ONLY, each with its payments
+     products    products, READ ONLY
+   For any deal where amounts_trustworthy is false, render the amount
+   greyed out with the note "סכום לא מאומת — מקורו במנדיי". Never
+   recompute or sum an amount in the UI. The CRM does not calculate money.
+
+3. funnels.tsx at /crm/funnels (admin only) - list, create, edit, and the
+   full cost history per funnel from useListCrmFunnelCostHistory, not just
+   the current value. useUpdateCrmFunnel takes the id INSIDE the body
+   (CrmFunnelUpdate), not in the path.
+
+4. ads.tsx at /crm/ads (admin only) - list with a linked/unlinked filter
+   and a funnel picker per ad via useLinkCrmAd (PATCH /crm/ads/:id with
+   { funnel_id }; funnel_id null unlinks). Show a persistent banner with
+   the count from useListUnlinkedCrmAds.
+
+5. components/crm/data-table.tsx - a shared table for the CRM screens ONLY.
+   It must use `table-fixed` with an explicit width on every column: under
+   table-auto a wide column overflows and in RTL that clips the actions
+   column on the left. See the comment at pages/deals.tsx:210.
+   Do NOT convert any existing page to this component.
+
+6. lib/crm/format.ts with local copies of formatDate, formatCurrency and
+   empty. Do NOT refactor the existing pages that duplicate these.
+
+7. Register in App.tsx (specific routes before /:id) and add ONE sidebar
+   entry: { name: "CRM", href: "/crm/leads", icon: Target }. Do not gate
+   the sidebar entry by role - the API decides what each role gets.
+
+CONVENTIONS
+- Copy the structure of pages/leads.tsx: react-hook-form + zod, Hebrew
+  error messages, Label + register, manual error <p>.
+- Note pages/leads.tsx:604 has a broken invalidateQueries key. Do not copy
+  that line.
+- Reuse Shell, LookupSelect, ComboboxField, EmptyState, Badge, Dialog,
+  useToast. Add dir="rtl" explicitly on every Radix portal content.
+- All UI text in Hebrew. Dates DD/MM/YYYY, currency ₪.
+- Do not render a path as "A -> B -> C" anywhere. Hebrew bidi reverses it
+  on screen. Use a numbered list or plain sentences.
+
+DO NOT TOUCH
+- pages/leads.tsx or any existing page except App.tsx and sidebar.tsx.
+- Any existing component in components/ui/.
+- Any file under artifacts/api-server/, lib/db/, lib/api-spec/ or any
+  generated directory. If a field you need is missing from an endpoint,
+  report it - do not add it.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- A sales user sees no view toggle and only their own leads, and the tab
+  badges add up to what the list shows.
+- A manager can switch modes and both the list and the badges change.
+- Opening another rep's lead id as a sales user shows "הליד לא נמצא".
+- The old /leads screen is completely unchanged.
+- No visible English text anywhere in the new screens.
+
+REPORT
+What was built, files changed, how to test, known limitations, whether any
+visible English text remains, and any endpoint field you needed but could
+not get.
