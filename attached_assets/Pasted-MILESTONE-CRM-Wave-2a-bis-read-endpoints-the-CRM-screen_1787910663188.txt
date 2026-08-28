@@ -1,0 +1,98 @@
+MILESTONE: CRM Wave 2a-bis - read endpoints the CRM screens need.
+
+CONTEXT
+Wave 2a shipped /api/crm with per-rep scoping in services/crm/scope.ts.
+It is missing the reads the screens need, and services/crm/legacy-read.ts
+is currently dead code - no route calls it. This milestone closes that gap
+and nothing else. Backend only. No UI in this milestone.
+
+Pull main first. It moved: two commits added
+lib/db/sql/crm/10_crm_inquiries_source_ref.sql and the matching Drizzle
+fields on crm_inquiries (source, source_ref). That SQL is already applied
+to the dev database.
+
+THE ONE RULE THAT MATTERS
+Every new read must go through leadScope(req, crmLeadView(req.query.view))
+exactly like the existing /crm/leads handlers. A count, an aggregate or a
+nested resource that skips it leaks other reps' data just as badly as a
+list does. There is no "it's only a number" exception.
+
+BUILD
+
+1. Enrich the rows returned by GET /crm/leads
+   Each row keeps every current field and gains four:
+     funnel_id        uuid   | null  - from the most recent inquiry
+     funnel_name      string | null  - crm_funnels.name for that funnel
+     last_inquiry_at  string | null  - max(crm_inquiries.inquiry_at)
+     inquiry_count    integer        - count of inquiries, 0 if none
+   Compute these in ONE query with a lateral join or a grouped subquery
+   over crm_inquiries. Do NOT issue a query per lead.
+   Leave the existing search / status / sales_rep / funnel filters, the
+   ordering and the X-Total-Count header exactly as they are.
+
+2. New: GET /crm/lead-statuses
+   Returns crm_lead_statuses where is_active is true, ordered by
+   sort_order, each row as { code, label, sort_order, lead_count }.
+   lead_count is the number of non-deleted crm_leads with that status
+   THAT THE CALLER MAY SEE - the same leadScope and the same `view` query
+   param as GET /crm/leads. A status with zero visible leads is still
+   returned, with 0. One query for all statuses, not one per status.
+
+3. New: GET /crm/leads/:id/context
+   Everything the lead card needs, in one response.
+   First load the lead with the same leadScope guard as GET /crm/leads/:id
+   and return 404 - not 403 - when it is out of scope. Only then read the
+   rest. Response shape:
+     {
+       inquiries:  [ crm_inquiries rows for this lead, inquiry_at desc,
+                     each with funnel_name and ad_name resolved ],
+       notes:      [ crm_lead_notes rows, created_at desc ],
+       tasks:      [ crm_lead_tasks rows, due date asc ],
+       call_logs:  [ crm_call_logs rows, newest first ],
+       deals:      [ dealsForCustomer(lead.linked_customer_id), each with
+                     its payments array and the amounts_trustworthy flag ],
+       products:   [ productsForCustomer(lead.linked_customer_id) ]
+     }
+   When linked_customer_id is null, deals and products are empty arrays.
+   That is the normal case, not an error.
+   deals and products MUST come from services/crm/legacy-read.ts. Do not
+   import dealsTable, paymentsTable or productsTable anywhere else.
+
+4. Fix the N+1 in dealsForCustomer
+   It currently awaits paymentsForDeal once per deal. Replace it with a
+   single query using inArray over the deal ids and group in memory.
+   Keep the exported signature and the amounts_trustworthy rule byte for
+   byte identical - it is the isDealPaid / payment_status contract and it
+   must not change. Leave paymentsForDeal exported and working; it has its
+   own callers.
+
+5. OpenAPI and codegen
+   Add the two new paths and the new response schemas to
+   lib/api-spec/openapi.yaml next to the existing /crm entries, then run
+   pnpm --filter @workspace/api-spec run codegen
+   Commit the regenerated client. Do not hand-edit generated files.
+
+DO NOT TOUCH
+- routes/leads.ts, quotes.ts, deals.ts, payments.ts, customers.ts,
+  products.ts, whatsapp-link.ts, invoiceWebhook.ts
+- services/crm/scope.ts - the policy is correct, do not "improve" it
+- Any file under artifacts/bist-app/ - there is no UI in this milestone
+- lib/db/src/schema/** - the Drizzle mirror is hand-maintained and already
+  matches the database. If you believe a column is missing, report it
+  instead of adding it. Never run drizzle-kit push.
+
+ACCEPTANCE
+- pnpm run typecheck passes in all packages.
+- A sales user calling GET /crm/lead-statuses?view=manager gets counts
+  covering only their own leads.
+- A sales user calling GET /crm/leads/:id/context for another rep's lead
+  gets 404 with no body leakage.
+- A lead with linked_customer_id null returns empty deals and products,
+  status 200.
+- GET /crm/leads issues a constant number of queries regardless of how
+  many leads are returned.
+
+REPORT
+What was built, files changed, the exact number of SQL queries GET
+/crm/leads and GET /crm/leads/:id/context each issue now, and anything you
+needed but could not do without touching a forbidden file.
