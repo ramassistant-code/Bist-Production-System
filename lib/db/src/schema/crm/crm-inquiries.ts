@@ -13,6 +13,11 @@ export const crmInquiriesTable = pgTable("crm_inquiries", {
   inquiry_at: timestamp("inquiry_at", { withTimezone: true }).notNull().defaultNow(),
   inquiry_number: integer("inquiry_number").notNull().default(1),
   raw_payload: jsonb("raw_payload").notNull().default(sql`'{}'::jsonb`),
+  // crm | manual | monday | facebook_lead_ads
+  source: text("source").notNull().default("crm"),
+  // מזהה הפנייה במערכת המקור. ל-facebook_lead_ads זהו leadgen_id.
+  // unique חלקי על הזוג (source, source_ref) — ראו 10_crm_inquiries_source_ref.sql
+  source_ref: text("source_ref"),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
