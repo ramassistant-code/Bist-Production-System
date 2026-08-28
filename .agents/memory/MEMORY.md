@@ -4,3 +4,4 @@
 - [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
 - [bist-app mutation pattern](bist-app-mutation-pattern.md) — RLS blocks anon Supabase for app_users/lookup tables; use apiFetch+Express for mutations that need number generation; use Supabase directly when RLS allows
 - [API client codegen barrel](api-client-codegen-barrel.md) — after Orval codegen, deduplicate exports in the handwritten client barrel; never edit generated files
+- [Express mounted router guards](express-mounted-router-guards.md) — scope router middleware to its URL prefix so it cannot block unrelated sibling routes.
