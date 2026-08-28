@@ -945,6 +945,18 @@ export const ListCrmLeadStatusesResponse = zod.array(ListCrmLeadStatusesResponse
 
 
 /**
+ * @summary List active CRM rejection reasons
+ */
+export const ListCrmRejectionReasonsResponseItem = zod.object({
+  "code": zod.string(),
+  "label": zod.string(),
+  "requires_detail": zod.boolean(),
+  "sort_order": zod.number()
+})
+export const ListCrmRejectionReasonsResponse = zod.array(ListCrmRejectionReasonsResponseItem)
+
+
+/**
  * @summary List CRM leads within the caller scope
  */
 export const listCrmLeadsQueryViewDefault = `rep`;
@@ -1212,6 +1224,215 @@ export const GetCrmLeadContextResponse = zod.object({
   "updated_at": zod.string(),
   "deleted_at": zod.string().nullish()
 }))
+})
+
+
+/**
+ * @summary Change a CRM lead status through the server status machine
+ */
+export const ChangeCrmLeadStatusParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const changeCrmLeadStatusQueryViewDefault = `rep`;
+
+export const ChangeCrmLeadStatusQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(changeCrmLeadStatusQueryViewDefault)
+})
+
+
+
+
+
+export const ChangeCrmLeadStatusBody = zod.object({
+  "status_code": zod.string().min(1),
+  "task": zod.object({
+  "title": zod.string().min(1),
+  "due_at": zod.coerce.date()
+}).optional(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish()
+})
+
+export const ChangeCrmLeadStatusResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone_e164": zod.string(),
+  "phone_raw": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "sales_rep_id": zod.string().nullish(),
+  "status_code": zod.string(),
+  "is_active_customer": zod.boolean(),
+  "answer_status": zod.string().nullish(),
+  "capture_attempts": zod.number(),
+  "rejection_reason_code": zod.string().nullish(),
+  "rejection_detail": zod.string().nullish(),
+  "pending_reassignment": zod.boolean(),
+  "legacy_lead_id": zod.string().nullish(),
+  "linked_customer_id": zod.string().nullish(),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "deleted_at": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Add a note to a CRM lead within the caller scope
+ */
+export const CreateCrmLeadNoteParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const createCrmLeadNoteQueryViewDefault = `rep`;
+
+export const CreateCrmLeadNoteQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(createCrmLeadNoteQueryViewDefault)
+})
+
+
+
+
+export const CreateCrmLeadNoteBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const CreateCrmLeadNoteResponse = zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "user_id": zod.string().nullish(),
+  "content": zod.string(),
+  "edited_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit an authored CRM note during its edit window
+ */
+export const UpdateCrmLeadNoteParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateCrmLeadNoteQueryViewDefault = `rep`;
+
+export const UpdateCrmLeadNoteQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(updateCrmLeadNoteQueryViewDefault)
+})
+
+
+
+
+export const UpdateCrmLeadNoteBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const UpdateCrmLeadNoteResponse = zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "user_id": zod.string().nullish(),
+  "content": zod.string(),
+  "edited_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary Add a dated task to a CRM lead within the caller scope
+ */
+export const CreateCrmLeadTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const createCrmLeadTaskQueryViewDefault = `rep`;
+
+export const CreateCrmLeadTaskQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(createCrmLeadTaskQueryViewDefault)
+})
+
+
+
+
+export const CreateCrmLeadTaskBody = zod.object({
+  "title": zod.string().min(1),
+  "description": zod.string().nullish(),
+  "due_at": zod.coerce.date()
+})
+
+export const CreateCrmLeadTaskResponse = zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "assigned_user_id": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "due_at": zod.coerce.date(),
+  "status": zod.string(),
+  "source": zod.string(),
+  "completed_at": zod.coerce.date().nullish(),
+  "snoozed_until": zod.coerce.date().nullish(),
+  "whatsapp_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+/**
+ * @summary List the caller's overdue open and unsnoozed CRM tasks
+ */
+export const ListMyCrmTasksResponseItem = zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "assigned_user_id": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "due_at": zod.coerce.date(),
+  "status": zod.string(),
+  "source": zod.string(),
+  "completed_at": zod.coerce.date().nullish(),
+  "snoozed_until": zod.coerce.date().nullish(),
+  "whatsapp_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lead_name": zod.string(),
+  "lead_phone": zod.string()
+}))
+export const ListMyCrmTasksResponse = zod.array(ListMyCrmTasksResponseItem)
+
+
+/**
+ * @summary Mark a scoped CRM task done or snooze it
+ */
+export const UpdateCrmLeadTaskParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateCrmLeadTaskQueryViewDefault = `rep`;
+
+export const UpdateCrmLeadTaskQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(updateCrmLeadTaskQueryViewDefault)
+})
+
+export const UpdateCrmLeadTaskBody = zod.object({
+  "status": zod.enum(['open', 'done']).optional(),
+  "snoozed_until": zod.coerce.date().nullish()
+})
+
+export const UpdateCrmLeadTaskResponse = zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "assigned_user_id": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "due_at": zod.coerce.date(),
+  "status": zod.string(),
+  "source": zod.string(),
+  "completed_at": zod.coerce.date().nullish(),
+  "snoozed_until": zod.coerce.date().nullish(),
+  "whatsapp_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
 })
 
 

@@ -15,7 +15,7 @@ export function useCrmView() {
   const [view, setView] = useState<CrmViewMode>(() => {
     if (!isManager) return "rep";
     try {
-      return localStorage.getItem(storageKey) === "manager" ? "manager" : "rep";
+      return sessionStorage.getItem(storageKey) === "manager" ? "manager" : "rep";
     } catch {
       return "rep";
     }
@@ -27,7 +27,7 @@ export function useCrmView() {
       return;
     }
     try {
-      const stored = localStorage.getItem(storageKey);
+      const stored = sessionStorage.getItem(storageKey);
       setView(stored === "manager" ? "manager" : "rep");
     } catch {
       setView("rep");
@@ -39,7 +39,7 @@ export function useCrmView() {
     setView(safeView);
     if (isManager) {
       try {
-        localStorage.setItem(storageKey, safeView);
+        sessionStorage.setItem(storageKey, safeView);
       } catch {
         // Storage can be unavailable in restricted browser contexts.
       }

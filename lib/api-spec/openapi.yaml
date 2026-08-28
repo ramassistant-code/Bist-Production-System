@@ -1008,6 +1008,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /crm/rejection-reasons:
+    get:
+      operationId: listCrmRejectionReasons
+      tags: [crm]
+      summary: List active CRM rejection reasons
+      responses:
+        "200":
+          description: Active CRM rejection reasons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmRejectionReason"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /crm/leads:
     get:
       operationId: listCrmLeads
@@ -1219,6 +1246,314 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads/{id}/status:
+    patch:
+      operationId: changeCrmLeadStatus
+      tags: [crm]
+      summary: Change a CRM lead status through the server status machine
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadStatusChange"
+      responses:
+        "200":
+          description: Updated CRM lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLead"
+        "400":
+          description: Invalid or blocked status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads/{id}/notes:
+    post:
+      operationId: createCrmLeadNote
+      tags: [crm]
+      summary: Add a note to a CRM lead within the caller scope
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadNoteInput"
+      responses:
+        "201":
+          description: Created CRM lead note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLeadNote"
+        "400":
+          description: Invalid note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/notes/{id}:
+    patch:
+      operationId: updateCrmLeadNote
+      tags: [crm]
+      summary: Edit an authored CRM note during its edit window
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadNoteUpdate"
+      responses:
+        "200":
+          description: Updated CRM lead note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLeadNote"
+        "400":
+          description: Invalid note update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Caller is not the author or the edit window expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Note not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads/{id}/tasks:
+    post:
+      operationId: createCrmLeadTask
+      tags: [crm]
+      summary: Add a dated task to a CRM lead within the caller scope
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadTaskInput"
+      responses:
+        "201":
+          description: Created CRM lead task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLeadTask"
+        "400":
+          description: Invalid task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lead not found in the caller scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/tasks/mine:
+    get:
+      operationId: listMyCrmTasks
+      tags: [crm]
+      summary: List the caller's overdue open and unsnoozed CRM tasks
+      responses:
+        "200":
+          description: Current user's reminder tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmMineTask"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/tasks/{id}:
+    patch:
+      operationId: updateCrmLeadTask
+      tags: [crm]
+      summary: Mark a scoped CRM task done or snooze it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [rep, manager]
+            default: rep
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmLeadTaskUpdate"
+      responses:
+        "200":
+          description: Updated CRM lead task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmLeadTask"
+        "400":
+          description: Invalid task update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found in the caller scope
           content:
             application/json:
               schema:
@@ -2239,6 +2574,19 @@ components:
           type: integer
       required: [code, label, sort_order, lead_count]
 
+    CrmRejectionReason:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        requires_detail:
+          type: boolean
+        sort_order:
+          type: integer
+      required: [code, label, requires_detail, sort_order]
+
     CrmInquiryContext:
       type: object
       properties:
@@ -2339,6 +2687,82 @@ components:
           type: string
           format: date-time
       required: [id, lead_id, title, due_at, status, source, created_at, updated_at]
+
+    CrmStatusTaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        due_at:
+          type: string
+          format: date-time
+      required: [title, due_at]
+
+    CrmLeadStatusChange:
+      type: object
+      properties:
+        status_code:
+          type: string
+          minLength: 1
+        task:
+          $ref: "#/components/schemas/CrmStatusTaskInput"
+        rejection_reason_code:
+          type: [string, "null"]
+        rejection_detail:
+          type: [string, "null"]
+      required: [status_code]
+
+    CrmLeadNoteInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required: [content]
+
+    CrmLeadNoteUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required: [content]
+
+    CrmLeadTaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: [string, "null"]
+        due_at:
+          type: string
+          format: date-time
+      required: [title, due_at]
+
+    CrmLeadTaskUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, done]
+        snoozed_until:
+          type: [string, "null"]
+          format: date-time
+      minProperties: 1
+
+    CrmMineTask:
+      allOf:
+        - $ref: "#/components/schemas/CrmLeadTask"
+        - type: object
+          properties:
+            lead_name:
+              type: string
+            lead_phone:
+              type: string
+          required: [lead_name, lead_phone]
 
     CrmCallLog:
       type: object

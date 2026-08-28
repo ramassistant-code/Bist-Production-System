@@ -426,6 +426,13 @@ export interface CrmLeadStatusSummary {
   lead_count: number;
 }
 
+export interface CrmRejectionReason {
+  code: string;
+  label: string;
+  requires_detail: boolean;
+  sort_order: number;
+}
+
 export type CrmInquiryContextRawPayload = { [key: string]: unknown };
 
 export interface CrmInquiryContext {
@@ -483,6 +490,59 @@ export interface CrmLeadTask {
   created_at: string;
   updated_at: string;
 }
+
+export interface CrmStatusTaskInput {
+  /** @minLength 1 */
+  title: string;
+  due_at: string;
+}
+
+export interface CrmLeadStatusChange {
+  /** @minLength 1 */
+  status_code: string;
+  task?: CrmStatusTaskInput;
+  /** @nullable */
+  rejection_reason_code?: string | null;
+  /** @nullable */
+  rejection_detail?: string | null;
+}
+
+export interface CrmLeadNoteInput {
+  /** @minLength 1 */
+  content: string;
+}
+
+export interface CrmLeadNoteUpdate {
+  /** @minLength 1 */
+  content: string;
+}
+
+export interface CrmLeadTaskInput {
+  /** @minLength 1 */
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  due_at: string;
+}
+
+export type CrmLeadTaskUpdateStatus = typeof CrmLeadTaskUpdateStatus[keyof typeof CrmLeadTaskUpdateStatus];
+
+
+export const CrmLeadTaskUpdateStatus = {
+  open: 'open',
+  done: 'done',
+} as const;
+
+export interface CrmLeadTaskUpdate {
+  status?: CrmLeadTaskUpdateStatus;
+  /** @nullable */
+  snoozed_until?: string | null;
+}
+
+export type CrmMineTask = CrmLeadTask & {
+  lead_name: string;
+  lead_phone: string;
+};
 
 /**
  * @nullable
@@ -650,6 +710,66 @@ export type GetCrmLeadContextView = typeof GetCrmLeadContextView[keyof typeof Ge
 
 
 export const GetCrmLeadContextView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type ChangeCrmLeadStatusParams = {
+view?: ChangeCrmLeadStatusView;
+};
+
+export type ChangeCrmLeadStatusView = typeof ChangeCrmLeadStatusView[keyof typeof ChangeCrmLeadStatusView];
+
+
+export const ChangeCrmLeadStatusView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type CreateCrmLeadNoteParams = {
+view?: CreateCrmLeadNoteView;
+};
+
+export type CreateCrmLeadNoteView = typeof CreateCrmLeadNoteView[keyof typeof CreateCrmLeadNoteView];
+
+
+export const CreateCrmLeadNoteView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type UpdateCrmLeadNoteParams = {
+view?: UpdateCrmLeadNoteView;
+};
+
+export type UpdateCrmLeadNoteView = typeof UpdateCrmLeadNoteView[keyof typeof UpdateCrmLeadNoteView];
+
+
+export const UpdateCrmLeadNoteView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type CreateCrmLeadTaskParams = {
+view?: CreateCrmLeadTaskView;
+};
+
+export type CreateCrmLeadTaskView = typeof CreateCrmLeadTaskView[keyof typeof CreateCrmLeadTaskView];
+
+
+export const CreateCrmLeadTaskView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type UpdateCrmLeadTaskParams = {
+view?: UpdateCrmLeadTaskView;
+};
+
+export type UpdateCrmLeadTaskView = typeof UpdateCrmLeadTaskView[keyof typeof UpdateCrmLeadTaskView];
+
+
+export const UpdateCrmLeadTaskView = {
   rep: 'rep',
   manager: 'manager',
 } as const;

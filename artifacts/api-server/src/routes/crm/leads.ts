@@ -15,6 +15,10 @@ import {
 import { crmLeadView, leadScope } from "../../services/crm/scope";
 import { dealsForCustomer, productsForCustomer } from "../../services/crm/legacy-read";
 import { toE164 } from "../../services/crm/phone";
+import {
+  applyStatusChange,
+  StatusChangeError,
+} from "../../services/crm/status-machine";
 
 const router: IRouter = Router();
 
@@ -308,7 +312,9 @@ router.patch("/leads/:id", async (req: Request, res: Response): Promise<void> =>
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "status_code")) {
-    res.status(400).json({ error: "שינוי סטטוס יתווסף בשלב הבא" });
+    res.status(400).json({
+      error: "שינוי סטטוס מתבצע דרך PATCH /api/crm/leads/:id/status",
+    });
     return;
   }
 
@@ -353,6 +359,77 @@ router.patch("/leads/:id", async (req: Request, res: Response): Promise<void> =>
   } catch (err) {
     req.log.error({ err }, "Failed to update CRM lead");
     res.status(500).json({ error: "שגיאה בעדכון הליד" });
+  }
+});
+
+router.patch("/leads/:id/status", async (req: Request, res: Response): Promise<void> => {
+  const id = leadId(req);
+  const body = leadInput(req.body);
+  const toStatus =
+    typeof body?.["status_code"] === "string" ? body["status_code"].trim() : "";
+
+  if (!id || !body || !toStatus) {
+    res.status(400).json({ error: "סטטוס הליד אינו תקין" });
+    return;
+  }
+
+  try {
+    const [visibleLead] = await db
+      .select({ id: crmLeadsTable.id })
+      .from(crmLeadsTable)
+      .where(
+        and(
+          eq(crmLeadsTable.id, id),
+          isNull(crmLeadsTable.deleted_at),
+          leadScope(req, crmLeadView(req.query["view"])),
+        ),
+      )
+      .limit(1);
+
+    if (!visibleLead) {
+      res.status(404).json({ error: "ליד לא נמצא" });
+      return;
+    }
+
+    const taskBody = leadInput(body["task"]);
+    const updated = await applyStatusChange({
+      leadId: id,
+      toStatus,
+      actorId: req.appUser!.id,
+      ...(taskBody
+        ? {
+            task: {
+              title:
+                typeof taskBody["title"] === "string"
+                  ? taskBody["title"]
+                  : "",
+              due_at:
+                typeof taskBody["due_at"] === "string"
+                  ? taskBody["due_at"]
+                  : "",
+            },
+          }
+        : {}),
+      rejection: {
+        rejection_reason_code:
+          typeof body["rejection_reason_code"] === "string"
+            ? body["rejection_reason_code"]
+            : null,
+        rejection_detail:
+          typeof body["rejection_detail"] === "string"
+            ? body["rejection_detail"]
+            : null,
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    if (err instanceof StatusChangeError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "Failed to change CRM lead status");
+    res.status(500).json({ error: "שגיאה בשינוי סטטוס הליד" });
   }
 });
 

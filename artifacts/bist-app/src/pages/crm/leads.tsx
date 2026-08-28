@@ -11,7 +11,7 @@ import {
   useListCrmLeads,
 } from "@workspace/api-client-react";
 import { useCrmView } from "./use-crm-view";
-import { useActiveSalesUsers } from "./use-users";
+import { useActiveSalesUsers, useSalesUsers } from "./use-users";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -91,7 +91,8 @@ export default function CrmLeads() {
     }
   });
 
-  const { data: reps } = useActiveSalesUsers();
+  const { data: reps } = useSalesUsers();
+  const { data: activeReps } = useActiveSalesUsers();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -140,7 +141,7 @@ export default function CrmLeads() {
                   </SelectTrigger>
                   <SelectContent dir="rtl">
                     <SelectItem value="all">כל נציגי המכירות</SelectItem>
-                    {reps?.map(r => (
+                    {activeReps?.map(r => (
                       <SelectItem key={r.id} value={r.id}>{r.full_name || r.email}</SelectItem>
                     ))}
                   </SelectContent>
@@ -268,7 +269,6 @@ export default function CrmLeads() {
                         </td>
                         <td className="px-4 py-3">
                            <div className="truncate font-medium">{crmEmpty(lead.funnel_name)}</div>
-                           <div className="truncate text-xs text-muted-foreground">{crmEmpty(lead.source)}</div>
                         </td>
                          <td className="px-4 py-3 text-center">
                           {lead.capture_attempts > 0 ? (

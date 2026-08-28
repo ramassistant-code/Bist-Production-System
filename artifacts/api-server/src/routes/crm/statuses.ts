@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import {
   crmLeadStatusesTable,
   crmLeadsTable,
+  crmRejectionReasonsTable,
 } from "@workspace/db/schema";
 import { crmLeadView, leadScope } from "../../services/crm/scope";
 
@@ -42,6 +43,26 @@ router.get("/lead-statuses", async (req: Request, res: Response): Promise<void> 
   } catch (err) {
     req.log.error({ err }, "Failed to list CRM lead statuses");
     res.status(500).json({ error: "שגיאה בטעינת סטטוסי הלידים" });
+  }
+});
+
+router.get("/rejection-reasons", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const reasons = await db
+      .select({
+        code: crmRejectionReasonsTable.code,
+        label: crmRejectionReasonsTable.label,
+        requires_detail: crmRejectionReasonsTable.requires_detail,
+        sort_order: crmRejectionReasonsTable.sort_order,
+      })
+      .from(crmRejectionReasonsTable)
+      .where(eq(crmRejectionReasonsTable.is_active, true))
+      .orderBy(asc(crmRejectionReasonsTable.sort_order));
+
+    res.json(reasons);
+  } catch (err) {
+    req.log.error({ err }, "Failed to list CRM rejection reasons");
+    res.status(500).json({ error: "שגיאה בטעינת סיבות הדחייה" });
   }
 });
 

@@ -21,8 +21,11 @@ import type {
 
 import type {
   AddProductComponentBody,
+  ChangeCrmLeadStatusParams,
   Component,
   CreateComponentBody,
+  CreateCrmLeadNoteParams,
+  CreateCrmLeadTaskParams,
   CreateCustomerBody,
   CreateLeadBody,
   CreateProductBody,
@@ -36,8 +39,17 @@ import type {
   CrmLeadContext,
   CrmLeadInput,
   CrmLeadListItem,
+  CrmLeadNote,
+  CrmLeadNoteInput,
+  CrmLeadNoteUpdate,
+  CrmLeadStatusChange,
   CrmLeadStatusSummary,
+  CrmLeadTask,
+  CrmLeadTaskInput,
+  CrmLeadTaskUpdate,
   CrmLeadUpdate,
+  CrmMineTask,
+  CrmRejectionReason,
   Customer,
   DashboardStats,
   DbCheckStatus,
@@ -55,7 +67,9 @@ import type {
   ProductComponentRow,
   ProductWithComponents,
   UpdateComponentBody,
+  UpdateCrmLeadNoteParams,
   UpdateCrmLeadParams,
+  UpdateCrmLeadTaskParams,
   UpdateCustomerBody,
   UpdateLeadBody,
   UpdateProductBody,
@@ -2437,6 +2451,83 @@ export function useListCrmLeadStatuses<TData = Awaited<ReturnType<typeof listCrm
 
 
 
+export const getListCrmRejectionReasonsUrl = () => {
+
+
+
+
+  return `/api/crm/rejection-reasons`
+}
+
+/**
+ * @summary List active CRM rejection reasons
+ */
+export const listCrmRejectionReasons = async ( options?: RequestInit): Promise<CrmRejectionReason[]> => {
+
+  return customFetch<CrmRejectionReason[]>(getListCrmRejectionReasonsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmRejectionReasonsQueryKey = () => {
+    return [
+    `/api/crm/rejection-reasons`
+    ] as const;
+    }
+
+
+export const getListCrmRejectionReasonsQueryOptions = <TData = Awaited<ReturnType<typeof listCrmRejectionReasons>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmRejectionReasons>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmRejectionReasonsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmRejectionReasons>>> = ({ signal }) => listCrmRejectionReasons({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmRejectionReasons>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmRejectionReasonsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmRejectionReasons>>>
+export type ListCrmRejectionReasonsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List active CRM rejection reasons
+ */
+
+export function useListCrmRejectionReasons<TData = Awaited<ReturnType<typeof listCrmRejectionReasons>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmRejectionReasons>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmRejectionReasonsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListCrmLeadsUrl = (params?: ListCrmLeadsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -2850,4 +2941,486 @@ export function useGetCrmLeadContext<TData = Awaited<ReturnType<typeof getCrmLea
 
 
 
+
+export const getChangeCrmLeadStatusUrl = (id: string,
+    params?: ChangeCrmLeadStatusParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}/status?${stringifiedParams}` : `/api/crm/leads/${id}/status`
+}
+
+/**
+ * @summary Change a CRM lead status through the server status machine
+ */
+export const changeCrmLeadStatus = async (id: string,
+    crmLeadStatusChange: CrmLeadStatusChange,
+    params?: ChangeCrmLeadStatusParams, options?: RequestInit): Promise<CrmLead> => {
+
+  return customFetch<CrmLead>(getChangeCrmLeadStatusUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadStatusChange)
+  }
+);}
+
+
+
+
+
+export const getChangeCrmLeadStatusMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeCrmLeadStatus>>, TError,{id: string;data: BodyType<CrmLeadStatusChange>;params?: ChangeCrmLeadStatusParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeCrmLeadStatus>>, TError,{id: string;data: BodyType<CrmLeadStatusChange>;params?: ChangeCrmLeadStatusParams}, TContext> => {
+
+const mutationKey = ['changeCrmLeadStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeCrmLeadStatus>>, {id: string;data: BodyType<CrmLeadStatusChange>;params?: ChangeCrmLeadStatusParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  changeCrmLeadStatus(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeCrmLeadStatusMutationResult = NonNullable<Awaited<ReturnType<typeof changeCrmLeadStatus>>>
+    export type ChangeCrmLeadStatusMutationBody = BodyType<CrmLeadStatusChange>
+    export type ChangeCrmLeadStatusMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Change a CRM lead status through the server status machine
+ */
+export const useChangeCrmLeadStatus = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeCrmLeadStatus>>, TError,{id: string;data: BodyType<CrmLeadStatusChange>;params?: ChangeCrmLeadStatusParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeCrmLeadStatus>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadStatusChange>;params?: ChangeCrmLeadStatusParams},
+        TContext
+      > => {
+      return useMutation(getChangeCrmLeadStatusMutationOptions(options));
+    }
+
+export const getCreateCrmLeadNoteUrl = (id: string,
+    params?: CreateCrmLeadNoteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}/notes?${stringifiedParams}` : `/api/crm/leads/${id}/notes`
+}
+
+/**
+ * @summary Add a note to a CRM lead within the caller scope
+ */
+export const createCrmLeadNote = async (id: string,
+    crmLeadNoteInput: CrmLeadNoteInput,
+    params?: CreateCrmLeadNoteParams, options?: RequestInit): Promise<CrmLeadNote> => {
+
+  return customFetch<CrmLeadNote>(getCreateCrmLeadNoteUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadNoteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmLeadNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteInput>;params?: CreateCrmLeadNoteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteInput>;params?: CreateCrmLeadNoteParams}, TContext> => {
+
+const mutationKey = ['createCrmLeadNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmLeadNote>>, {id: string;data: BodyType<CrmLeadNoteInput>;params?: CreateCrmLeadNoteParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  createCrmLeadNote(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmLeadNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmLeadNote>>>
+    export type CreateCrmLeadNoteMutationBody = BodyType<CrmLeadNoteInput>
+    export type CreateCrmLeadNoteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a note to a CRM lead within the caller scope
+ */
+export const useCreateCrmLeadNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteInput>;params?: CreateCrmLeadNoteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmLeadNote>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadNoteInput>;params?: CreateCrmLeadNoteParams},
+        TContext
+      > => {
+      return useMutation(getCreateCrmLeadNoteMutationOptions(options));
+    }
+
+export const getUpdateCrmLeadNoteUrl = (id: string,
+    params?: UpdateCrmLeadNoteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/notes/${id}?${stringifiedParams}` : `/api/crm/notes/${id}`
+}
+
+/**
+ * @summary Edit an authored CRM note during its edit window
+ */
+export const updateCrmLeadNote = async (id: string,
+    crmLeadNoteUpdate: CrmLeadNoteUpdate,
+    params?: UpdateCrmLeadNoteParams, options?: RequestInit): Promise<CrmLeadNote> => {
+
+  return customFetch<CrmLeadNote>(getUpdateCrmLeadNoteUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadNoteUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmLeadNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteUpdate>;params?: UpdateCrmLeadNoteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteUpdate>;params?: UpdateCrmLeadNoteParams}, TContext> => {
+
+const mutationKey = ['updateCrmLeadNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmLeadNote>>, {id: string;data: BodyType<CrmLeadNoteUpdate>;params?: UpdateCrmLeadNoteParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  updateCrmLeadNote(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmLeadNoteMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmLeadNote>>>
+    export type UpdateCrmLeadNoteMutationBody = BodyType<CrmLeadNoteUpdate>
+    export type UpdateCrmLeadNoteMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Edit an authored CRM note during its edit window
+ */
+export const useUpdateCrmLeadNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadNote>>, TError,{id: string;data: BodyType<CrmLeadNoteUpdate>;params?: UpdateCrmLeadNoteParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmLeadNote>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadNoteUpdate>;params?: UpdateCrmLeadNoteParams},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmLeadNoteMutationOptions(options));
+    }
+
+export const getCreateCrmLeadTaskUrl = (id: string,
+    params?: CreateCrmLeadTaskParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}/tasks?${stringifiedParams}` : `/api/crm/leads/${id}/tasks`
+}
+
+/**
+ * @summary Add a dated task to a CRM lead within the caller scope
+ */
+export const createCrmLeadTask = async (id: string,
+    crmLeadTaskInput: CrmLeadTaskInput,
+    params?: CreateCrmLeadTaskParams, options?: RequestInit): Promise<CrmLeadTask> => {
+
+  return customFetch<CrmLeadTask>(getCreateCrmLeadTaskUrl(id,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadTaskInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmLeadTaskMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskInput>;params?: CreateCrmLeadTaskParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskInput>;params?: CreateCrmLeadTaskParams}, TContext> => {
+
+const mutationKey = ['createCrmLeadTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmLeadTask>>, {id: string;data: BodyType<CrmLeadTaskInput>;params?: CreateCrmLeadTaskParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  createCrmLeadTask(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmLeadTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmLeadTask>>>
+    export type CreateCrmLeadTaskMutationBody = BodyType<CrmLeadTaskInput>
+    export type CreateCrmLeadTaskMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add a dated task to a CRM lead within the caller scope
+ */
+export const useCreateCrmLeadTask = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskInput>;params?: CreateCrmLeadTaskParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmLeadTask>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadTaskInput>;params?: CreateCrmLeadTaskParams},
+        TContext
+      > => {
+      return useMutation(getCreateCrmLeadTaskMutationOptions(options));
+    }
+
+export const getListMyCrmTasksUrl = () => {
+
+
+
+
+  return `/api/crm/tasks/mine`
+}
+
+/**
+ * @summary List the caller's overdue open and unsnoozed CRM tasks
+ */
+export const listMyCrmTasks = async ( options?: RequestInit): Promise<CrmMineTask[]> => {
+
+  return customFetch<CrmMineTask[]>(getListMyCrmTasksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyCrmTasksQueryKey = () => {
+    return [
+    `/api/crm/tasks/mine`
+    ] as const;
+    }
+
+
+export const getListMyCrmTasksQueryOptions = <TData = Awaited<ReturnType<typeof listMyCrmTasks>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCrmTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyCrmTasksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyCrmTasks>>> = ({ signal }) => listMyCrmTasks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyCrmTasks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyCrmTasksQueryResult = NonNullable<Awaited<ReturnType<typeof listMyCrmTasks>>>
+export type ListMyCrmTasksQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List the caller's overdue open and unsnoozed CRM tasks
+ */
+
+export function useListMyCrmTasks<TData = Awaited<ReturnType<typeof listMyCrmTasks>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCrmTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyCrmTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCrmLeadTaskUrl = (id: string,
+    params?: UpdateCrmLeadTaskParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/tasks/${id}?${stringifiedParams}` : `/api/crm/tasks/${id}`
+}
+
+/**
+ * @summary Mark a scoped CRM task done or snooze it
+ */
+export const updateCrmLeadTask = async (id: string,
+    crmLeadTaskUpdate: CrmLeadTaskUpdate,
+    params?: UpdateCrmLeadTaskParams, options?: RequestInit): Promise<CrmLeadTask> => {
+
+  return customFetch<CrmLeadTask>(getUpdateCrmLeadTaskUrl(id,params),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadTaskUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmLeadTaskMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskUpdate>;params?: UpdateCrmLeadTaskParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskUpdate>;params?: UpdateCrmLeadTaskParams}, TContext> => {
+
+const mutationKey = ['updateCrmLeadTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmLeadTask>>, {id: string;data: BodyType<CrmLeadTaskUpdate>;params?: UpdateCrmLeadTaskParams}> = (props) => {
+          const {id,data,params} = props ?? {};
+
+          return  updateCrmLeadTask(id,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmLeadTaskMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmLeadTask>>>
+    export type UpdateCrmLeadTaskMutationBody = BodyType<CrmLeadTaskUpdate>
+    export type UpdateCrmLeadTaskMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Mark a scoped CRM task done or snooze it
+ */
+export const useUpdateCrmLeadTask = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadTask>>, TError,{id: string;data: BodyType<CrmLeadTaskUpdate>;params?: UpdateCrmLeadTaskParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmLeadTask>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadTaskUpdate>;params?: UpdateCrmLeadTaskParams},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmLeadTaskMutationOptions(options));
+    }
 
