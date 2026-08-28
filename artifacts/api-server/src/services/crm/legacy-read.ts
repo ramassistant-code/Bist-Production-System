@@ -21,6 +21,8 @@ export async function paymentsForDeal(dealId: string) {
     .orderBy(desc(paymentsTable.created_at));
 }
 
+type PaymentRow = Awaited<ReturnType<typeof paymentsForDeal>>[number];
+
 export async function dealsForCustomer(customerId: string) {
   const deals = await db
     .select()
@@ -28,13 +30,32 @@ export async function dealsForCustomer(customerId: string) {
     .where(and(eq(dealsTable.customer_id, customerId), isNull(dealsTable.deleted_at)))
     .orderBy(desc(dealsTable.created_at));
 
-  const paymentsByDeal = await Promise.all(
-    deals.map(async (deal) => [deal.id, await paymentsForDeal(deal.id)] as const),
-  );
-  const paymentRows = new Map(paymentsByDeal);
+  const paymentRows = new Map<string, PaymentRow[]>();
+  if (deals.length > 0) {
+    const payments = await db
+      .select()
+      .from(paymentsTable)
+      .where(
+        and(
+          inArray(
+            paymentsTable.deal_id,
+            deals.map((deal) => deal.id),
+          ),
+          isNull(paymentsTable.deleted_at),
+        ),
+      )
+      .orderBy(desc(paymentsTable.created_at));
+
+    for (const payment of payments) {
+      const dealPayments = paymentRows.get(payment.deal_id) ?? [];
+      dealPayments.push(payment);
+      paymentRows.set(payment.deal_id, dealPayments);
+    }
+  }
 
   return deals.map((deal) => ({
     ...deal,
+    payments: paymentRows.get(deal.id) ?? [],
     amounts_trustworthy:
       !(deal.monday_item_id && (paymentRows.get(deal.id)?.length ?? 0) === 0),
   }));

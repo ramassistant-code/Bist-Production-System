@@ -409,6 +409,125 @@ export interface CrmLead {
   deleted_at?: string | null;
 }
 
+export type CrmLeadListItem = CrmLead & ({
+  /** @nullable */
+  funnel_id: string | null;
+  /** @nullable */
+  funnel_name: string | null;
+  /** @nullable */
+  last_inquiry_at: string | null;
+  inquiry_count: number;
+});
+
+export interface CrmLeadStatusSummary {
+  code: string;
+  label: string;
+  sort_order: number;
+  lead_count: number;
+}
+
+export type CrmInquiryContextRawPayload = { [key: string]: unknown };
+
+export interface CrmInquiryContext {
+  id: string;
+  lead_id: string;
+  /** @nullable */
+  ad_id?: string | null;
+  /** @nullable */
+  funnel_id?: string | null;
+  /** @nullable */
+  form_name?: string | null;
+  /** @nullable */
+  free_text?: string | null;
+  inquiry_at: string;
+  inquiry_number: number;
+  raw_payload: CrmInquiryContextRawPayload;
+  source: string;
+  /** @nullable */
+  source_ref?: string | null;
+  created_at: string;
+  /** @nullable */
+  funnel_name: string | null;
+  /** @nullable */
+  ad_name: string | null;
+}
+
+export interface CrmLeadNote {
+  id: string;
+  lead_id: string;
+  /** @nullable */
+  user_id?: string | null;
+  content: string;
+  /** @nullable */
+  edited_at?: string | null;
+  created_at: string;
+}
+
+export interface CrmLeadTask {
+  id: string;
+  lead_id: string;
+  /** @nullable */
+  assigned_user_id?: string | null;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  due_at: string;
+  status: string;
+  source: string;
+  /** @nullable */
+  completed_at?: string | null;
+  /** @nullable */
+  snoozed_until?: string | null;
+  /** @nullable */
+  whatsapp_sent_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * @nullable
+ */
+export type CrmCallLogRawPayload = { [key: string]: unknown } | null;
+
+export interface CrmCallLog {
+  id: string;
+  /** @nullable */
+  lead_id?: string | null;
+  /** @nullable */
+  user_id?: string | null;
+  /** @nullable */
+  phone_e164?: string | null;
+  direction: string;
+  started_at: string;
+  duration_sec: number;
+  result: string;
+  /** @nullable */
+  recording_url?: string | null;
+  /** @nullable */
+  ai_summary?: string | null;
+  voicecenter_call_id: string;
+  /** @nullable */
+  raw_payload?: CrmCallLogRawPayload;
+  created_at: string;
+}
+
+export interface CrmLegacyPayment { [key: string]: unknown }
+
+export interface CrmLegacyDeal {
+  payments: CrmLegacyPayment[];
+  amounts_trustworthy: boolean;
+  [key: string]: unknown;
+ }
+
+export interface CrmLeadContext {
+  inquiries: CrmInquiryContext[];
+  notes: CrmLeadNote[];
+  tasks: CrmLeadTask[];
+  call_logs: CrmCallLog[];
+  deals: CrmLegacyDeal[];
+  products: Product[];
+}
+
 export interface CrmLeadInput {
   /** @minLength 1 */
   name: string;
@@ -462,6 +581,18 @@ category?: string;
 is_active?: boolean;
 };
 
+export type ListCrmLeadStatusesParams = {
+view?: ListCrmLeadStatusesView;
+};
+
+export type ListCrmLeadStatusesView = typeof ListCrmLeadStatusesView[keyof typeof ListCrmLeadStatusesView];
+
+
+export const ListCrmLeadStatusesView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
 export type ListCrmLeadsParams = {
 view?: ListCrmLeadsView;
 status?: string;
@@ -507,6 +638,18 @@ export type UpdateCrmLeadView = typeof UpdateCrmLeadView[keyof typeof UpdateCrmL
 
 
 export const UpdateCrmLeadView = {
+  rep: 'rep',
+  manager: 'manager',
+} as const;
+
+export type GetCrmLeadContextParams = {
+view?: GetCrmLeadContextView;
+};
+
+export type GetCrmLeadContextView = typeof GetCrmLeadContextView[keyof typeof GetCrmLeadContextView];
+
+
+export const GetCrmLeadContextView = {
   rep: 'rep',
   manager: 'manager',
 } as const;

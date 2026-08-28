@@ -927,6 +927,24 @@ export const LinkCrmAdResponse = zod.object({
 
 
 /**
+ * @summary List active CRM lead statuses with scoped lead counts
+ */
+export const listCrmLeadStatusesQueryViewDefault = `rep`;
+
+export const ListCrmLeadStatusesQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(listCrmLeadStatusesQueryViewDefault)
+})
+
+export const ListCrmLeadStatusesResponseItem = zod.object({
+  "code": zod.string(),
+  "label": zod.string(),
+  "sort_order": zod.number(),
+  "lead_count": zod.number()
+})
+export const ListCrmLeadStatusesResponse = zod.array(ListCrmLeadStatusesResponseItem)
+
+
+/**
  * @summary List CRM leads within the caller scope
  */
 export const listCrmLeadsQueryViewDefault = `rep`;
@@ -967,7 +985,12 @@ export const ListCrmLeadsResponseItem = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "deleted_at": zod.coerce.date().nullish()
-})
+}).and(zod.object({
+  "funnel_id": zod.string().nullable(),
+  "funnel_name": zod.string().nullable(),
+  "last_inquiry_at": zod.coerce.date().nullable(),
+  "inquiry_count": zod.number()
+}))
 export const ListCrmLeadsResponse = zod.array(ListCrmLeadsResponseItem)
 
 
@@ -1097,6 +1120,98 @@ export const UpdateCrmLeadResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "deleted_at": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Get the scoped context required by a CRM lead card
+ */
+export const GetCrmLeadContextParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getCrmLeadContextQueryViewDefault = `rep`;
+
+export const GetCrmLeadContextQueryParams = zod.object({
+  "view": zod.enum(['rep', 'manager']).default(getCrmLeadContextQueryViewDefault)
+})
+
+export const GetCrmLeadContextResponse = zod.object({
+  "inquiries": zod.array(zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "ad_id": zod.string().nullish(),
+  "funnel_id": zod.string().nullish(),
+  "form_name": zod.string().nullish(),
+  "free_text": zod.string().nullish(),
+  "inquiry_at": zod.coerce.date(),
+  "inquiry_number": zod.number(),
+  "raw_payload": zod.record(zod.string(), zod.unknown()),
+  "source": zod.string(),
+  "source_ref": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "funnel_name": zod.string().nullable(),
+  "ad_name": zod.string().nullable()
+})),
+  "notes": zod.array(zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "user_id": zod.string().nullish(),
+  "content": zod.string(),
+  "edited_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string(),
+  "assigned_user_id": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "due_at": zod.coerce.date(),
+  "status": zod.string(),
+  "source": zod.string(),
+  "completed_at": zod.coerce.date().nullish(),
+  "snoozed_until": zod.coerce.date().nullish(),
+  "whatsapp_sent_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})),
+  "call_logs": zod.array(zod.object({
+  "id": zod.string(),
+  "lead_id": zod.string().nullish(),
+  "user_id": zod.string().nullish(),
+  "phone_e164": zod.string().nullish(),
+  "direction": zod.string(),
+  "started_at": zod.coerce.date(),
+  "duration_sec": zod.number(),
+  "result": zod.string(),
+  "recording_url": zod.string().nullish(),
+  "ai_summary": zod.string().nullish(),
+  "voicecenter_call_id": zod.string(),
+  "raw_payload": zod.record(zod.string(), zod.unknown()).nullish(),
+  "created_at": zod.coerce.date()
+})),
+  "deals": zod.array(zod.object({
+  "payments": zod.array(zod.record(zod.string(), zod.unknown())),
+  "amounts_trustworthy": zod.boolean()
+})),
+  "products": zod.array(zod.object({
+  "id": zod.string(),
+  "product_number": zod.string(),
+  "name": zod.string(),
+  "category": zod.string().nullish(),
+  "deliverable_type": zod.string().nullish(),
+  "consumer_price": zod.string().nullish(),
+  "production_cost": zod.string().nullish(),
+  "product_explanation": zod.string().nullish(),
+  "sales_notes": zod.string().nullish(),
+  "quote_description_default": zod.string().nullish(),
+  "quote_notes_default": zod.string().nullish(),
+  "is_active": zod.boolean().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string(),
+  "deleted_at": zod.string().nullish()
+}))
 })
 
 

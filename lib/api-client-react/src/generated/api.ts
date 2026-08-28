@@ -33,16 +33,21 @@ import type {
   CrmFunnelInput,
   CrmFunnelUpdate,
   CrmLead,
+  CrmLeadContext,
   CrmLeadInput,
+  CrmLeadListItem,
+  CrmLeadStatusSummary,
   CrmLeadUpdate,
   Customer,
   DashboardStats,
   DbCheckStatus,
   ErrorResponse,
+  GetCrmLeadContextParams,
   GetCrmLeadParams,
   HealthStatus,
   Lead,
   ListComponentsParams,
+  ListCrmLeadStatusesParams,
   ListCrmLeadsParams,
   ListLeadsParams,
   ListProductsParams,
@@ -2348,6 +2353,90 @@ export const useLinkCrmAd = <TError = ErrorType<ErrorResponse>,
       return useMutation(getLinkCrmAdMutationOptions(options));
     }
 
+export const getListCrmLeadStatusesUrl = (params?: ListCrmLeadStatusesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/lead-statuses?${stringifiedParams}` : `/api/crm/lead-statuses`
+}
+
+/**
+ * @summary List active CRM lead statuses with scoped lead counts
+ */
+export const listCrmLeadStatuses = async (params?: ListCrmLeadStatusesParams, options?: RequestInit): Promise<CrmLeadStatusSummary[]> => {
+
+  return customFetch<CrmLeadStatusSummary[]>(getListCrmLeadStatusesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmLeadStatusesQueryKey = (params?: ListCrmLeadStatusesParams,) => {
+    return [
+    `/api/crm/lead-statuses`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCrmLeadStatusesQueryOptions = <TData = Awaited<ReturnType<typeof listCrmLeadStatuses>>, TError = ErrorType<ErrorResponse>>(params?: ListCrmLeadStatusesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmLeadStatuses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmLeadStatusesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmLeadStatuses>>> = ({ signal }) => listCrmLeadStatuses(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmLeadStatuses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmLeadStatusesQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmLeadStatuses>>>
+export type ListCrmLeadStatusesQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List active CRM lead statuses with scoped lead counts
+ */
+
+export function useListCrmLeadStatuses<TData = Awaited<ReturnType<typeof listCrmLeadStatuses>>, TError = ErrorType<ErrorResponse>>(
+ params?: ListCrmLeadStatusesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmLeadStatuses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmLeadStatusesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListCrmLeadsUrl = (params?: ListCrmLeadsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -2366,9 +2455,9 @@ export const getListCrmLeadsUrl = (params?: ListCrmLeadsParams,) => {
 /**
  * @summary List CRM leads within the caller scope
  */
-export const listCrmLeads = async (params?: ListCrmLeadsParams, options?: RequestInit): Promise<CrmLead[]> => {
+export const listCrmLeads = async (params?: ListCrmLeadsParams, options?: RequestInit): Promise<CrmLeadListItem[]> => {
 
-  return customFetch<CrmLead[]>(getListCrmLeadsUrl(params),
+  return customFetch<CrmLeadListItem[]>(getListCrmLeadsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2672,4 +2761,93 @@ export const useUpdateCrmLead = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getUpdateCrmLeadMutationOptions(options));
     }
+
+export const getGetCrmLeadContextUrl = (id: string,
+    params?: GetCrmLeadContextParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crm/leads/${id}/context?${stringifiedParams}` : `/api/crm/leads/${id}/context`
+}
+
+/**
+ * @summary Get the scoped context required by a CRM lead card
+ */
+export const getCrmLeadContext = async (id: string,
+    params?: GetCrmLeadContextParams, options?: RequestInit): Promise<CrmLeadContext> => {
+
+  return customFetch<CrmLeadContext>(getGetCrmLeadContextUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCrmLeadContextQueryKey = (id: string,
+    params?: GetCrmLeadContextParams,) => {
+    return [
+    `/api/crm/leads/${id}/context`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCrmLeadContextQueryOptions = <TData = Awaited<ReturnType<typeof getCrmLeadContext>>, TError = ErrorType<ErrorResponse>>(id: string,
+    params?: GetCrmLeadContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmLeadContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCrmLeadContextQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrmLeadContext>>> = ({ signal }) => getCrmLeadContext(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrmLeadContext>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCrmLeadContextQueryResult = NonNullable<Awaited<ReturnType<typeof getCrmLeadContext>>>
+export type GetCrmLeadContextQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the scoped context required by a CRM lead card
+ */
+
+export function useGetCrmLeadContext<TData = Awaited<ReturnType<typeof getCrmLeadContext>>, TError = ErrorType<ErrorResponse>>(
+ id: string,
+    params?: GetCrmLeadContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmLeadContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCrmLeadContextQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

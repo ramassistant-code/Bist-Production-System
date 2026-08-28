@@ -3,3 +3,4 @@
 - [refresh_deal_payment_totals](refresh-deal-payment-totals.md) — dual ex/inc-VAT OR comparison; called on POST payment + PATCH deal; rounding guard caps ex-VAT at remaining to avoid DB constraint
 - [customFetch auth pattern](customfetch-auth-pattern.md) — web app uses setAuthTokenGetter in auth-context.tsx so customFetch sends Bearer on all calls; never remove auth from routes, fix the caller instead
 - [bist-app mutation pattern](bist-app-mutation-pattern.md) — RLS blocks anon Supabase for app_users/lookup tables; use apiFetch+Express for mutations that need number generation; use Supabase directly when RLS allows
+- [API client codegen barrel](api-client-codegen-barrel.md) — after Orval codegen, deduplicate exports in the handwritten client barrel; never edit generated files

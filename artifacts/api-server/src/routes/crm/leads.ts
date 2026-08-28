@@ -1,16 +1,33 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
+  crmAdsTable,
+  crmCallLogsTable,
+  crmFunnelsTable,
   crmInquiriesTable,
+  crmLeadNotesTable,
+  crmLeadTasksTable,
   crmLeadsTable,
   insertCrmLeadSchema,
   updateCrmLeadSchema,
 } from "@workspace/db/schema";
 import { crmLeadView, leadScope } from "../../services/crm/scope";
+import { dealsForCustomer, productsForCustomer } from "../../services/crm/legacy-read";
 import { toE164 } from "../../services/crm/phone";
 
 const router: IRouter = Router();
+
+const inquirySummary = db
+  .select({
+    lead_id: crmInquiriesTable.lead_id,
+    funnel_id: sql<string | null>`(array_agg(${crmInquiriesTable.funnel_id} ORDER BY ${crmInquiriesTable.inquiry_at} DESC))[1]`,
+    last_inquiry_at: sql<Date | null>`max(${crmInquiriesTable.inquiry_at})`,
+    inquiry_count: sql<number>`count(*)::int`,
+  })
+  .from(crmInquiriesTable)
+  .groupBy(crmInquiriesTable.lead_id)
+  .as("crm_inquiry_summary");
 
 function queryString(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -91,8 +108,35 @@ router.get("/leads", async (req: Request, res: Response): Promise<void> => {
   try {
     const [leads, countResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: crmLeadsTable.id,
+          name: crmLeadsTable.name,
+          phone_e164: crmLeadsTable.phone_e164,
+          phone_raw: crmLeadsTable.phone_raw,
+          email: crmLeadsTable.email,
+          sales_rep_id: crmLeadsTable.sales_rep_id,
+          status_code: crmLeadsTable.status_code,
+          is_active_customer: crmLeadsTable.is_active_customer,
+          answer_status: crmLeadsTable.answer_status,
+          capture_attempts: crmLeadsTable.capture_attempts,
+          rejection_reason_code: crmLeadsTable.rejection_reason_code,
+          rejection_detail: crmLeadsTable.rejection_detail,
+          pending_reassignment: crmLeadsTable.pending_reassignment,
+          legacy_lead_id: crmLeadsTable.legacy_lead_id,
+          linked_customer_id: crmLeadsTable.linked_customer_id,
+          source: crmLeadsTable.source,
+          source_ref: crmLeadsTable.source_ref,
+          created_at: crmLeadsTable.created_at,
+          updated_at: crmLeadsTable.updated_at,
+          deleted_at: crmLeadsTable.deleted_at,
+          funnel_id: inquirySummary.funnel_id,
+          funnel_name: crmFunnelsTable.name,
+          last_inquiry_at: inquirySummary.last_inquiry_at,
+          inquiry_count: sql<number>`coalesce(${inquirySummary.inquiry_count}, 0)::int`,
+        })
         .from(crmLeadsTable)
+        .leftJoin(inquirySummary, eq(crmLeadsTable.id, inquirySummary.lead_id))
+        .leftJoin(crmFunnelsTable, eq(inquirySummary.funnel_id, crmFunnelsTable.id))
         .where(where)
         .orderBy(desc(crmLeadsTable.updated_at))
         .limit(limit)
@@ -108,6 +152,88 @@ router.get("/leads", async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Failed to list CRM leads");
     res.status(500).json({ error: "שגיאה בטעינת הלידים" });
+  }
+});
+
+router.get("/leads/:id/context", async (req: Request, res: Response): Promise<void> => {
+  const id = leadId(req);
+  if (!id) {
+    res.status(400).json({ error: "מזהה ליד חסר" });
+    return;
+  }
+
+  try {
+    const [lead] = await db
+      .select()
+      .from(crmLeadsTable)
+      .where(
+        and(
+          eq(crmLeadsTable.id, id),
+          isNull(crmLeadsTable.deleted_at),
+          leadScope(req, crmLeadView(req.query["view"])),
+        ),
+      )
+      .limit(1);
+
+    if (!lead) {
+      res.status(404).json({ error: "ליד לא נמצא" });
+      return;
+    }
+
+    const customerId = lead.linked_customer_id;
+    const [inquiries, notes, tasks, callLogs, deals, products] = await Promise.all([
+      db
+        .select({
+          id: crmInquiriesTable.id,
+          lead_id: crmInquiriesTable.lead_id,
+          ad_id: crmInquiriesTable.ad_id,
+          funnel_id: crmInquiriesTable.funnel_id,
+          form_name: crmInquiriesTable.form_name,
+          free_text: crmInquiriesTable.free_text,
+          inquiry_at: crmInquiriesTable.inquiry_at,
+          inquiry_number: crmInquiriesTable.inquiry_number,
+          raw_payload: crmInquiriesTable.raw_payload,
+          source: crmInquiriesTable.source,
+          source_ref: crmInquiriesTable.source_ref,
+          created_at: crmInquiriesTable.created_at,
+          funnel_name: crmFunnelsTable.name,
+          ad_name: crmAdsTable.name,
+        })
+        .from(crmInquiriesTable)
+        .leftJoin(crmFunnelsTable, eq(crmInquiriesTable.funnel_id, crmFunnelsTable.id))
+        .leftJoin(crmAdsTable, eq(crmInquiriesTable.ad_id, crmAdsTable.id))
+        .where(eq(crmInquiriesTable.lead_id, id))
+        .orderBy(desc(crmInquiriesTable.inquiry_at)),
+      db
+        .select()
+        .from(crmLeadNotesTable)
+        .where(eq(crmLeadNotesTable.lead_id, id))
+        .orderBy(desc(crmLeadNotesTable.created_at)),
+      db
+        .select()
+        .from(crmLeadTasksTable)
+        .where(eq(crmLeadTasksTable.lead_id, id))
+        .orderBy(asc(crmLeadTasksTable.due_at)),
+      db
+        .select()
+        .from(crmCallLogsTable)
+        .where(eq(crmCallLogsTable.lead_id, id))
+        .orderBy(desc(crmCallLogsTable.started_at)),
+      customerId ? dealsForCustomer(customerId) : Promise.resolve([]),
+      customerId ? productsForCustomer(customerId) : Promise.resolve([]),
+    ]);
+
+    res.json({
+      inquiries,
+      notes,
+      tasks,
+      call_logs: callLogs,
+      deals,
+      products,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to load CRM lead context");
+    res.status(500).json({ error: "שגיאה בטעינת פרטי הליד" });
   }
 });
 
