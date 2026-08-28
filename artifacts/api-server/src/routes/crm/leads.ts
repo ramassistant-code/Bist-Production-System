@@ -21,9 +21,9 @@ const router: IRouter = Router();
 const inquirySummary = db
   .select({
     lead_id: crmInquiriesTable.lead_id,
-    funnel_id: sql<string | null>`(array_agg(${crmInquiriesTable.funnel_id} ORDER BY ${crmInquiriesTable.inquiry_at} DESC))[1]`,
-    last_inquiry_at: sql<Date | null>`max(${crmInquiriesTable.inquiry_at})`,
-    inquiry_count: sql<number>`count(*)::int`,
+    funnel_id: sql<string | null>`(array_agg(${crmInquiriesTable.funnel_id} ORDER BY ${crmInquiriesTable.inquiry_at} DESC))[1]`.as("funnel_id"),
+    last_inquiry_at: sql<Date | null>`max(${crmInquiriesTable.inquiry_at})`.as("last_inquiry_at"),
+    inquiry_count: sql<number>`count(*)::int`.as("inquiry_count"),
   })
   .from(crmInquiriesTable)
   .groupBy(crmInquiriesTable.lead_id)
