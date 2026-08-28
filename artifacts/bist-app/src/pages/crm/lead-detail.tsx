@@ -2,8 +2,10 @@ import { Link, useRoute } from "wouter";
 import {
   getGetCrmLeadContextQueryKey,
   getGetCrmLeadQueryKey,
+  getListCrmLeadStatusesQueryKey,
   useGetCrmLead,
   useGetCrmLeadContext,
+  useListCrmLeadStatuses,
 } from "@workspace/api-client-react";
 import {
   ArrowRight,
@@ -25,14 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCrmView } from "./use-crm-view";
 import { useActiveSalesUsers } from "./use-users";
-import { crmCurrency, crmDate, crmEmpty, crmNumber } from "./format";
-
-const STATUS_LABELS: Record<string, string> = {
-  new: "חדש",
-  active: "פעיל",
-  won: "נסגר",
-  lost: "לא רלוונטי",
-};
+import { crmCurrency, crmDate, crmEmpty } from "./format";
 
 function isNotFound(error: unknown): boolean {
   return error instanceof Error && /\b404\b/.test(error.message);
@@ -42,16 +37,6 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
     : {};
-}
-
-function paymentAmount(payment: unknown): number {
-  const row = asRecord(payment);
-  return crmNumber(
-    row.amount_including_vat ??
-      row.amount_with_vat ??
-      row.amount ??
-      row.total_amount,
-  );
 }
 
 export default function CrmLeadDetail() {
@@ -70,6 +55,13 @@ export default function CrmLeadDetail() {
     query: {
       enabled: Boolean(id),
       queryKey: getGetCrmLeadContextQueryKey(id, { view }),
+    },
+  });
+  // התוויות של הסטטוסים חיות ב-crm_lead_statuses. אין מפה קשיחה בקוד —
+  // אדמין שמוסיף סטטוס לא אמור לחייב deploy.
+  const { data: statuses } = useListCrmLeadStatuses({ view }, {
+    query: {
+      queryKey: getListCrmLeadStatusesQueryKey({ view }),
     },
   });
 
@@ -164,8 +156,9 @@ export default function CrmLeadDetail() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {STATUS_LABELS[lead.status_code] ?? lead.status_code}
+              <Badge variant="secondary" data-testid="badge-crm-lead-status">
+                {statuses?.find((status) => status.code === lead.status_code)
+                  ?.label ?? lead.status_code}
               </Badge>
               {lead.is_active_customer && (
                 <Badge variant="success">לקוח פעיל</Badge>
@@ -336,15 +329,9 @@ export default function CrmLeadDetail() {
               {context.deals.map((deal, index) => {
                 const row = asRecord(deal);
                 const payments = Array.isArray(deal.payments) ? deal.payments : [];
-                const totalPaid = payments.reduce(
-                  (sum, payment) => sum + paymentAmount(payment),
-                  0,
-                );
-                const amount =
-                  row.total_with_vat ??
-                  row.amount_with_vat ??
-                  row.total_amount ??
-                  totalPaid;
+                // הסכום נקרא מהעסקה כמו שהוא. ה-CRM לא מחשב כסף ולא מסכם
+                // תשלומים — ההגדרה יושבת ב-services/crm/legacy-read.ts בלבד.
+                const amount = row.total_amount_including_vat ?? row.total_amount;
                 return (
                   <div
                     key={String(row.id ?? index)}
