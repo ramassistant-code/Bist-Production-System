@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isTestEnvironment } from "@/lib/environment";
 
 const NAV_ITEMS = [
+  { name: "מרכז CRM", href: "/crm/leads", icon: Target },
   { name: "לידים", href: "/leads", icon: Target },
   { name: "לקוחות", href: "/customers", icon: Users },
   { name: "מוצרים", href: "/products", icon: Box },

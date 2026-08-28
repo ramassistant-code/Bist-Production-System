@@ -58,6 +58,10 @@ import NotFound from "@/pages/not-found";
 import SignPage from "@/pages/sign";
 import PayPage from "@/pages/pay";
 import PaymentDone from "@/pages/payment-done";
+import CrmLeads from "@/pages/crm/leads";
+import CrmLeadDetail from "@/pages/crm/lead-detail";
+import CrmFunnels from "@/pages/crm/funnels";
+import CrmAds from "@/pages/crm/ads";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +96,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/">{() => { window.location.replace("/leads"); return null; }}</Route>
+      <Route path="/crm/leads" component={CrmLeads} />
+      <Route path="/crm/funnels" component={CrmFunnels} />
+      <Route path="/crm/ads" component={CrmAds} />
+      <Route path="/crm/leads/:id" component={CrmLeadDetail} />
       <Route path="/leads" component={Leads} />
       <Route path="/customers" component={Customers} />
       <Route path="/products" component={Products} />
