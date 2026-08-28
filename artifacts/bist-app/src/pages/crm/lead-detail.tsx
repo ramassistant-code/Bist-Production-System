@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCrmView } from "./use-crm-view";
-import { useActiveSalesUsers } from "./use-users";
+import { useSalesUsers } from "./use-users";
 import { crmCurrency, crmDate, crmEmpty } from "./format";
 
 function isNotFound(error: unknown): boolean {
@@ -43,7 +43,8 @@ export default function CrmLeadDetail() {
   const [, params] = useRoute("/crm/leads/:id");
   const id = params?.id ?? "";
   const { view } = useCrmView();
-  const { data: reps } = useActiveSalesUsers();
+  // כולל נציגים לא פעילים — ליד של נציג שעזב אינו ליד לא משויך.
+  const { data: reps } = useSalesUsers();
 
   const leadQuery = useGetCrmLead(id, { view }, {
     query: {

@@ -133,12 +133,12 @@ export async function applyStatusChange({
       .set({
         status_code: toStatus,
         updated_at: new Date(),
-        ...(toStatus === "not_relevant"
-          ? {
-              rejection_reason_code: rejectionReasonCode,
-              rejection_detail: rejectionDetail,
-            }
-          : {}),
+        // יוצאים מ"לא רלוונטי" — הסיבה והפירוט מתארים דחייה שכבר לא קיימת.
+        // בלי הניקוי הזה הכרטיס ימשיך להציג סיבת דחייה על ליד פעיל.
+        rejection_reason_code:
+          toStatus === "not_relevant" ? rejectionReasonCode : null,
+        rejection_detail:
+          toStatus === "not_relevant" ? rejectionDetail : null,
       })
       .where(eq(crmLeadsTable.id, leadId))
       .returning();
@@ -146,7 +146,10 @@ export async function applyStatusChange({
     if (statusTask) {
       await tx.insert(crmLeadTasksTable).values({
         lead_id: leadId,
-        assigned_user_id: lead.sales_rep_id,
+        // ליד לא משויך עדיין מחייב מעקב. משימה עם assigned_user_id ריק לא
+        // תופיע אצל אף אחד ב-tasks/mine, כלומר החסימה תיראה כאילו עבדה
+        // ולא ייצא ממנה כלום. מי שביצע את המעבר אחראי עליה.
+        assigned_user_id: lead.sales_rep_id ?? actorId,
         title: statusTask.title,
         due_at: statusTask.due_at,
         source: "status_auto",

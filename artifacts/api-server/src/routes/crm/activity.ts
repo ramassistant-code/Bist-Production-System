@@ -168,7 +168,8 @@ router.post("/leads/:id/tasks", async (req: Request, res: Response): Promise<voi
       .insert(crmLeadTasksTable)
       .values({
         lead_id: id,
-        assigned_user_id: lead.sales_rep_id,
+        // ראו ההערה ב-status-machine.ts: משימה בלי משויך נעלמת מ-tasks/mine.
+        assigned_user_id: lead.sales_rep_id ?? req.appUser!.id,
         title,
         ...(description !== undefined ? { description } : {}),
         due_at: dueAt,
