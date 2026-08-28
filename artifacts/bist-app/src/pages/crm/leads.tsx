@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Users, SwitchCamera } from "lucide-react";
+import { Search, Loader2, Users } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmDataTable, type CrmTableColumn } from "./crm-data-table";
 import { crmDate, crmEmpty } from "./format";
@@ -149,15 +149,34 @@ export default function CrmLeads() {
             </div>
 
             {isManager && (
-              <Button
-                variant={view === "manager" ? "default" : "secondary"}
-                onClick={() => setView(view === "manager" ? "rep" : "manager")}
-                className="shrink-0"
-                data-testid="button-toggle-view"
+              // פקד דו-מצבי ולא כפתור החלפה: כפתור יחיד שכתוב עליו "מצב מנהל"
+              // נקרא כפעולה ("עבור למצב מנהל") ולא כמצב הנוכחי. כאן שתי
+              // האפשרויות גלויות והפעילה מסומנת, אז אין מה לפרש.
+              <div
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-muted/50 p-1"
+                role="group"
+                aria-label="מצב תצוגה"
+                data-testid="toggle-crm-view"
               >
-                <SwitchCamera className="w-4 h-4" />
-                {view === "manager" ? "מצב מנהל" : "מצב איש מכירות"}
-              </Button>
+                <Button
+                  size="sm"
+                  variant={view === "rep" ? "default" : "ghost"}
+                  aria-pressed={view === "rep"}
+                  onClick={() => setView("rep")}
+                  data-testid="button-view-rep"
+                >
+                  מצב איש מכירות
+                </Button>
+                <Button
+                  size="sm"
+                  variant={view === "manager" ? "default" : "ghost"}
+                  aria-pressed={view === "manager"}
+                  onClick={() => setView("manager")}
+                  data-testid="button-view-manager"
+                >
+                  מצב מנהל
+                </Button>
+              </div>
             )}
           </div>
 
