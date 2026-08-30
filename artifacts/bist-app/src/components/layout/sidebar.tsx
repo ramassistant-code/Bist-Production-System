@@ -3,6 +3,7 @@ import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, Message
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { isTestEnvironment } from "@/lib/environment";
+import { useListMyCrmTasks, getListMyCrmTasksQueryKey } from "@workspace/api-client-react";
 
 const NAV_ITEMS = [
   { name: "מרכז CRM", href: "/crm/leads", icon: Target },
@@ -20,6 +21,9 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const [location] = useLocation();
   const { appUser, signOut } = useAuth();
+  const { data: myTasks } = useListMyCrmTasks({
+    query: { queryKey: getListMyCrmTasksQueryKey(), refetchInterval: 60_000 },
+  });
 
   return (
     <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-full border-l border-sidebar-border">
@@ -55,6 +59,11 @@ export function Sidebar() {
             >
               <item.icon className="w-5 h-5 shrink-0" />
               <span>{item.name}</span>
+              {item.href === "/crm/leads" && Boolean(myTasks?.length) && (
+                <span className="mr-auto min-w-5 rounded-full bg-destructive px-1.5 py-0.5 text-center text-[10px] font-bold text-destructive-foreground">
+                  {myTasks?.length}
+                </span>
+              )}
             </Link>
           );
         })}

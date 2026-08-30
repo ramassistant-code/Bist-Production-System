@@ -62,6 +62,7 @@ import CrmLeads from "@/pages/crm/leads";
 import CrmLeadDetail from "@/pages/crm/lead-detail";
 import CrmFunnels from "@/pages/crm/funnels";
 import CrmAds from "@/pages/crm/ads";
+import { TaskNudgeProvider } from "@/components/crm/task-nudge-provider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -139,7 +140,10 @@ function App() {
                 <Route path="/payment-done" component={PaymentDone} />
                 <Route>
                   <AuthGate>
-                    <Router />
+                    <>
+                      <TaskNudgeProvider />
+                      <Router />
+                    </>
                   </AuthGate>
                 </Route>
               </Switch>
