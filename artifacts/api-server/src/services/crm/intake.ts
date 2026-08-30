@@ -317,6 +317,7 @@ export async function ingestLead(
       let assignedRepId = lead.sales_rep_id;
       let usedFallback = false;
       let fallbackRole: string | null = null;
+      let queueHadActiveReps = false;
 
       if (isNewLead || reopenedPaid) {
         let keepOriginalRep = false;
@@ -355,7 +356,8 @@ export async function ingestLead(
                 and u.deleted_at is null
               limit 1
             `);
-            if (activeQueue.rows.length > 0) {
+            queueHadActiveReps = activeQueue.rows.length > 0;
+            if (queueHadActiveReps) {
               for (let attempt = 0; attempt < 12 && !assignedRepId; attempt += 1) {
                 await new Promise((resolve) => setTimeout(resolve, 25));
                 const retriedRep = await tx.execute(
@@ -414,7 +416,11 @@ export async function ingestLead(
               'intake_fallback_assignment',
               null,
               ${json({
-                reason: "no_active_reps",
+                // ההבחנה חשובה: "אף אחד לא פעיל" היא החלטת ניהול, ואילו
+                // "התור היה נעול" היא תקלה טכנית שהפילה ליד על המנהל בזמן
+                // שאנשי מכירות כן היו זמינים. אותה שורת יומן לשתיהן הופכת
+                // את השנייה לבלתי ניתנת לאיתור.
+                reason: queueHadActiveReps ? "queue_contention" : "no_active_reps",
                 target_user_id: assignedRepId,
                 target_role: fallbackRole,
               })}::jsonb
