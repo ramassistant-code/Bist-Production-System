@@ -249,6 +249,9 @@ router.patch("/tasks/:id", async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
+    // משימה ששויכה למשתמש היא שלו, גם אם הליד עצמו מחוץ ל-scope הנוכחי שלו.
+    // בלי הענף הזה מנהל שקיבל משימה על ליד לא משויך מקבל 404 על "בוצע",
+    // ומודאל התזכורת — שאי אפשר לסגור בדרך אחרת — נתקע פתוח.
     const [task] = await db
       .select({ id: crmLeadTasksTable.id })
       .from(crmLeadTasksTable)
@@ -257,7 +260,10 @@ router.patch("/tasks/:id", async (req: Request, res: Response): Promise<void> =>
         and(
           eq(crmLeadTasksTable.id, id),
           isNull(crmLeadsTable.deleted_at),
-          leadScope(req, crmLeadView(req.query["view"])),
+          or(
+            eq(crmLeadTasksTable.assigned_user_id, req.appUser!.id),
+            leadScope(req, crmLeadView(req.query["view"])),
+          ),
         ),
       )
       .limit(1);
