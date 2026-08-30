@@ -1,0 +1,123 @@
+MILESTONE: CRM Wave 4b - availability screen, bulk transfer, reassignment
+pool. Frontend only.
+
+CONTEXT
+Pull main first. Wave 4a shipped intake, RoundRobin, availability and bulk
+assign, and all of it is verified against the running app. Every endpoint
+you need exists and the generated client is current. This milestone is UI
+only - do not touch anything under artifacts/api-server/, lib/db/ or
+lib/api-spec/.
+
+THE API YOU HAVE - exact names, do not invent any
+  useListCrmAvailability()          -> CrmAvailability[]
+  useUpdateCrmAvailability()        PATCH /crm/availability/:userId
+  useBulkAssignCrmLeads()           POST  /crm/leads/bulk-assign
+  useListCrmLeads / useListCrmLeadStatuses / useGetCrmLead
+Cache keys from getListCrmAvailabilityQueryKey(), getListCrmLeadsQueryKey(),
+getListCrmLeadStatusesQueryKey(). Never write a query key as a literal.
+
+SHAPES
+  CrmAvailability = { id, full_name, email, phone, role, is_active,
+                      is_active_today, leads_today, queue_position,
+                      last_assigned_at, is_next_in_queue }
+  CrmBulkAssignInput  = { lead_ids: string[] (1..500), target_user_id }
+  CrmBulkAssignResult = { updated_count, target_user_id }
+
+ERROR TEXT COMES FROM THE SERVER
+Display the Hebrew string the server returns in { error }. Do not keep a
+second copy of it in the UI. Reuse the errorText() helper that already
+exists in pages/crm/lead-detail.tsx - move it into pages/crm/format.ts and
+import it in both places rather than duplicating it.
+The server enforces all of these; the UI only makes them pleasant:
+  "לא ניתן לשנות את הזמינות של עצמך"
+  "משתמש היעד אינו פעיל"
+  "בקשת השיוך המרוכז אינה תקינה"
+
+BUILD
+
+1. pages/crm/availability.tsx at /crm/availability
+   Visible to sales_manager and admin only. A sales user who types the URL
+   gets 403 from the API - render "אין לך הרשאה לעמוד זה" and a link back
+   to /crm/leads, not a raw error.
+   - A row per user from useListCrmAvailability, in the order the API
+     returns them. Do not re-sort.
+   - Columns: name, role in Hebrew, a זמין/לא זמין toggle, leads_today,
+     queue_position, and a clear marker on the row where is_next_in_queue
+     is true - label it "הבא בתור".
+   - The toggle saves on click. No separate save button. While the request
+     is in flight disable that row only, not the table.
+   - The current user's own toggle is DISABLED, with a title explaining
+     why. The server returns 403 regardless; this is so nobody clicks it
+     and wonders.
+   - A user whose is_active is false is shown greyed with "לא פעיל
+     במערכת" and cannot be toggled.
+   - Show a persistent warning banner while NO user has is_active_today
+     true: "אין אנשי מכירות זמינים — לידים חדשים ינותבו למנהל המכירות".
+     That is what actually happens at intake, and it is worth seeing
+     before the leads pile up rather than after.
+   - Add a sidebar entry { name: "זמינות", href: "/crm/availability" },
+     rendered only for sales_manager and admin.
+
+2. Multi-select and bulk transfer on pages/crm/leads.tsx
+   - A checkbox column, rendered ONLY when isManager is true.
+   - A "בחר הכל" control that selects every lead currently listed. Label it
+     with the count actually selected. If more leads match the filter than
+     the page shows, say so plainly - do not imply you selected them all.
+   - While anything is selected show an action bar with the count and a
+     "העבר לנציג" button.
+   - That opens a confirmation step showing the number of leads, the target
+     rep's name, and what will change: only the assignment, and open tasks
+     move with the lead. The target list offers ACTIVE users only, from
+     useListCrmAvailability filtered on is_active.
+   - On confirm call useBulkAssignCrmLeads once with all ids. Do not loop
+     one request per lead.
+   - On success invalidate the leads list AND the lead-statuses list, clear
+     the selection, and show the returned updated_count in a toast.
+   - The cap is 500. Block the request in the UI with a clear message
+     rather than letting the server reject it.
+
+3. The "ממתין להשמה" pool
+   - A view in the leads screen listing leads where pending_reassignment is
+     true. A tab or a filter toggle, your choice, but it must be reachable
+     in one click from the leads list and visible only to managers.
+   - While the pool is non-empty show a prominent counter. These are leads
+     nobody owns.
+   - Reassignment from the pool uses the same bulk endpoint and the same
+     confirmation step. No second implementation.
+
+CONVENTIONS
+- Copy the structure of pages/leads.tsx: react-hook-form + zod, Hebrew
+  error messages, Label + register, manual error <p>.
+- Reuse pages/crm/crm-data-table.tsx for the availability table. It is
+  table-fixed and needs an explicit width per column.
+- Add dir="rtl" explicitly on every Radix portal content.
+- All UI text in Hebrew, roles included: sales = "איש מכירות",
+  sales_manager = "מנהל מכירות", admin = "מנהל מערכת". Never print the raw
+  role string.
+- Dates DD/MM/YYYY. Reuse pages/crm/format.ts.
+- Do not render a path as "A -> B -> C" anywhere. Hebrew bidi reverses it
+  on screen. Use a numbered list or plain sentences.
+
+DO NOT TOUCH
+- Anything under artifacts/api-server/, lib/db/, lib/api-spec/ or any
+  generated directory. If a field you need is missing, report it - do not
+  add it and do not guess a column name.
+- Any existing component in components/ui/, and components/layout/shell.tsx.
+- Any existing page except App.tsx and sidebar.tsx.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- A sales user opening /crm/availability sees the Hebrew permission message,
+  not a stack trace or a blank screen.
+- A manager cannot toggle their own row.
+- Turning the last available rep off raises the banner immediately.
+- Selecting 3 leads and transferring moves exactly those 3, the list
+  refreshes without a manual reload, and the toast shows 3.
+- The confirmation step names the target rep before anything is sent.
+- Cancelling the confirmation sends no request at all.
+- No visible English text anywhere in the new UI, including role names.
+
+REPORT
+What was built, files changed, how "בחר הכל" behaves when the filter matches
+more leads than the page shows, which queries you invalidate after a
+transfer, known limitations, and whether any visible English text remains.
