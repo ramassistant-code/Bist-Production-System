@@ -55,6 +55,37 @@ select coalesce(u.full_name, '(ללא שיוך)') as rep, count(*) as leads
  group by 1 order by 1;
 
 
+-- ── שלב 1ב: זריעת תור הזמינות ───────────────────────────────────────────────
+-- נדרש כדי ש-crm_next_rep_in_queue() יחזיר מישהו. בלי זה כל ליד נכנס
+-- נופל למנהל המכירות, וזה נראה כמו באג ברוטציה.
+-- ⚠️ החלף את שלושת ה-UUID במשתמשים אמיתיים בתפקיד sales.
+
+update crm_rep_availability set is_active_today = false;
+
+insert into crm_rep_availability (user_id, is_active_today, queue_position)
+values
+  ('00000000-0000-0000-0000-000000000000'::uuid, true, 1),   -- ← נציג 1
+  ('00000000-0000-0000-0000-000000000000'::uuid, true, 2),   -- ← נציג 2
+  ('00000000-0000-0000-0000-000000000000'::uuid, true, 3)    -- ← נציג 3
+on conflict (user_id) do update
+   set is_active_today  = true,
+       queue_position   = excluded.queue_position,
+       last_assigned_at = null,
+       leads_today      = 0,
+       leads_today_date = null;
+
+-- צפוי: שלוש שורות
+select user_id, queue_position from crm_rep_availability where is_active_today;
+
+
+-- ── שלב 1ג: לידים דרך מסלול הקליטה האמיתי ───────────────────────────────────
+-- את לידי הקליטה אי אפשר לזרוע ב-SQL — הם חייבים לעבור דרך
+-- POST /api/crm/webhooks/lead, אחרת לא נבדקים ה-dedup, ירושת המשפך
+-- והרוטציה. ה-snippet לירי דרך ה-Console נמצא בשיחת גל 4א; הוא שולח
+-- שישה לידים תקינים, כפילות, טלפון פסול וליד בלי שם.
+-- דורש CRM_INTAKE_SECRET מוגדר ב-Replit Secrets.
+
+
 -- ============================================================================
 -- שלב 2: הבדיקה עצמה — לא ב-SQL אלא מול ה-API
 -- ============================================================================
@@ -84,11 +115,5 @@ select coalesce(u.full_name, '(ללא שיוך)') as rep, count(*) as leads
 
 
 -- ── ניקוי ───────────────────────────────────────────────────────────────────
--- להרצה כשמסיימים. מוחק רק את לידי הבדיקה.
---
--- delete from crm_leads
---  where phone_e164 in (
---    '+972500000001','+972500000002','+972500000003',
---    '+972500000101','+972500000102','+972500000103',
---    '+972500000201'
---  );
+-- לא כאן. 91_dev_test_data_cleanup.sql מוחק את כל נתוני הבדיקה של גלים 2–4
+-- במקום אחד, כולל לידי הקליטה, המודעות ויומן הביקורת.

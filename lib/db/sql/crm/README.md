@@ -25,7 +25,8 @@
 | 9 | `09_role_enum_usage.sql` | אילו עמודות משתמשות ב-enum הזה |
 | 10 | `10_crm_inquiries_source_ref.sql` | `source` + `source_ref` על `crm_inquiries` ואינדקס ייחודי חלקי. חוסם פניות כפולות מ-retry של מטא. **לפני גל 4** |
 | 11 | `11_crm_intake.sql` | `crm_intake_failures` (ללא FK), `form_id` על הפניות, היררכיית קמפיין על `crm_ads`. **לפני גל 4** |
-| — | `90_dev_scope_test_seed.sql` | לידי בדיקה לאימות ה-scope של גל 2א. **פיתוח בלבד** |
+| — | `90_dev_scope_test_seed.sql` | זריעת נתוני בדיקה: לידי scope ותור זמינות. **פיתוח בלבד** |
+| — | `91_dev_test_data_cleanup.sql` | מחיקת כל נתוני הבדיקה של גלים 2–4. **פיתוח בלבד** |
 | — | `99_rollback.sql` | ביטול מלא של 01–06. **לא להריץ אחרי הקשירה בגל 7ב** |
 
 כל קובץ עטוף ב-`BEGIN/COMMIT`. שאילתות הבדיקה נמצאות **אחרי** ה-`COMMIT`,
