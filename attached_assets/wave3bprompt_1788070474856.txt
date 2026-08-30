@@ -1,0 +1,145 @@
+MILESTONE: CRM Wave 3b - status dialog, notes, tasks and the reminder modal.
+Frontend only.
+
+CONTEXT
+Pull main first. Wave 3a shipped the status machine, notes, tasks and the
+reminder feed, and all of it is verified at runtime. Every endpoint you
+need already exists and the generated client is up to date. This milestone
+is UI only - do not touch anything under artifacts/api-server/, lib/db/ or
+lib/api-spec/.
+
+THE API YOU HAVE - exact names, do not invent any
+  useChangeCrmLeadStatus       PATCH /crm/leads/:id/status
+  useListCrmRejectionReasons   -> CrmRejectionReason[]
+  useCreateCrmLeadNote / useUpdateCrmLeadNote
+  useCreateCrmLeadTask / useUpdateCrmLeadTask
+  useListMyCrmTasks            -> CrmMineTask[]
+  useListCrmLeadStatuses / useListCrmLeads / useGetCrmLead
+  useGetCrmLeadContext
+Cache keys come from getListCrmLeadsQueryKey(), getListCrmLeadStatusesQueryKey(),
+getGetCrmLeadQueryKey(), getGetCrmLeadContextQueryKey(),
+getListMyCrmTasksQueryKey(), getListCrmRejectionReasonsQueryKey().
+Never write a query key as a string literal.
+
+SHAPES
+  CrmLeadStatusChange = { status_code, task?: { title, due_at },
+                          rejection_reason_code?, rejection_detail? }
+  CrmRejectionReason  = { code, label, requires_detail, sort_order }
+  CrmLeadTaskInput    = { title, description?, due_at }
+  CrmLeadTaskUpdate   = { status?: "open" | "done", snoozed_until? }
+  CrmLeadNoteInput    = { content }
+  CrmMineTask         = CrmLeadTask & { lead_name, lead_phone }
+
+ERROR TEXT COMES FROM THE SERVER
+The server returns Hebrew messages in { error }. Display that string.
+Do NOT hardcode a second copy of it in the UI - if the two ever disagree
+the user is told something false. These are the real strings, listed so you
+recognise them, NOT so you reproduce them:
+  "חובה ליצור משימה עם תאריך"
+  "לא ניתן להזין תאריך שעבר"
+  "סטטוס זה מתעדכן אוטומטית בעת קליטת תשלום"
+  "לא ניתן להחזיר ליד לסטטוס חדש"
+  "חובה לבחור סיבת דחייה"
+  "סיבת הדחייה אינה תקינה"
+  "חובה להוסיף פירוט לסיבת הדחייה"
+  "לא ניתן לערוך הערה לאחר 15 דקות"
+Client-side validation is welcome as a convenience, never as the authority.
+
+BUILD
+
+1. Status change on the lead card - pages/crm/lead-detail.tsx
+   The status badge becomes a control that opens a dialog.
+   - The picker lists statuses from useListCrmLeadStatuses but EXCLUDES
+     "paid" and "new". The server rejects both; do not offer them.
+   - Choosing "pipe" or "long_followup" reveals a required task section in
+     the SAME dialog: title and due_at. Cancelling the dialog cancels the
+     whole action - nothing is sent and the status does not change.
+   - Choosing "not_relevant" reveals a reason picker from
+     useListCrmRejectionReasons. When the chosen reason has
+     requires_detail true, a free-text field appears and is required.
+   - One submit sends one useChangeCrmLeadStatus call carrying whichever
+     of task / rejection applies.
+   - On success invalidate ALL of: the lead, the lead context, the leads
+     list, AND the lead-statuses list. The tab badges are derived from
+     status counts, so skipping the last one leaves stale numbers on screen.
+   - On failure keep the dialog open and show the server's message.
+
+2. Notes on the lead card
+   - Adding a note is ONE textarea and ONE button, inline on the card. No
+     separate screen and no dialog, and the scroll position must survive
+     the submit.
+   - Newest first.
+   - Show an edit affordance only when the note's user_id is the current
+     user AND created_at is less than 15 minutes ago. Editing is inline.
+   - A note that has edited_at set shows a quiet "נערך" marker.
+   - There is no delete. Do not add one.
+
+3. Tasks on the lead card
+   - A create form: title, optional description, due_at. Past dates
+     disabled in the picker.
+   - Each open task gets a "בוצע" action (useUpdateCrmLeadTask, status
+     "done"). Done tasks stay visible, struck through, sorted after the
+     open ones.
+   - Show the task's source: "אוטומטי" for status_auto, "ידני" for manual.
+     Never print the raw English value.
+
+4. The reminder modal - components/crm/task-nudge-provider.tsx
+   - Mount it ONCE in App.tsx inside AuthGate, as a sibling of <Router />.
+     It must not be inside any page.
+   - Poll useListMyCrmTasks with refetchInterval 60000.
+   - Render a blocking centred modal above all content: the task title, the
+     lead name and phone, and a link to /crm/leads/:lead_id.
+   - EXACTLY two actions. "בוצע" sets status "done". "דחה" sets
+     snoozed_until to one hour from now. Both then refetch the feed.
+   - NO close X, NO click-outside dismiss, NO Escape dismiss.
+     **You cannot use the shared DialogContent for this** - it hardcodes an
+     X close button at components/ui/dialog.tsx:46, and components/ui/ is
+     off limits. Compose Radix Dialog primitives yourself inside
+     components/crm/, or use a plain fixed overlay. Whichever you pick,
+     handle onEscapeKeyDown and onInteractOutside by preventing default.
+   - If several tasks are due, show them ONE AT A TIME as a queue. Never
+     stack modals.
+   - The modal must never appear while the feed is empty or still loading.
+
+5. Overdue counter
+   Put a count badge on the existing "מרכז CRM" sidebar entry in
+   components/layout/sidebar.tsx, fed by the same useListMyCrmTasks query.
+   Hide it at zero.
+   Do NOT modify components/layout/shell.tsx - it is the layout for every
+   existing page in the app.
+
+CONVENTIONS
+- Copy the structure of pages/leads.tsx: react-hook-form + zod, Hebrew
+  error messages, Label + register, manual error <p>.
+- Add dir="rtl" explicitly on every Radix portal content.
+- All UI text in Hebrew. Dates DD/MM/YYYY, currency ₪. Reuse
+  pages/crm/format.ts.
+- Do not render a path as "A -> B -> C" anywhere. Hebrew bidi reverses it
+  on screen. Use a numbered list or plain sentences.
+
+DO NOT TOUCH
+- Anything under artifacts/api-server/, lib/db/, lib/api-spec/ or any
+  generated directory. If a field you need is missing, report it - do not
+  add it, and do not work around it by guessing a column name.
+- Any existing component in components/ui/.
+- Any existing page except App.tsx and sidebar.tsx.
+- components/layout/shell.tsx.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- Cancelling the task section of the status dialog leaves the status
+  unchanged - confirm the lead row did not move.
+- Selecting "not_relevant" with a reason that requires detail and leaving
+  the detail empty shows the server's message and the dialog stays open.
+- After a successful status change the tab badges on /crm/leads reflect the
+  new counts without a manual refresh.
+- The reminder modal cannot be closed with Escape, an outside click, or any
+  control other than the two actions.
+- Two due tasks appear one after the other, never stacked.
+- "שילם" and "חדש" never appear in the status picker.
+- No visible English text anywhere in the new UI.
+
+REPORT
+What was built, files changed, how you made the reminder modal
+non-dismissible, which queries you invalidate after a status change, known
+limitations, and whether any visible English text remains.
