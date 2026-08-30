@@ -48,7 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth-context";
 import { useCrmView } from "./use-crm-view";
 import { useSalesUsers } from "./use-users";
-import { crmCurrency, crmDate, crmEmpty } from "./format";
+import { crmCurrency, crmDate, crmEmpty, errorText } from "./format";
 
 function isNotFound(error: unknown): boolean {
   return error instanceof Error && /\b404\b/.test(error.message);
@@ -56,15 +56,6 @@ function isNotFound(error: unknown): boolean {
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-}
-
-function errorText(error: unknown): string {
-  const data = asRecord((error as { data?: unknown })?.data);
-  return typeof data.error === "string"
-    ? data.error
-    : error instanceof Error
-      ? error.message
-      : "אירעה שגיאה. נסה שוב.";
 }
 
 function localDateTime(value?: string | null): string {

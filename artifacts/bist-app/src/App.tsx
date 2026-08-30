@@ -62,6 +62,7 @@ import CrmLeads from "@/pages/crm/leads";
 import CrmLeadDetail from "@/pages/crm/lead-detail";
 import CrmFunnels from "@/pages/crm/funnels";
 import CrmAds from "@/pages/crm/ads";
+import CrmAvailability from "@/pages/crm/availability";
 import { TaskNudgeProvider } from "@/components/crm/task-nudge-provider";
 
 const queryClient = new QueryClient({
@@ -98,6 +99,7 @@ function Router() {
     <Switch>
       <Route path="/">{() => { window.location.replace("/leads"); return null; }}</Route>
       <Route path="/crm/leads" component={CrmLeads} />
+      <Route path="/crm/availability" component={CrmAvailability} />
       <Route path="/crm/funnels" component={CrmFunnels} />
       <Route path="/crm/ads" component={CrmAds} />
       <Route path="/crm/leads/:id" component={CrmLeadDetail} />

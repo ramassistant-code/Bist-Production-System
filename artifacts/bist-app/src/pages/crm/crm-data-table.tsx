@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export interface CrmTableColumn {
   key: string;
-  label: string;
+  label: ReactNode;
   width: string;
   className?: string;
 }

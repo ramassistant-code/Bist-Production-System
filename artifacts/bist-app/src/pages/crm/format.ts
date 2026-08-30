@@ -4,6 +4,21 @@ export function crmEmpty(value: unknown): string {
   return text || "—";
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+export function errorText(error: unknown): string {
+  const data = asRecord((error as { data?: unknown })?.data);
+  return typeof data.error === "string"
+    ? data.error
+    : error instanceof Error
+      ? error.message
+      : "אירעה שגיאה. נסה שוב.";
+}
+
 export function crmDate(value: unknown, includeTime = false): string {
   if (!value) return "—";
   const date = new Date(String(value));

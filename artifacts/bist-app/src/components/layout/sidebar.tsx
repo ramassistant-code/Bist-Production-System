@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, ClipboardList, LogOut } from "lucide-react";
+import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, ClipboardList, LogOut, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { isTestEnvironment } from "@/lib/environment";
@@ -7,6 +7,7 @@ import { useListMyCrmTasks, getListMyCrmTasksQueryKey } from "@workspace/api-cli
 
 const NAV_ITEMS = [
   { name: "מרכז CRM", href: "/crm/leads", icon: Target },
+  { name: "זמינות", href: "/crm/availability", icon: CalendarCheck, managerOnly: true },
   { name: "לידים", href: "/leads", icon: Target },
   { name: "לקוחות", href: "/customers", icon: Users },
   { name: "מוצרים", href: "/products", icon: Box },
@@ -24,6 +25,12 @@ export function Sidebar() {
   const { data: myTasks } = useListMyCrmTasks({
     query: { queryKey: getListMyCrmTasksQueryKey(), refetchInterval: 60_000 },
   });
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) =>
+      !item.managerOnly ||
+      appUser?.role === "sales_manager" ||
+      appUser?.role === "admin",
+  );
 
   return (
     <div className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-full border-l border-sidebar-border">
@@ -41,7 +48,7 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex-1 py-5 px-3 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive =
             item.href === "/"
               ? location === "/"

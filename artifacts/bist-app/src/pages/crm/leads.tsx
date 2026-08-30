@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useSearch } from "wouter/use-browser-location";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shell } from "@/components/layout/shell";
 import {
+  getListCrmAvailabilityQueryKey,
   getListCrmFunnelsQueryKey,
   getListCrmLeadStatusesQueryKey,
   getListCrmLeadsQueryKey,
+  listCrmLeads,
+  useBulkAssignCrmLeads,
   useListCrmFunnels,
+  useListCrmAvailability,
   useListCrmLeadStatuses,
   useListCrmLeads,
 } from "@workspace/api-client-react";
@@ -16,10 +21,22 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Users } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Loader2, Users, UserRoundPlus, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmDataTable, type CrmTableColumn } from "./crm-data-table";
-import { crmDate, crmEmpty } from "./format";
+import { crmDate, crmEmpty, errorText } from "./format";
+import { useToast } from "@/hooks/use-toast";
 
 const LEAD_COLUMNS: CrmTableColumn[] = [
   { key: "name", label: "שם הליד", width: "22%" },
@@ -37,12 +54,19 @@ export default function CrmLeads() {
   
   const { view, setView, isManager } = useCrmView();
   
-  const statusParam = searchParams.get("status") || "new";
+  const pendingPool = searchParams.get("pool") === "pending";
+  const statusParam = pendingPool ? "" : searchParams.get("status") || "new";
   const searchParam = searchParams.get("search") || "";
-  const funnelParam = searchParams.get("funnel") || "all";
-  const repParam = searchParams.get("rep") || "all";
+  const funnelParam = pendingPool ? "all" : searchParams.get("funnel") || "all";
+  const repParam = pendingPool ? "all" : searchParams.get("rep") || "all";
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
   const [searchInput, setSearchInput] = useState(searchParam);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [targetUserId, setTargetUserId] = useState("");
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => setSearchInput(searchParam), [searchParam]);
   
@@ -68,6 +92,7 @@ export default function CrmLeads() {
     data: statuses,
     isLoading: isLoadingStatuses,
     isError: isStatusesError,
+    error: statusesError,
   } = useListCrmLeadStatuses({ view }, {
     query: {
       queryKey: getListCrmLeadStatusesQueryKey({ view }),
@@ -78,11 +103,39 @@ export default function CrmLeads() {
     data: leads,
     isLoading: isLoadingLeads,
     isError: isLeadsError,
-  } = useListCrmLeads({ view, status: statusParam, search: searchParam || undefined, funnel: funnelParam !== 'all' ? funnelParam : undefined, sales_rep: repParam !== 'all' ? repParam : undefined, limit, offset }, {
+    error: leadsError,
+  } = useListCrmLeads({ view, status: statusParam || undefined, search: searchParam || undefined, funnel: funnelParam !== 'all' ? funnelParam : undefined, sales_rep: repParam !== 'all' ? repParam : undefined, limit, offset }, {
     query: {
-      queryKey: getListCrmLeadsQueryKey({ view, status: statusParam, search: searchParam || undefined, funnel: funnelParam !== 'all' ? funnelParam : undefined, sales_rep: repParam !== 'all' ? repParam : undefined, limit, offset }),
+      enabled: !pendingPool,
+      queryKey: getListCrmLeadsQueryKey({ view, status: statusParam || undefined, search: searchParam || undefined, funnel: funnelParam !== 'all' ? funnelParam : undefined, sales_rep: repParam !== 'all' ? repParam : undefined, limit, offset }),
       placeholderData: (prev) => prev,
     },
+  });
+
+  const { data: availability } = useListCrmAvailability({
+    query: {
+      enabled: isManager,
+      queryKey: getListCrmAvailabilityQueryKey(),
+    },
+  });
+
+  const pendingPoolQuery = useQuery({
+    enabled: isManager,
+    queryKey: getListCrmLeadsQueryKey({ view: "manager", limit: 500, offset: 0 }),
+    queryFn: async ({ signal }) => {
+      const pending = [];
+      let batchOffset = 0;
+      while (true) {
+        const batch = await listCrmLeads(
+          { view: "manager", limit: 500, offset: batchOffset },
+          { signal },
+        );
+        pending.push(...batch.filter((lead) => lead.pending_reassignment));
+        if (batch.length < 500) return pending;
+        batchOffset += 500;
+      }
+    },
+    staleTime: 60_000,
   });
 
   const { data: funnels } = useListCrmFunnels({
@@ -94,6 +147,83 @@ export default function CrmLeads() {
   const { data: reps } = useSalesUsers();
   const { data: activeReps } = useActiveSalesUsers();
 
+  const visibleLeads = useMemo(
+    () =>
+      pendingPool
+        ? (pendingPoolQuery.data ?? []).slice(offset, offset + limit)
+        : leads ?? [],
+    [leads, offset, pendingPool, pendingPoolQuery.data],
+  );
+  const pendingCount = pendingPoolQuery.data?.length ?? 0;
+  const effectiveLeadsLoading = pendingPool
+    ? pendingPoolQuery.isLoading
+    : isLoadingLeads;
+  const effectiveLeadsError = pendingPool
+    ? pendingPoolQuery.isError
+    : isLeadsError;
+  const effectiveLeadsErrorValue = pendingPool
+    ? pendingPoolQuery.error
+    : leadsError;
+  const activeAvailabilityUsers = useMemo(
+    () => availability?.filter((user) => user.is_active) ?? [],
+    [availability],
+  );
+  const targetUser = activeAvailabilityUsers.find((user) => user.id === targetUserId);
+  const currentLeadIds = useMemo(() => visibleLeads.map((lead) => lead.id), [visibleLeads]);
+  const selectedCount = selectedLeadIds.length;
+  const allVisibleSelected =
+    currentLeadIds.length > 0 && currentLeadIds.every((id) => selectedLeadIds.includes(id));
+  const displayColumns: CrmTableColumn[] = isManager
+    ? [
+        {
+          key: "select",
+          label: (
+            <div className="flex flex-col items-center gap-1">
+              <Checkbox
+                checked={allVisibleSelected}
+                onCheckedChange={(checked) => toggleVisibleLeads(checked === true)}
+                aria-label="בחירת כל הלידים המוצגים"
+                data-testid="checkbox-leads-select-visible"
+              />
+              <span className="whitespace-nowrap text-[10px]">
+                בחר הכל בדף ({selectedCount}/{currentLeadIds.length})
+              </span>
+            </div>
+          ),
+          width: "8%",
+          className: "text-center",
+        },
+        ...LEAD_COLUMNS,
+      ]
+    : LEAD_COLUMNS;
+
+  useEffect(() => {
+    setSelectedLeadIds([]);
+    setTargetUserId("");
+    setTransferDialogOpen(false);
+    setBulkError(null);
+  }, [pageParam, pendingPool, searchParam, statusParam, funnelParam, repParam]);
+
+  const bulkAssignMutation = useBulkAssignCrmLeads({
+    mutation: {
+      onSuccess: async (result) => {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: getListCrmLeadsQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getListCrmLeadStatusesQueryKey() }),
+        ]);
+        setSelectedLeadIds([]);
+        setTargetUserId("");
+        setTransferDialogOpen(false);
+        setBulkError(null);
+        toast({
+          title: "הלידים הוקצו בהצלחה",
+          description: `${result.updated_count} לידים הוקצו ל${targetUser?.full_name || targetUser?.email || "נציג היעד"}`,
+        });
+      },
+      onError: (error) => setBulkError(errorText(error)),
+    },
+  });
+
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateParams({ search: searchInput.trim() });
@@ -103,6 +233,34 @@ export default function CrmLeads() {
     if (!statuses) return [];
     return [...statuses].sort((a, b) => a.sort_order - b.sort_order);
   }, [statuses]);
+
+  const toggleLead = (leadId: string, checked: boolean) => {
+    setSelectedLeadIds((current) =>
+      checked
+        ? current.includes(leadId) ? current : [...current, leadId]
+        : current.filter((id) => id !== leadId),
+    );
+  };
+
+  const toggleVisibleLeads = (checked: boolean) => {
+    setSelectedLeadIds(checked ? currentLeadIds : []);
+  };
+
+  const openTransferDialog = () => {
+    if (selectedCount === 0 || selectedCount > 500 || !targetUserId) return;
+    setBulkError(null);
+    setTransferDialogOpen(true);
+  };
+
+  const submitBulkAssignment = () => {
+    if (selectedCount === 0 || selectedCount > 500 || !targetUserId) return;
+    bulkAssignMutation.mutate({
+      data: {
+        lead_ids: selectedLeadIds,
+        target_user_id: targetUserId,
+      },
+    });
+  };
 
   return (
     <Shell title="CRM לידים" noPadding>
@@ -147,6 +305,22 @@ export default function CrmLeads() {
                   </SelectContent>
                 </Select>
               )}
+              {isManager && (
+                <Button
+                  type="button"
+                  variant={pendingPool ? "default" : "outline"}
+                  className="gap-2"
+                  onClick={() => {
+                    setView("manager");
+                    updateParams({ pool: pendingPool ? null : "pending", status: null, funnel: null, rep: null, search: null });
+                  }}
+                  data-testid="button-crm-pending-pool"
+                >
+                  <UserRoundPlus className="h-4 w-4" />
+                  ממתין להשמה
+                  <Badge variant={pendingPool ? "secondary" : "warning"}>{pendingCount}</Badge>
+                </Button>
+              )}
             </div>
 
             {isManager && (
@@ -181,8 +355,70 @@ export default function CrmLeads() {
             )}
           </div>
 
+          {pendingPool && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+              <div>
+                <p className="font-semibold">לידים שממתינים להשמה</p>
+                <p className="text-sm text-muted-foreground">
+                  מוצגים {visibleLeads.length} מתוך {pendingCount} לידים. ניתן לבחור רק לידים שמוצגים בעמוד זה.
+                </p>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => updateParams({ pool: null })}>
+                <X className="ml-2 h-4 w-4" />
+                חזרה לכל הלידים
+              </Button>
+            </div>
+          )}
+
+          {isManager && selectedCount > 0 && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3" data-testid="crm-bulk-action-bar">
+              <Badge variant="secondary" className="text-sm">
+                {selectedCount} לידים נבחרו
+              </Badge>
+              <Select value={targetUserId} onValueChange={setTargetUserId}>
+                <SelectTrigger className="w-56" data-testid="select-crm-bulk-target">
+                  <SelectValue placeholder="בחר נציג יעד" />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  {activeAvailabilityUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                onClick={openTransferDialog}
+                disabled={!targetUserId || selectedCount > 500 || bulkAssignMutation.isPending}
+                data-testid="button-crm-bulk-assign"
+              >
+                {bulkAssignMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
+                הקצה לידים
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedLeadIds([])}>
+                ביטול בחירה
+              </Button>
+              {selectedCount > 500 && (
+                <p className="basis-full text-sm text-destructive">
+                  ניתן להעביר עד 500 לידים בכל פעולה. צמצם את הבחירה לפני ההעברה.
+                </p>
+              )}
+              {activeAvailabilityUsers.length === 0 && (
+                <p className="basis-full text-sm text-muted-foreground">
+                  אין משתמש פעיל שניתן לבחור כיעד.
+                </p>
+              )}
+              {bulkError && (
+                <p className="basis-full text-sm text-destructive" role="alert">
+                  {bulkError}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="overflow-x-auto pb-1 -mb-1">
-            <Tabs value={statusParam} onValueChange={(v) => updateParams({ status: v })}>
+            {!pendingPool && <Tabs value={statusParam} onValueChange={(v) => updateParams({ status: v })}>
               <TabsList className="bg-transparent p-0 justify-start gap-2 h-auto" data-testid="tabs-statuses">
                 {isLoadingStatuses ? (
                   <div className="flex items-center gap-2 p-2">
@@ -194,7 +430,7 @@ export default function CrmLeads() {
                     className="px-2 py-1 text-sm text-destructive"
                     data-testid="status-crm-statuses-error"
                   >
-                    שגיאה בטעינת הסטטוסים
+                     {errorText(statusesError)}
                   </p>
                 ) : (
                   sortedStatuses.map((s) => (
@@ -215,31 +451,37 @@ export default function CrmLeads() {
                   ))
                 )}
               </TabsList>
-            </Tabs>
+            </Tabs>}
           </div>
         </div>
 
         <div className="flex-1 overflow-auto p-4">
-          {isLoadingLeads ? (
+          {effectiveLeadsLoading ? (
             <div className="flex items-center justify-center h-48">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : isLeadsError ? (
+          ) : effectiveLeadsError ? (
             <div
               className="flex h-48 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 text-sm text-destructive"
               data-testid="status-crm-leads-error"
             >
-              שגיאה בטעינת הלידים
+              {errorText(effectiveLeadsErrorValue)}
             </div>
-          ) : leads?.length === 0 ? (
+          ) : visibleLeads.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-center bg-card rounded-xl border border-border">
               <Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-foreground">לא נמצאו לידים</h3>
-              <p className="text-sm text-muted-foreground mt-1">נסה לשנות את סינוני החיפוש או לבחור סטטוס אחר</p>
+              <h3 className="text-lg font-medium text-foreground">
+                {pendingPool ? "אין לידים שממתינים להשמה" : "לא נמצאו לידים"}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {pendingPool
+                  ? "כל הלידים משויכים כרגע לנציגים."
+                  : "נסה לשנות את סינוני החיפוש או לבחור סטטוס אחר"}
+              </p>
             </div>
           ) : (
-            <CrmDataTable columns={LEAD_COLUMNS} testId="table-crm-leads">
-                  {leads?.map(lead => {
+            <CrmDataTable columns={displayColumns} testId="table-crm-leads">
+                  {visibleLeads.map(lead => {
                     const rep = reps?.find(r => r.id === lead.sales_rep_id);
                     return (
                       <tr 
@@ -248,6 +490,16 @@ export default function CrmLeads() {
                         onClick={() => setLocation(`/crm/leads/${lead.id}`)}
                         data-testid={`row-lead-${lead.id}`}
                       >
+                        {isManager && (
+                          <td className="px-3 py-3 text-center" onClick={(event) => event.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedLeadIds.includes(lead.id)}
+                              onCheckedChange={(checked) => toggleLead(lead.id, checked === true)}
+                              aria-label={`בחירת ליד ${lead.name}`}
+                              data-testid={`checkbox-lead-${lead.id}`}
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                            <div
                              className="truncate font-semibold text-foreground"
@@ -295,7 +547,7 @@ export default function CrmLeads() {
             <Button 
               variant="outline" 
               onClick={() => updateParams({ page: Math.max(1, pageParam - 1).toString() })}
-              disabled={pageParam <= 1 || isLoadingLeads}
+              disabled={pageParam <= 1 || effectiveLeadsLoading}
                data-testid="button-crm-leads-previous"
             >
               הקודם
@@ -306,13 +558,47 @@ export default function CrmLeads() {
             <Button 
               variant="outline" 
               onClick={() => updateParams({ page: (pageParam + 1).toString() })}
-              disabled={!leads || leads.length < limit || isLoadingLeads}
+              disabled={
+                effectiveLeadsLoading ||
+                (pendingPool
+                  ? offset + limit >= pendingCount
+                  : !leads || leads.length < limit)
+              }
                data-testid="button-crm-leads-next"
             >
               הבא
             </Button>
           </div>
         </div>
+        <AlertDialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>אישור הקצאת לידים</AlertDialogTitle>
+              <AlertDialogDescription>
+                האם להקצות {selectedCount} לידים ל{targetUser?.full_name || targetUser?.email || "נציג היעד"}?
+                פעולה זו תעביר גם את המשימות הפתוחות של הלידים לנציג היעד.
+              </AlertDialogDescription>
+              {bulkError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {bulkError}
+                </p>
+              )}
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-row-reverse gap-2">
+              <AlertDialogCancel disabled={bulkAssignMutation.isPending}>ביטול</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(event) => {
+                  event.preventDefault();
+                  submitBulkAssignment();
+                }}
+                disabled={bulkAssignMutation.isPending}
+                data-testid="button-crm-bulk-confirm"
+              >
+                {bulkAssignMutation.isPending ? "מקצה..." : "אישור והקצאה"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Shell>
   );
