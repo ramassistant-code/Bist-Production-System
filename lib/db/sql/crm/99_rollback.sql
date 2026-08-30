@@ -11,6 +11,7 @@
 begin;
 
 -- סדר המחיקה לפי תלויות
+drop table if exists crm_intake_failures     cascade;
 drop table if exists crm_audit_log           cascade;
 drop table if exists crm_rep_availability    cascade;
 drop table if exists crm_call_logs           cascade;
