@@ -3,6 +3,8 @@ import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm
 import { db } from "@workspace/db";
 import {
   crmAdsTable,
+  appUsersTable,
+  crmAuditLogTable,
   crmCallLogsTable,
   crmFunnelsTable,
   crmInquiriesTable,
@@ -12,6 +14,8 @@ import {
   insertCrmLeadSchema,
   updateCrmLeadSchema,
 } from "@workspace/db/schema";
+import { requireRole } from "../../middlewares/require-auth";
+import { sendCrmNotification } from "../../lib/crm-notify";
 import { crmLeadView, leadScope } from "../../services/crm/scope";
 import { dealsForCustomer, productsForCustomer } from "../../services/crm/legacy-read";
 import { toE164 } from "../../services/crm/phone";
@@ -21,6 +25,8 @@ import {
 } from "../../services/crm/status-machine";
 
 const router: IRouter = Router();
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const inquirySummary = db
   .select({
@@ -53,6 +59,131 @@ function leadInput(body: unknown): Record<string, unknown> | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
   return body as Record<string, unknown>;
 }
+
+router.post(
+  "/leads/bulk-assign",
+  requireRole("sales_manager", "admin"),
+  async (req: Request, res: Response): Promise<void> => {
+    const body = leadInput(req.body);
+    const leadIdsInput = body?.["lead_ids"];
+    const targetUserId = body?.["target_user_id"];
+
+    if (
+      !Array.isArray(leadIdsInput) ||
+      leadIdsInput.length === 0 ||
+      leadIdsInput.length > 500 ||
+      !leadIdsInput.every(
+        (id): id is string => typeof id === "string" && UUID_PATTERN.test(id),
+      ) ||
+      typeof targetUserId !== "string" ||
+      !UUID_PATTERN.test(targetUserId)
+    ) {
+      res.status(400).json({ error: "בקשת השיוך המרוכז אינה תקינה" });
+      return;
+    }
+
+    const leadIds = [...new Set(leadIdsInput)];
+    if (leadIds.length !== leadIdsInput.length) {
+      res.status(400).json({ error: "רשימת הלידים מכילה כפילויות" });
+      return;
+    }
+
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [target] = await tx
+          .select({
+            id: appUsersTable.id,
+            full_name: appUsersTable.full_name,
+            phone: appUsersTable.phone,
+          })
+          .from(appUsersTable)
+          .where(
+            and(
+              eq(appUsersTable.id, targetUserId),
+              eq(appUsersTable.is_active, true),
+              isNull(appUsersTable.deleted_at),
+            ),
+          )
+          .limit(1);
+        if (!target) return { kind: "target_missing" as const };
+
+        const leads = await tx
+          .select({
+            id: crmLeadsTable.id,
+            sales_rep_id: crmLeadsTable.sales_rep_id,
+          })
+          .from(crmLeadsTable)
+          .where(
+            and(
+              inArray(crmLeadsTable.id, leadIds),
+              isNull(crmLeadsTable.deleted_at),
+            ),
+          );
+        if (leads.length !== leadIds.length) {
+          return { kind: "lead_missing" as const };
+        }
+
+        await tx
+          .update(crmLeadsTable)
+          .set({
+            sales_rep_id: targetUserId,
+            pending_reassignment: false,
+          })
+          .where(inArray(crmLeadsTable.id, leadIds));
+
+        await tx
+          .update(crmLeadTasksTable)
+          .set({ assigned_user_id: targetUserId })
+          .where(
+            and(
+              inArray(crmLeadTasksTable.lead_id, leadIds),
+              eq(crmLeadTasksTable.status, "open"),
+            ),
+          );
+
+        await tx.insert(crmAuditLogTable).values(
+          leads.map((lead) => ({
+            entity_type: "crm_lead",
+            entity_id: lead.id,
+            action: "bulk_assigned",
+            actor_user_id: req.appUser!.id,
+            details: {
+              from_user_id: lead.sales_rep_id,
+              to_user_id: targetUserId,
+            },
+          })),
+        );
+
+        return {
+          kind: "updated" as const,
+          updated_count: leads.length,
+          target,
+        };
+      });
+
+      if (result.kind === "target_missing") {
+        res.status(400).json({ error: "משתמש היעד אינו פעיל" });
+        return;
+      }
+      if (result.kind === "lead_missing") {
+        res.status(404).json({ error: "אחד או יותר מהלידים לא נמצאו" });
+        return;
+      }
+
+      void sendCrmNotification({
+        phone: result.target.phone,
+        message: `${result.updated_count} לידים שויכו אליך בשיוך מרוכז`,
+      });
+      res.json({
+        updated_count: result.updated_count,
+        target_user_id: result.target.id,
+      });
+    } catch (err) {
+      req.log.error({ err }, "Failed to bulk assign CRM leads");
+      res.status(500).json({ error: "שגיאה בשיוך הלידים" });
+    }
+  },
+);
 
 function normalizedLeadPayload(body: Record<string, unknown>) {
   const rawPhone = body["phone"];

@@ -5,10 +5,14 @@ import adsRouter from "./ads";
 import leadsRouter from "./leads";
 import statusesRouter from "./statuses";
 import activityRouter from "./activity";
+import availabilityRouter from "./availability";
+import webhooksRouter from "./webhooks";
 
 const crmRouter: IRouter = Router();
 
+crmRouter.use(webhooksRouter);
 crmRouter.use(requireAuth);
+crmRouter.use(availabilityRouter);
 crmRouter.use(funnelsRouter);
 crmRouter.use(adsRouter);
 crmRouter.use(statusesRouter);

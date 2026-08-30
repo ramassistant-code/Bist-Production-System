@@ -31,6 +31,11 @@ import type {
   CreateProductBody,
   CrmAd,
   CrmAdLink,
+  CrmAvailability,
+  CrmAvailabilityUpdate,
+  CrmAvailabilityUpdateResult,
+  CrmBulkAssignInput,
+  CrmBulkAssignResult,
   CrmFunnel,
   CrmFunnelCostHistory,
   CrmFunnelInput,
@@ -2528,6 +2533,155 @@ export function useListCrmRejectionReasons<TData = Awaited<ReturnType<typeof lis
 
 
 
+export const getListCrmAvailabilityUrl = () => {
+
+
+
+
+  return `/api/crm/availability`
+}
+
+/**
+ * @summary List CRM salesperson availability and queue state
+ */
+export const listCrmAvailability = async ( options?: RequestInit): Promise<CrmAvailability[]> => {
+
+  return customFetch<CrmAvailability[]>(getListCrmAvailabilityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmAvailabilityQueryKey = () => {
+    return [
+    `/api/crm/availability`
+    ] as const;
+    }
+
+
+export const getListCrmAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof listCrmAvailability>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmAvailabilityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmAvailability>>> = ({ signal }) => listCrmAvailability({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmAvailability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmAvailability>>>
+export type ListCrmAvailabilityQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List CRM salesperson availability and queue state
+ */
+
+export function useListCrmAvailability<TData = Awaited<ReturnType<typeof listCrmAvailability>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmAvailabilityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCrmAvailabilityUrl = (userId: string,) => {
+
+
+
+
+  return `/api/crm/availability/${userId}`
+}
+
+/**
+ * @summary Update another CRM user's availability for today
+ */
+export const updateCrmAvailability = async (userId: string,
+    crmAvailabilityUpdate: CrmAvailabilityUpdate, options?: RequestInit): Promise<CrmAvailabilityUpdateResult> => {
+
+  return customFetch<CrmAvailabilityUpdateResult>(getUpdateCrmAvailabilityUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmAvailabilityUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmAvailabilityMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmAvailability>>, TError,{userId: string;data: BodyType<CrmAvailabilityUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmAvailability>>, TError,{userId: string;data: BodyType<CrmAvailabilityUpdate>}, TContext> => {
+
+const mutationKey = ['updateCrmAvailability'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmAvailability>>, {userId: string;data: BodyType<CrmAvailabilityUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateCrmAvailability(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmAvailabilityMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmAvailability>>>
+    export type UpdateCrmAvailabilityMutationBody = BodyType<CrmAvailabilityUpdate>
+    export type UpdateCrmAvailabilityMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update another CRM user's availability for today
+ */
+export const useUpdateCrmAvailability = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmAvailability>>, TError,{userId: string;data: BodyType<CrmAvailabilityUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmAvailability>>,
+        TError,
+        {userId: string;data: BodyType<CrmAvailabilityUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmAvailabilityMutationOptions(options));
+    }
+
 export const getListCrmLeadsUrl = (params?: ListCrmLeadsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -2681,6 +2835,77 @@ export const useCreateCrmLead = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateCrmLeadMutationOptions(options));
+    }
+
+export const getBulkAssignCrmLeadsUrl = () => {
+
+
+
+
+  return `/api/crm/leads/bulk-assign`
+}
+
+/**
+ * @summary Assign up to 500 CRM leads and their open tasks to an active user
+ */
+export const bulkAssignCrmLeads = async (crmBulkAssignInput: CrmBulkAssignInput, options?: RequestInit): Promise<CrmBulkAssignResult> => {
+
+  return customFetch<CrmBulkAssignResult>(getBulkAssignCrmLeadsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmBulkAssignInput)
+  }
+);}
+
+
+
+
+
+export const getBulkAssignCrmLeadsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkAssignCrmLeads>>, TError,{data: BodyType<CrmBulkAssignInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkAssignCrmLeads>>, TError,{data: BodyType<CrmBulkAssignInput>}, TContext> => {
+
+const mutationKey = ['bulkAssignCrmLeads'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkAssignCrmLeads>>, {data: BodyType<CrmBulkAssignInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkAssignCrmLeads(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkAssignCrmLeadsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkAssignCrmLeads>>>
+    export type BulkAssignCrmLeadsMutationBody = BodyType<CrmBulkAssignInput>
+    export type BulkAssignCrmLeadsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Assign up to 500 CRM leads and their open tasks to an active user
+ */
+export const useBulkAssignCrmLeads = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkAssignCrmLeads>>, TError,{data: BodyType<CrmBulkAssignInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkAssignCrmLeads>>,
+        TError,
+        {data: BodyType<CrmBulkAssignInput>},
+        TContext
+      > => {
+      return useMutation(getBulkAssignCrmLeadsMutationOptions(options));
     }
 
 export const getGetCrmLeadUrl = (id: string,

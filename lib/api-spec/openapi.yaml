@@ -1035,6 +1035,94 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /crm/availability:
+    get:
+      operationId: listCrmAvailability
+      tags: [crm]
+      summary: List CRM salesperson availability and queue state
+      responses:
+        "200":
+          description: CRM availability rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmAvailability"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Manager or admin role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/availability/{userId}:
+    patch:
+      operationId: updateCrmAvailability
+      tags: [crm]
+      summary: Update another CRM user's availability for today
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmAvailabilityUpdate"
+      responses:
+        "200":
+          description: Updated CRM availability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmAvailabilityUpdateResult"
+        "400":
+          description: Invalid availability update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Manager or admin role required, or self-update attempted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: CRM user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /crm/leads:
     get:
       operationId: listCrmLeads
@@ -1125,6 +1213,55 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crm/leads/bulk-assign:
+    post:
+      operationId: bulkAssignCrmLeads
+      tags: [crm]
+      summary: Assign up to 500 CRM leads and their open tasks to an active user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmBulkAssignInput"
+      responses:
+        "200":
+          description: CRM leads assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmBulkAssignResult"
+        "400":
+          description: Invalid input or inactive target user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Manager or admin role required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: One or more leads were not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
           content:
             application/json:
               schema:
@@ -2486,6 +2623,91 @@ components:
         funnel_id:
           type: [string, "null"]
       required: [funnel_id]
+
+    CrmAvailability:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: [string, "null"]
+        email:
+          type: string
+        phone:
+          type: [string, "null"]
+        role:
+          type: string
+          enum: [sales, sales_manager, admin]
+        is_active:
+          type: boolean
+        is_active_today:
+          type: boolean
+        leads_today:
+          type: integer
+        queue_position:
+          type: integer
+        last_assigned_at:
+          type: [string, "null"]
+          format: date-time
+        is_next_in_queue:
+          type: boolean
+      required:
+        - id
+        - full_name
+        - email
+        - phone
+        - role
+        - is_active
+        - is_active_today
+        - leads_today
+        - queue_position
+        - last_assigned_at
+        - is_next_in_queue
+
+    CrmAvailabilityUpdate:
+      type: object
+      properties:
+        is_active_today:
+          type: boolean
+      required: [is_active_today]
+
+    CrmAvailabilityUpdateResult:
+      type: object
+      additionalProperties: true
+      properties:
+        user_id:
+          type: string
+        is_active_today:
+          type: boolean
+        leads_today:
+          type: integer
+        role:
+          type: string
+          enum: [sales, sales_manager, admin]
+      required: [user_id, is_active_today, leads_today, role]
+
+    CrmBulkAssignInput:
+      type: object
+      properties:
+        lead_ids:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items:
+            type: string
+        target_user_id:
+          type: string
+      required: [lead_ids, target_user_id]
+
+    CrmBulkAssignResult:
+      type: object
+      properties:
+        updated_count:
+          type: integer
+        target_user_id:
+          type: string
+      required: [updated_count, target_user_id]
 
     CrmLead:
       type: object

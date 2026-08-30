@@ -376,6 +376,67 @@ export interface CrmAdLink {
   funnel_id: string | null;
 }
 
+export type CrmAvailabilityRole = typeof CrmAvailabilityRole[keyof typeof CrmAvailabilityRole];
+
+
+export const CrmAvailabilityRole = {
+  sales: 'sales',
+  sales_manager: 'sales_manager',
+  admin: 'admin',
+} as const;
+
+export interface CrmAvailability {
+  id: string;
+  /** @nullable */
+  full_name: string | null;
+  email: string;
+  /** @nullable */
+  phone: string | null;
+  role: CrmAvailabilityRole;
+  is_active: boolean;
+  is_active_today: boolean;
+  leads_today: number;
+  queue_position: number;
+  /** @nullable */
+  last_assigned_at: string | null;
+  is_next_in_queue: boolean;
+}
+
+export interface CrmAvailabilityUpdate {
+  is_active_today: boolean;
+}
+
+export type CrmAvailabilityUpdateResultRole = typeof CrmAvailabilityUpdateResultRole[keyof typeof CrmAvailabilityUpdateResultRole];
+
+
+export const CrmAvailabilityUpdateResultRole = {
+  sales: 'sales',
+  sales_manager: 'sales_manager',
+  admin: 'admin',
+} as const;
+
+export interface CrmAvailabilityUpdateResult {
+  user_id: string;
+  is_active_today: boolean;
+  leads_today: number;
+  role: CrmAvailabilityUpdateResultRole;
+  [key: string]: unknown;
+ }
+
+export interface CrmBulkAssignInput {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  lead_ids: string[];
+  target_user_id: string;
+}
+
+export interface CrmBulkAssignResult {
+  updated_count: number;
+  target_user_id: string;
+}
+
 export interface CrmLead {
   id: string;
   name: string;

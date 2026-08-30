@@ -957,6 +957,44 @@ export const ListCrmRejectionReasonsResponse = zod.array(ListCrmRejectionReasons
 
 
 /**
+ * @summary List CRM salesperson availability and queue state
+ */
+export const ListCrmAvailabilityResponseItem = zod.object({
+  "id": zod.string(),
+  "full_name": zod.string().nullable(),
+  "email": zod.string(),
+  "phone": zod.string().nullable(),
+  "role": zod.enum(['sales', 'sales_manager', 'admin']),
+  "is_active": zod.boolean(),
+  "is_active_today": zod.boolean(),
+  "leads_today": zod.number(),
+  "queue_position": zod.number(),
+  "last_assigned_at": zod.coerce.date().nullable(),
+  "is_next_in_queue": zod.boolean()
+})
+export const ListCrmAvailabilityResponse = zod.array(ListCrmAvailabilityResponseItem)
+
+
+/**
+ * @summary Update another CRM user's availability for today
+ */
+export const UpdateCrmAvailabilityParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UpdateCrmAvailabilityBody = zod.object({
+  "is_active_today": zod.boolean()
+})
+
+export const UpdateCrmAvailabilityResponse = zod.object({
+  "user_id": zod.string(),
+  "is_active_today": zod.boolean(),
+  "leads_today": zod.number(),
+  "role": zod.enum(['sales', 'sales_manager', 'admin'])
+})
+
+
+/**
  * @summary List CRM leads within the caller scope
  */
 export const listCrmLeadsQueryViewDefault = `rep`;
@@ -1044,6 +1082,24 @@ export const CreateCrmLeadResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_at": zod.coerce.date(),
   "deleted_at": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Assign up to 500 CRM leads and their open tasks to an active user
+ */
+export const bulkAssignCrmLeadsBodyLeadIdsMax = 500;
+
+
+
+export const BulkAssignCrmLeadsBody = zod.object({
+  "lead_ids": zod.array(zod.string()).min(1).max(bulkAssignCrmLeadsBodyLeadIdsMax),
+  "target_user_id": zod.string()
+})
+
+export const BulkAssignCrmLeadsResponse = zod.object({
+  "updated_count": zod.number(),
+  "target_user_id": zod.string()
 })
 
 
