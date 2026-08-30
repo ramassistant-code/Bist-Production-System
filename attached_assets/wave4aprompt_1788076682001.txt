@@ -1,0 +1,200 @@
+MILESTONE: CRM Wave 4a - lead intake, RoundRobin, notifications, bulk
+assign. Backend only.
+
+CONTEXT
+Pull main first. Waves 1-3 are done and verified at runtime. This is the
+most sensitive logic in the module: it is the door leads come in through,
+and it runs unattended. No UI in this milestone - the screens are 4b.
+
+Two migrations were applied to the database since you last saw the schema.
+Read lib/db/sql/crm/10_crm_inquiries_source_ref.sql and 11_crm_intake.sql
+before you write anything. They exist specifically to make this milestone
+possible.
+
+READ BEFORE YOU WRITE
+Never guess a column name. Every table has an exact definition under
+lib/db/src/schema/. In wave 2b four payment column names were invented,
+none existed, and the card silently showed 0 for every amount. If a field
+you expect is not in the schema file, it does not exist - report it, do not
+improvise a fallback chain.
+
+THE GOVERNING RULE
+"קליטת ליד לעולם לא נכשלת." An unknown ad, a missing funnel, an empty
+field, a malformed phone - none of them may lose a lead.
+
+But note what that CANNOT mean, because the schema forbids it:
+crm_leads.phone_e164 is NOT NULL with an E.164 CHECK, and
+crm_inquiries.lead_id is NOT NULL. So there is no such thing as "create the
+lead anyway and flag it" when the phone will not normalise. That path lands
+in crm_intake_failures - a table with deliberately NO foreign keys, so it
+accepts a write in exactly the states where everything else refuses.
+"Never fails" means the payload is always durably stored and the caller
+always gets 200. It does not mean a lead row always appears.
+
+BUILD
+
+1. services/crm/intake.ts - export ingestLead(payload, source)
+
+   Order of operations:
+
+   a. DEDUP FIRST. If payload.source_ref is present, the inquiry insert
+      later must use:
+        on conflict (source, source_ref) where source_ref is not null
+        do nothing
+      That WHERE clause is required - the unique index is partial and
+      Postgres will not infer it without the predicate. If no row was
+      created, STOP: no numbering, no tagging, no assignment, no
+      notification. Return a result saying it was a duplicate.
+      This matters because Meta retries every non-200 and a 15-minute sweep
+      re-fetches; without it one submission becomes two inquiries and
+      falsely raises "השאיר פרטים שוב".
+
+   b. Normalise the phone with toE164 from services/crm/phone.ts.
+      If it returns null: write crm_intake_failures with source, source_ref,
+      the whole raw payload and an error string, then return. No lead, no
+      inquiry, no throw. Never normalise phones anywhere else - that
+      function is the single source of truth.
+
+   c. Name: crm_leads.name is NOT NULL. When the payload has no name, use
+      the explicit marker "ליד ללא שם". Do not invent a name from the email
+      and do not write an empty string - the marker is visible to the rep
+      and raw_payload keeps the original.
+
+   d. Look up crm_leads by phone_e164. Not found means a new lead with
+      status_code 'new'. Found means the returning loop, step (g).
+
+   e. Resolve the ad by facebook_ad_id.
+      - Known ad: use it, and take funnel_id from it.
+      - Unknown ad: create a crm_ads row with fetch_failed = true, storing
+        campaign_id, campaign_name, adset_id and adset_name from the
+        payload. For funnel_id, inherit from the campaign ONLY when every
+        existing ad in that campaign agrees on one funnel. The exact query
+        is written at the bottom of lib/db/sql/crm/11_crm_intake.sql - use
+        it as written. A campaign spanning two funnels must leave
+        funnel_id null for the admin to link, because funnel attribution
+        feeds cost-per-lead and a silent wrong inherit is a budget decision
+        made by accident.
+
+   f. Insert crm_inquiries with source, source_ref, form_id, form_name,
+      free_text, inquiry_at, raw_payload, ad_id and funnel_id.
+      inquiry_number is set by the DB trigger - do NOT compute it in JS.
+
+   g. Returning-loop rules:
+      - Existing status 'paid': set status back to 'new', reset
+        capture_attempts to 0, and LEAVE is_active_customer true. It is set
+        on first purchase and must never be turned off.
+      - Any other non-paid status: do NOT reassign and do NOT change the
+        status. Only the new inquiry is added. The repeat is expressed by
+        inquiry_number > 1, which the UI already reads - do not add a
+        separate flag column.
+
+   h. Assignment, only for a brand-new lead or a reopened paid loop:
+      - New lead: crm_next_rep_in_queue().
+      - Reopened loop and the original rep is still active today: keep the
+        original rep.
+      - Reopened loop and the original rep is not active:
+        crm_next_rep_in_queue().
+      - crm_next_rep_in_queue() returned NULL, meaning nobody is active:
+        assign to a user with role sales_manager; if there is none, assign
+        to an admin, and write crm_audit_log either way so it is visible
+        that this happened.
+      Call the function through SQL. Do NOT reimplement the rotation in JS
+      - it uses FOR UPDATE SKIP LOCKED and that is what makes concurrent
+      intake safe.
+
+   i. Notification, fire-and-forget. A failure here must never fail the
+      intake and must never throw.
+
+2. POST /api/crm/webhooks/lead
+   - Authenticated by a shared secret header, NOT by user auth. This route
+     must be mounted OUTSIDE the requireAuth in routes/crm/index.ts.
+     Add CRM_INTAKE_SECRET to .env.example.
+   - The ONLY 4xx is a bad or missing secret. Everything else returns 200.
+   - Respond as soon as the payload is durably stored, then continue the
+     rest. A slow downstream must never make Meta retry.
+   - The payload n8n sends:
+       source "facebook_lead_ads", source_ref (Meta leadgen_id),
+       name, phone_raw (raw, NOT normalised), email,
+       facebook_ad_id, ad_name, campaign_id, campaign_name,
+       form_id, form_name, free_text, inquiry_at, raw_payload
+     Any of name, phone_raw, email may be missing.
+
+3. lib/crm-notify.ts
+   Follow the shape of lib/invoiceWebhook.ts: fire-and-forget, 10s
+   AbortController timeout, never throws, kill-switch env var. Do NOT touch
+   invoiceWebhook.ts itself.
+   POST { message, phone } to CRM_NOTIFY_WEBHOOK_URL. That contract is
+   already live in n8n, so do not change the body shape.
+   Two Hebrew messages:
+   - New lead assigned: name, phone, funnel name, ad name and ad_url, the
+     lead's own free_text, a direct link to the lead card, and the tags
+     "לקוח קיים" and "השאיר פרטים שוב" when they apply.
+   - Repeat inquiry on a lead already in progress: short alert plus link.
+
+4. Availability endpoints
+   GET   /api/crm/availability   - every user whose role is sales,
+         sales_manager or admin, with is_active_today, leads_today (only
+         when leads_today_date is today, else 0) and who is next in queue.
+   PATCH /api/crm/availability/:userId  body { is_active_today }
+   - Both restricted to sales_manager and admin. Scope the guard with
+     router.use("/availability", requireRole(...)) - a bare router.use runs
+     for every request entering the parent router and once 403'd the whole
+     CRM API.
+   - A user may never change their own availability. 403.
+   - Every change writes crm_audit_log with actor, target and before/after.
+   - There is NO automatic end-of-day reset. Do not add a scheduler
+     anywhere - this project has none by design and never will.
+
+5. POST /api/crm/leads/bulk-assign
+   - sales_manager and admin only.
+   - Body { lead_ids: uuid[], target_user_id }. Cap the array at 500 and
+     reject a larger request rather than truncating it silently.
+   - The target must be an active user.
+   - Changes ONLY sales_rep_id. Status, counters, notes, inquiries and
+     history are untouched. Also clear pending_reassignment on the moved
+     leads.
+   - Open tasks on those leads move to the new rep as well.
+   - One crm_audit_log row PER LEAD: actor, lead, from, to.
+   - One summarising notification to the receiving rep, fire-and-forget.
+   - All of it in one transaction.
+
+DO NOT TOUCH
+- routes/leads.ts (the legacy one), quotes.ts, deals.ts, payments.ts,
+  customers.ts, products.ts, whatsapp-link.ts, invoiceWebhook.ts
+- services/crm/scope.ts and services/crm/status-machine.ts
+- lib/db/src/schema/** - the mirror matches the database. If you believe a
+  column is missing, report it. Never run drizzle-kit push.
+- Anything under artifacts/bist-app/ - there is no UI in this milestone.
+
+OPENAPI
+Add every new path and schema to lib/api-spec/openapi.yaml except the
+webhook, which is machine-to-machine and stays out of the client. Then run
+pnpm --filter @workspace/api-spec run codegen and commit the result.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- 6 leads with 3 active reps: exactly 2 each.
+- 20 leads posted concurrently: even distribution, no lost leads, no
+  duplicate inquiries.
+- Nobody active: the lead lands on the sales_manager and an audit row says
+  so.
+- The same source_ref posted twice: one inquiry, and the second call
+  reports a duplicate without notifying anyone.
+- A payload with no name and an unknown ad id: the lead IS created, named
+  "ליד ללא שם", the ad row exists with fetch_failed true.
+- A payload whose phone cannot be normalised: 200, no lead, one
+  crm_intake_failures row holding the full payload.
+- A phone matching a 'paid' lead: inquiry_number 2, status back to 'new',
+  capture_attempts 0, is_active_customer still true.
+- A phone matching a lead in 'pipe': no reassignment, no status change,
+  one more inquiry.
+- Bulk assign of 50 leads: only sales_rep_id changed, open tasks moved,
+  50 audit rows.
+- A sales user calling bulk-assign or PATCH availability gets 403.
+- Any user calling PATCH availability on themselves gets 403.
+
+REPORT
+What was built, files changed, the exact env var names you added, how you
+verified the concurrent case, how many SQL queries one ingestLead call
+issues, and anything you needed but could not do without touching a
+forbidden file.
