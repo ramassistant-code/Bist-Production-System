@@ -121,7 +121,11 @@ export default function CrmLeads() {
 
   const pendingPoolQuery = useQuery({
     enabled: isManager,
-    queryKey: getListCrmLeadsQueryKey({ view: "manager", limit: 500, offset: 0 }),
+    // מפתח נפרד ולא getListCrmLeadsQueryKey({...}) עם אותם פרמטרים: מה שנשמר
+    // כאן הוא תת-קבוצה מסוננת ולא תשובת הרשימה. אותו מפתח לשניהם היה מגיש
+    // את הסינון הזה לכל קריאה עתידית עם אותם ארגומנטים. נשאר תחת התחילית
+    // של הלידים כדי שביטול ה-cache הקיים ימשיך לרענן אותו.
+    queryKey: [...getListCrmLeadsQueryKey(), "pending-reassignment"],
     queryFn: async ({ signal }) => {
       const pending = [];
       let batchOffset = 0;
