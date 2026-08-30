@@ -29,6 +29,7 @@ INVOICE_WEBHOOK_URL = "https://rambist.app.n8n.cloud/webhook/53bf79df-0bf3-43a3-
 INVOICE4U_CLEARING_COMPANY = "7"
 INVOICE4U_RETURN_URL = "https://bist-production-system.replit.app/payment-done"
 PUBLIC_APP_URL = "https://bist-production-system.replit.app"
+CRM_NOTIFY_ENABLED = "false"
 
 [nix]
 channel = "stable-25_05"
