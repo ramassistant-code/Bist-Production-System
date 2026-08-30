@@ -222,6 +222,25 @@ export default function CrmLeadDetail() {
               {lead.pending_reassignment && <Badge variant="warning">ממתין לשיוך</Badge>}
             </div>
           </CardContent>
+          {lead.status_code === "not_relevant" && (
+            // סיבת הדחייה נשמרה על הליד מאז ומעולם, אבל לא הוצגה בשום מקום.
+            // בלעדיה אי אפשר לענות על השאלה שבגללה השדה קיים: למה לידים נופלים.
+            <CardContent className="pt-0" data-testid="section-crm-lead-rejection">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <span className="font-medium text-destructive">סיבת דחייה: </span>
+                <span>
+                  {rejectionReasons?.find(
+                    (reason) => reason.code === lead.rejection_reason_code,
+                  )?.label ?? crmEmpty(lead.rejection_reason_code)}
+                </span>
+                {lead.rejection_detail && (
+                  <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                    {lead.rejection_detail}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         <Card data-testid="section-crm-lead-source"><CardHeader><CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" />מקור הפנייה</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
