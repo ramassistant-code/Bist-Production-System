@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getGetCrmLeadContextQueryKey,
   getGetCrmLeadQueryKey,
+  getListCrmFunnelsQueryKey,
   getListCrmLeadStatusesQueryKey,
   getListCrmLeadsQueryKey,
   getListMyCrmTasksQueryKey,
@@ -13,8 +14,10 @@ import {
   useCreateCrmLeadTask,
   useGetCrmLead,
   useGetCrmLeadContext,
+  useListCrmFunnels,
   useListCrmLeadStatuses,
   useListCrmRejectionReasons,
+  useUpdateCrmLeadFunnel,
   useUpdateCrmLeadNote,
   useUpdateCrmLeadTask,
 } from "@workspace/api-client-react";
@@ -42,9 +45,12 @@ import { Shell } from "@/components/layout/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import { useCrmView } from "./use-crm-view";
 import { useSalesUsers } from "./use-users";
@@ -83,11 +89,14 @@ function sourceLabel(source: string): string {
 export default function CrmLeadDetail() {
   const [, params] = useRoute("/crm/leads/:id");
   const id = params?.id ?? "";
-  const { view } = useCrmView();
+  const { view, isManager } = useCrmView();
   const { appUser } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: reps } = useSalesUsers();
   const [statusOpen, setStatusOpen] = useState(false);
+  const [funnelOpen, setFunnelOpen] = useState(false);
+  const [selectedFunnelId, setSelectedFunnelId] = useState("unassigned");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [statusTaskTitle, setStatusTaskTitle] = useState("");
   const [statusDueAt, setStatusDueAt] = useState("");
@@ -111,6 +120,12 @@ export default function CrmLeadDetail() {
   });
   const { data: rejectionReasons } = useListCrmRejectionReasons({
     query: { queryKey: getListCrmRejectionReasonsQueryKey() },
+  });
+  const { data: funnels } = useListCrmFunnels({
+    query: {
+      enabled: isManager,
+      queryKey: getListCrmFunnelsQueryKey(),
+    },
   });
 
   const invalidateLead = () => {
@@ -142,6 +157,15 @@ export default function CrmLeadDetail() {
       onSuccess: () => {
         invalidateLead();
         void queryClient.invalidateQueries({ queryKey: getListMyCrmTasksQueryKey() });
+      },
+    },
+  });
+  const updateFunnelMutation = useUpdateCrmLeadFunnel({
+    mutation: {
+      onSuccess: () => {
+        invalidateLead();
+        setFunnelOpen(false);
+        toast({ title: "המשפך עודכן בהצלחה" });
       },
     },
   });
@@ -197,6 +221,20 @@ export default function CrmLeadDetail() {
       },
     });
   };
+  const openFunnelDialog = () => {
+    updateFunnelMutation.reset();
+    setSelectedFunnelId(latestInquiry?.funnel_id ?? "unassigned");
+    setFunnelOpen(true);
+  };
+  const submitFunnel = () => {
+    updateFunnelMutation.mutate({
+      id,
+      data: {
+        funnel_id:
+          selectedFunnelId === "unassigned" ? null : selectedFunnelId,
+      },
+    });
+  };
 
   return (
     <Shell title="פרטי ליד">
@@ -249,7 +287,7 @@ export default function CrmLeadDetail() {
         </Card>
 
         <Card data-testid="section-crm-lead-source"><CardHeader><CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" />מקור הפנייה</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <Detail label="מקור" value={sourceLabel(lead.source)} /><Detail label="אסמכתא / קמפיין" value={lead.source_ref} /><Detail label="משפך אחרון" value={latestInquiry?.funnel_name} /><Detail label="מודעה אחרונה" value={latestInquiry?.ad_name} /><Detail label="תאריך יצירה" value={crmDate(lead.created_at, true)} /><Detail label="סטטוס מענה" value={lead.answer_status} />
+          <Detail label="מקור" value={sourceLabel(lead.source)} /><Detail label="אסמכתא / קמפיין" value={lead.source_ref} /><div><p className="text-xs text-muted-foreground">משפך אחרון</p><div className="mt-1 flex flex-wrap items-center gap-2"><p className="font-medium">{crmEmpty(latestInquiry?.funnel_name)}</p>{isManager && latestInquiry && <Button type="button" size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" onClick={openFunnelDialog} data-testid="button-crm-lead-funnel-edit"><Pencil className="h-3 w-3" />שינוי משפך</Button>}</div></div><Detail label="מודעה אחרונה" value={latestInquiry?.ad_name} /><Detail label="תאריך יצירה" value={crmDate(lead.created_at, true)} /><Detail label="סטטוס מענה" value={lead.answer_status} />
         </CardContent></Card>
 
         <Section icon={<Clock className="h-4 w-4 text-primary" />} title={`היסטוריית פניות (${context.inquiries.length})`} testId="section-crm-lead-inquiries">
@@ -282,6 +320,60 @@ export default function CrmLeadDetail() {
         </Section>
       </div>
       {statusOpen && <StatusDialog statuses={allowedStatuses} selected={selectedStatus} onSelect={(code) => { setSelectedStatus(code); setRejectionCode(""); setRejectionDetail(""); }} taskTitle={statusTaskTitle} setTaskTitle={setStatusTaskTitle} dueAt={statusDueAt} setDueAt={setStatusDueAt} reasons={rejectionReasons ?? []} rejectionCode={rejectionCode} setRejectionCode={setRejectionCode} rejectionDetail={rejectionDetail} setRejectionDetail={setRejectionDetail} selectedReason={selectedReason} error={statusMutation.isError ? errorText(statusMutation.error) : null} busy={statusMutation.isPending} onCancel={() => setStatusOpen(false)} onSubmit={submitStatus} />}
+      <Dialog
+        open={funnelOpen}
+        onOpenChange={(open) => {
+          if (!updateFunnelMutation.isPending) setFunnelOpen(open);
+        }}
+      >
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>שינוי משפך לליד</DialogTitle>
+            <DialogDescription>
+              השינוי יחול על הפנייה האחרונה של הליד בלבד. פניות קודמות יישארו ללא שינוי.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="crm-lead-funnel">משפך</Label>
+            <Select value={selectedFunnelId} onValueChange={setSelectedFunnelId}>
+              <SelectTrigger id="crm-lead-funnel" data-testid="select-crm-lead-funnel">
+                <SelectValue placeholder="בחר משפך" />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value="unassigned">ללא משפך</SelectItem>
+                {funnels?.map((funnel) => (
+                  <SelectItem key={funnel.id} value={funnel.id}>
+                    {funnel.name}{funnel.is_active ? "" : " (לא פעיל)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {updateFunnelMutation.isError && (
+            <p className="text-sm text-destructive" role="alert">
+              {errorText(updateFunnelMutation.error)}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setFunnelOpen(false)}
+              disabled={updateFunnelMutation.isPending}
+            >
+              ביטול
+            </Button>
+            <Button
+              type="button"
+              onClick={submitFunnel}
+              disabled={updateFunnelMutation.isPending}
+              data-testid="button-crm-lead-funnel-save"
+            >
+              {updateFunnelMutation.isPending ? "שומר..." : "שמירת משפך"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }

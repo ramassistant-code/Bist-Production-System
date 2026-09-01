@@ -1284,6 +1284,25 @@ export const GetCrmLeadContextResponse = zod.object({
 
 
 /**
+ * @summary Update the latest inquiry funnel for a CRM lead
+ */
+export const UpdateCrmLeadFunnelParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateCrmLeadFunnelBody = zod.object({
+  "funnel_id": zod.string().nullable()
+})
+
+export const UpdateCrmLeadFunnelResponse = zod.object({
+  "inquiry_id": zod.string(),
+  "lead_id": zod.string(),
+  "funnel_id": zod.string().nullable(),
+  "funnel_name": zod.string().nullable()
+})
+
+
+/**
  * @summary Change a CRM lead status through the server status machine
  */
 export const ChangeCrmLeadStatusParams = zod.object({

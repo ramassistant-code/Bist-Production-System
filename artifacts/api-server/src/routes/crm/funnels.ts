@@ -9,8 +9,6 @@ import { requireRole } from "../../middlewares/require-auth";
 
 const router: IRouter = Router();
 
-router.use("/funnels", requireRole("admin"));
-
 function bodyAsRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -22,7 +20,10 @@ function stringOrNull(value: unknown): string | null | undefined {
   return value === null ? null : typeof value === "string" ? value : undefined;
 }
 
-router.get("/funnels", async (req: Request, res: Response): Promise<void> => {
+router.get(
+  "/funnels",
+  requireRole("sales_manager", "admin"),
+  async (req: Request, res: Response): Promise<void> => {
   try {
     const funnels = await db
       .select()
@@ -33,9 +34,13 @@ router.get("/funnels", async (req: Request, res: Response): Promise<void> => {
     req.log.error({ err }, "Failed to list CRM funnels");
     res.status(500).json({ error: "שגיאה בטעינת המשפכים" });
   }
-});
+  },
+);
 
-router.post("/funnels", async (req: Request, res: Response): Promise<void> => {
+router.post(
+  "/funnels",
+  requireRole("admin"),
+  async (req: Request, res: Response): Promise<void> => {
   const body = bodyAsRecord(req.body);
   const name = typeof body?.["name"] === "string" ? body["name"].trim() : "";
   const currentCost = stringOrNull(body?.["current_cost_per_lead"]);
@@ -65,9 +70,13 @@ router.post("/funnels", async (req: Request, res: Response): Promise<void> => {
     req.log.error({ err }, "Failed to create CRM funnel");
     res.status(500).json({ error: "שגיאה ביצירת המשפך" });
   }
-});
+  },
+);
 
-router.patch("/funnels", async (req: Request, res: Response): Promise<void> => {
+router.patch(
+  "/funnels",
+  requireRole("admin"),
+  async (req: Request, res: Response): Promise<void> => {
   const body = bodyAsRecord(req.body);
   const id = typeof body?.["id"] === "string" ? body["id"] : "";
   const name = body?.["name"];
@@ -110,10 +119,12 @@ router.patch("/funnels", async (req: Request, res: Response): Promise<void> => {
     req.log.error({ err }, "Failed to update CRM funnel");
     res.status(500).json({ error: "שגיאה בעדכון המשפך" });
   }
-});
+  },
+);
 
 router.get(
   "/funnels/:id/cost-history",
+  requireRole("admin"),
   async (req: Request, res: Response): Promise<void> => {
     const rawId = Array.isArray(req.params["id"]) ? req.params["id"][0] : req.params["id"];
     if (!rawId) {

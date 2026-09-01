@@ -37,6 +37,8 @@ export * from './crmInquiryContext';
 export * from './crmInquiryContextRawPayload';
 export * from './crmLead';
 export * from './crmLeadContext';
+export * from './crmLeadFunnelUpdate';
+export * from './crmLeadFunnelUpdateResult';
 export * from './crmLeadInput';
 export * from './crmLeadListItem';
 export * from './crmLeadNote';

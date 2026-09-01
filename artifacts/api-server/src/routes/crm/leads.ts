@@ -404,6 +404,122 @@ router.get("/leads/:id", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.patch(
+  "/leads/:id/funnel",
+  requireRole("sales_manager", "admin"),
+  async (req: Request, res: Response): Promise<void> => {
+    const id = leadId(req);
+    const body = leadInput(req.body);
+    const funnelId = body?.["funnel_id"];
+
+    if (
+      !id ||
+      !UUID_PATTERN.test(id) ||
+      !body ||
+      (funnelId !== null &&
+        (typeof funnelId !== "string" || !UUID_PATTERN.test(funnelId)))
+    ) {
+      res.status(400).json({ error: "שיוך המשפך אינו תקין" });
+      return;
+    }
+
+    try {
+      const result = await db.transaction(async (tx) => {
+        const [lead] = await tx
+          .select({ id: crmLeadsTable.id })
+          .from(crmLeadsTable)
+          .where(
+            and(
+              eq(crmLeadsTable.id, id),
+              isNull(crmLeadsTable.deleted_at),
+              leadScope(req, "manager"),
+            ),
+          )
+          .limit(1);
+        if (!lead) return { kind: "lead_missing" as const };
+
+        let funnelName: string | null = null;
+        if (typeof funnelId === "string") {
+          const [funnel] = await tx
+            .select({
+              id: crmFunnelsTable.id,
+              name: crmFunnelsTable.name,
+            })
+            .from(crmFunnelsTable)
+            .where(eq(crmFunnelsTable.id, funnelId))
+            .limit(1);
+          if (!funnel) return { kind: "funnel_missing" as const };
+          funnelName = funnel.name;
+        }
+
+        const [inquiry] = await tx
+          .select({
+            id: crmInquiriesTable.id,
+            funnel_id: crmInquiriesTable.funnel_id,
+            inquiry_number: crmInquiriesTable.inquiry_number,
+          })
+          .from(crmInquiriesTable)
+          .where(eq(crmInquiriesTable.lead_id, id))
+          .orderBy(
+            desc(crmInquiriesTable.inquiry_at),
+            desc(crmInquiriesTable.created_at),
+          )
+          .limit(1);
+        if (!inquiry) return { kind: "inquiry_missing" as const };
+
+        await tx
+          .update(crmInquiriesTable)
+          .set({ funnel_id: funnelId })
+          .where(eq(crmInquiriesTable.id, inquiry.id));
+
+        await tx.insert(crmAuditLogTable).values({
+          entity_type: "crm_inquiry",
+          entity_id: inquiry.id,
+          action: "funnel_changed",
+          actor_user_id: req.appUser!.id,
+          details: {
+            lead_id: id,
+            inquiry_number: inquiry.inquiry_number,
+            from_funnel_id: inquiry.funnel_id,
+            to_funnel_id: funnelId,
+          },
+        });
+
+        return {
+          kind: "updated" as const,
+          inquiry_id: inquiry.id,
+          lead_id: id,
+          funnel_id: funnelId,
+          funnel_name: funnelName,
+        };
+      });
+
+      if (result.kind === "lead_missing") {
+        res.status(404).json({ error: "ליד לא נמצא" });
+        return;
+      }
+      if (result.kind === "funnel_missing") {
+        res.status(400).json({ error: "המשפך שנבחר לא נמצא" });
+        return;
+      }
+      if (result.kind === "inquiry_missing") {
+        res.status(404).json({ error: "לא נמצאה פנייה לעדכון" });
+        return;
+      }
+
+      res.json({
+        inquiry_id: result.inquiry_id,
+        lead_id: result.lead_id,
+        funnel_id: result.funnel_id,
+        funnel_name: result.funnel_name,
+      });
+    } catch (err) {
+      req.log.error({ err, leadId: id }, "Failed to update CRM lead funnel");
+      res.status(500).json({ error: "שגיאה בעדכון המשפך" });
+    }
+  },
+);
+
 router.post("/leads", async (req: Request, res: Response): Promise<void> => {
   const body = leadInput(req.body);
   const payload = body ? normalizedLeadPayload(body) : null;

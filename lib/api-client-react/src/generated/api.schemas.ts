@@ -683,6 +683,20 @@ export interface CrmLeadUpdate {
   source_ref?: string | null;
 }
 
+export interface CrmLeadFunnelUpdate {
+  /** @nullable */
+  funnel_id: string | null;
+}
+
+export interface CrmLeadFunnelUpdateResult {
+  inquiry_id: string;
+  lead_id: string;
+  /** @nullable */
+  funnel_id: string | null;
+  /** @nullable */
+  funnel_name: string | null;
+}
+
 export type ListLeadsParams = {
 search?: string;
 status?: string;

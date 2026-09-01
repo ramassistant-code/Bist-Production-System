@@ -42,6 +42,8 @@ import type {
   CrmFunnelUpdate,
   CrmLead,
   CrmLeadContext,
+  CrmLeadFunnelUpdate,
+  CrmLeadFunnelUpdateResult,
   CrmLeadInput,
   CrmLeadListItem,
   CrmLeadNote,
@@ -3166,6 +3168,78 @@ export function useGetCrmLeadContext<TData = Awaited<ReturnType<typeof getCrmLea
 
 
 
+
+export const getUpdateCrmLeadFunnelUrl = (id: string,) => {
+
+
+
+
+  return `/api/crm/leads/${id}/funnel`
+}
+
+/**
+ * @summary Update the latest inquiry funnel for a CRM lead
+ */
+export const updateCrmLeadFunnel = async (id: string,
+    crmLeadFunnelUpdate: CrmLeadFunnelUpdate, options?: RequestInit): Promise<CrmLeadFunnelUpdateResult> => {
+
+  return customFetch<CrmLeadFunnelUpdateResult>(getUpdateCrmLeadFunnelUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmLeadFunnelUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmLeadFunnelMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadFunnel>>, TError,{id: string;data: BodyType<CrmLeadFunnelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadFunnel>>, TError,{id: string;data: BodyType<CrmLeadFunnelUpdate>}, TContext> => {
+
+const mutationKey = ['updateCrmLeadFunnel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmLeadFunnel>>, {id: string;data: BodyType<CrmLeadFunnelUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCrmLeadFunnel(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmLeadFunnelMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmLeadFunnel>>>
+    export type UpdateCrmLeadFunnelMutationBody = BodyType<CrmLeadFunnelUpdate>
+    export type UpdateCrmLeadFunnelMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update the latest inquiry funnel for a CRM lead
+ */
+export const useUpdateCrmLeadFunnel = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmLeadFunnel>>, TError,{id: string;data: BodyType<CrmLeadFunnelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmLeadFunnel>>,
+        TError,
+        {id: string;data: BodyType<CrmLeadFunnelUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmLeadFunnelMutationOptions(options));
+    }
 
 export const getChangeCrmLeadStatusUrl = (id: string,
     params?: ChangeCrmLeadStatusParams,) => {
