@@ -24,15 +24,16 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const [location] = useLocation();
   const { appUser, signOut } = useAuth();
+  const role = appUser?.role?.trim().toLowerCase();
+  const isAdmin = role === "admin";
+  const isManager = role === "sales_manager" || isAdmin;
   const { data: myTasks } = useListMyCrmTasks({
     query: { queryKey: getListMyCrmTasksQueryKey(), refetchInterval: 60_000 },
   });
   const visibleNavItems = NAV_ITEMS.filter(
     (item) =>
-      (!item.managerOnly ||
-        appUser?.role === "sales_manager" ||
-        appUser?.role === "admin") &&
-      (!item.adminOnly || appUser?.role === "admin"),
+      (!item.managerOnly || isManager) &&
+      (!item.adminOnly || isAdmin),
   );
 
   return (

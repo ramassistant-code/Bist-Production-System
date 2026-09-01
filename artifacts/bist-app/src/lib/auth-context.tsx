@@ -102,6 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
+    // Keep the auth gate and role-based navigation in sync immediately.
+    // The auth state listener runs asynchronously and should not be the only
+    // source that updates the session after a successful password login.
+    setSession(data.session);
     setAppUser(u);
     return { error: null };
   };
