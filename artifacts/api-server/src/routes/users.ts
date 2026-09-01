@@ -38,12 +38,14 @@ router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const normalizedRole = normalizeAppRole(appUser.role);
     res.json({
       id: appUser.id,
       email: appUser.email,
       full_name: appUser.full_name,
-      role: normalizeAppRole(appUser.role),
+      role: normalizedRole,
       is_active: appUser.is_active,
+      can_manage_crm_catalog: normalizedRole === "admin",
     });
   } catch (err) {
     logger.error({ err }, "Failed to verify auth user");

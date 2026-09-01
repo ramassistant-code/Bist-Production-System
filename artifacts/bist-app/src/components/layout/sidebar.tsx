@@ -25,7 +25,10 @@ export function Sidebar() {
   const [location] = useLocation();
   const { appUser, signOut } = useAuth();
   const role = appUser?.role?.trim().toLowerCase();
-  const isAdmin = role === "admin" || role === "מנהל";
+  const isAdmin =
+    appUser?.can_manage_crm_catalog === true ||
+    role === "admin" ||
+    role === "מנהל";
   const isManager =
     role === "sales_manager" || role === "מנהל מכירות" || isAdmin;
   const { data: myTasks } = useListMyCrmTasks({

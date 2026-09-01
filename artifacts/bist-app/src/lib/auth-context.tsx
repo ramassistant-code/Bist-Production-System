@@ -20,6 +20,7 @@ export interface AppUser {
   full_name: string | null;
   role: string | null;
   is_active: boolean;
+  can_manage_crm_catalog?: boolean;
   phone?: string | null;
 }
 
