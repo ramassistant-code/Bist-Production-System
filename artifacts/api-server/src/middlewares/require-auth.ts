@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { appUsersTable, type AppUser } from "@workspace/db/schema";
 import { supabaseAdmin } from "../lib/supabase-admin";
 import { logger } from "../lib/logger";
+import { normalizeAppRole } from "../lib/app-role";
 
 const APP_USER_CACHE_TTL_MS = 60_000;
 
@@ -61,12 +62,16 @@ async function getActiveAppUser(
     )
     .limit(1);
 
+  const normalizedAppUser = appUser
+    ? { ...appUser, role: normalizeAppRole(appUser.role) }
+    : null;
+
   appUserCache.set(token, {
-    appUser: appUser ?? null,
+    appUser: normalizedAppUser,
     expiresAt: Date.now() + APP_USER_CACHE_TTL_MS,
   });
 
-  return appUser ?? null;
+  return normalizedAppUser;
 }
 
 export const requireAuth: RequestHandler = async (

@@ -8,28 +8,9 @@ import { sendLoginCodeEmail } from "../lib/email";
 import { createHmac, randomInt } from "node:crypto";
 import { notifySync } from "../lib/syncClient";
 import { getAuthenticatedUser } from "../middlewares/require-auth";
+import { isValidAppRole, normalizeAppRole } from "../lib/app-role";
 
 const router: IRouter = Router();
-
-const ROLE_VALUE_BY_LABEL: Record<string, string> = {
-  "מנהל": "admin",
-  "מכירות": "sales",
-  "מנהל סטודיו": "studio_manager",
-  "עורך": "editor",
-  "מנהל משרד": "office_manager",
-  "מנהל עריכה": "editing_manager",
-};
-const VALID_ROLE_VALUES = new Set(["admin", "sales", "studio_manager", "editor", "office_manager", "editing_manager"]);
-
-function normalizeRole(role: string | null | undefined): string | null {
-  const value = role?.trim() ?? "";
-  if (!value) return null;
-  return ROLE_VALUE_BY_LABEL[value] ?? value;
-}
-
-function isValidRole(role: string | null): boolean {
-  return role === null || VALID_ROLE_VALUES.has(role);
-}
 
 // GET /auth/me — verify JWT and return active app_users row
 router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
@@ -61,7 +42,7 @@ router.get("/auth/me", async (req: Request, res: Response): Promise<void> => {
       id: appUser.id,
       email: appUser.email,
       full_name: appUser.full_name,
-      role: appUser.role,
+      role: normalizeAppRole(appUser.role),
       is_active: appUser.is_active,
     });
   } catch (err) {
@@ -275,8 +256,8 @@ router.post("/admin/users", async (req: Request, res: Response): Promise<void> =
       res.status(400).json({ error: "כתובת אימייל לא תקינה" }); return;
     }
 
-    const normalizedRole = normalizeRole(role);
-    if (!isValidRole(normalizedRole)) {
+    const normalizedRole = normalizeAppRole(role);
+    if (!isValidAppRole(normalizedRole)) {
       res.status(400).json({ error: "תפקיד משתמש לא תקין" });
       return;
     }
@@ -327,8 +308,8 @@ router.patch("/admin/users/:id", async (req: Request, res: Response): Promise<vo
     }
     if (phone !== undefined) patch["phone"] = phone?.trim() || null;
     if (role !== undefined) {
-      const normalizedRole = normalizeRole(role);
-      if (!isValidRole(normalizedRole)) {
+      const normalizedRole = normalizeAppRole(role);
+      if (!isValidAppRole(normalizedRole)) {
         res.status(400).json({ error: "תפקיד משתמש לא תקין" });
         return;
       }

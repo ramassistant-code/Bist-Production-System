@@ -25,8 +25,9 @@ export function Sidebar() {
   const [location] = useLocation();
   const { appUser, signOut } = useAuth();
   const role = appUser?.role?.trim().toLowerCase();
-  const isAdmin = role === "admin";
-  const isManager = role === "sales_manager" || isAdmin;
+  const isAdmin = role === "admin" || role === "מנהל";
+  const isManager =
+    role === "sales_manager" || role === "מנהל מכירות" || isAdmin;
   const { data: myTasks } = useListMyCrmTasks({
     query: { queryKey: getListMyCrmTasksQueryKey(), refetchInterval: 60_000 },
   });
