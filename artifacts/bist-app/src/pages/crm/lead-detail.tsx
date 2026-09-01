@@ -167,6 +167,8 @@ export default function CrmLeadDetail() {
   const lead = leadQuery.data!;
   const context = contextQuery.data!;
   const rep = reps?.find((user) => user.id === lead.sales_rep_id);
+  const currentStatusLabel =
+    statuses?.find((status) => status.code === lead.status_code)?.label ?? lead.status_code;
   const latestInquiry = context.inquiries[0];
   const sortedNotes = [...context.notes].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
   const sortedTasks = [...context.tasks].sort((a, b) => {
@@ -208,7 +210,19 @@ export default function CrmLeadDetail() {
               <span className="flex items-center gap-2"><UserRound className="h-4 w-4" />{rep?.full_name || rep?.email || "לא הוקצה"}</span>
             </div></div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={openStatusDialog} className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring"><Badge variant="secondary" data-testid="badge-crm-lead-status">{statuses?.find((status) => status.code === lead.status_code)?.label ?? lead.status_code}</Badge></button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={openStatusDialog}
+                className="h-10 gap-2 border-primary/50 bg-primary/5 px-3 text-primary shadow-sm transition-colors hover:border-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                aria-label={`סטטוס נוכחי: ${currentStatusLabel}. לחצו כדי לשנות סטטוס`}
+                data-testid="button-crm-lead-status"
+              >
+                <span className="text-xs font-medium text-muted-foreground">סטטוס</span>
+                <Badge variant="secondary" data-testid="badge-crm-lead-status">{currentStatusLabel}</Badge>
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
               {lead.is_active_customer && <Badge variant="success">לקוח פעיל</Badge>}
               {lead.pending_reassignment && <Badge variant="warning">ממתין לשיוך</Badge>}
             </div>
