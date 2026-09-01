@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, ClipboardList, LogOut, CalendarCheck } from "lucide-react";
+import { Users, Box, Layers, FileSignature, Settings, Target, Handshake, MessageCircle, ClipboardList, LogOut, CalendarCheck, Funnel, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { isTestEnvironment } from "@/lib/environment";
@@ -7,6 +7,8 @@ import { useListMyCrmTasks, getListMyCrmTasksQueryKey } from "@workspace/api-cli
 
 const NAV_ITEMS = [
   { name: "מרכז CRM", href: "/crm/leads", icon: Target },
+  { name: "משפכים", href: "/crm/funnels", icon: Funnel, adminOnly: true },
+  { name: "מודעות", href: "/crm/ads", icon: Megaphone, adminOnly: true },
   { name: "זמינות", href: "/crm/availability", icon: CalendarCheck, managerOnly: true },
   { name: "לידים", href: "/leads", icon: Target },
   { name: "לקוחות", href: "/customers", icon: Users },
@@ -27,9 +29,10 @@ export function Sidebar() {
   });
   const visibleNavItems = NAV_ITEMS.filter(
     (item) =>
-      !item.managerOnly ||
-      appUser?.role === "sales_manager" ||
-      appUser?.role === "admin",
+      (!item.managerOnly ||
+        appUser?.role === "sales_manager" ||
+        appUser?.role === "admin") &&
+      (!item.adminOnly || appUser?.role === "admin"),
   );
 
   return (
