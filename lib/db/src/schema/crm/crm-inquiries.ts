@@ -18,6 +18,10 @@ export const crmInquiriesTable = pgTable("crm_inquiries", {
   // מזהה הפנייה במערכת המקור. ל-facebook_lead_ads זהו leadgen_id.
   // unique חלקי על הזוג (source, source_ref) — ראו 10_crm_inquiries_source_ref.sql
   source_ref: text("source_ref"),
+  // מלא = המשפך נקבע ידנית. כל מילוי רטרואקטיבי חייב לדלג על שורות כאלה,
+  // אחרת תיקון של מנהל נמחק בשקט. ראו 13_crm_inquiries_funnel_lock.sql
+  funnel_locked_at: timestamp("funnel_locked_at", { withTimezone: true }),
+  funnel_locked_by: uuid("funnel_locked_by"),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

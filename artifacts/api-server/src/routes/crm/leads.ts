@@ -467,9 +467,15 @@ router.patch(
           .limit(1);
         if (!inquiry) return { kind: "inquiry_missing" as const };
 
+        // נעילה: מכאן והלאה השיוך הזה נקבע ידנית, ומילוי רטרואקטיבי
+        // חייב לדלג עליו. ראו 13_crm_inquiries_funnel_lock.sql
         await tx
           .update(crmInquiriesTable)
-          .set({ funnel_id: funnelId })
+          .set({
+            funnel_id: funnelId,
+            funnel_locked_at: new Date(),
+            funnel_locked_by: req.appUser!.id,
+          })
           .where(eq(crmInquiriesTable.id, inquiry.id));
 
         await tx.insert(crmAuditLogTable).values({
