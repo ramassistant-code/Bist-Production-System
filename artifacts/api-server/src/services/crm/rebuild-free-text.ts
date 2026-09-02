@@ -2,6 +2,13 @@ import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 
 const MAX_INQUIRIES = 2_000;
+
+// ⚠️ להעלות בכל שינוי בלוגיקת ההתאמה או הזיהוי.
+// שני סבבי אבחון שלמים אבדו על השאלה "האם הגרסה שרצה מכילה את התיקון",
+// שאי אפשר היה לענות עליה מבחוץ. התשובה מחזירה את הערך הזה, ואת רגע
+// עליית התהליך — פריסה חדשה מאפסת אותו.
+const REBUILD_ALGORITHM = "identity-by-value-v2";
+const PROCESS_STARTED_AT = new Date().toISOString();
 const LEAD_FIELD_NAMES = new Set([
   "full_name",
   "first_name",
@@ -39,12 +46,20 @@ type LeadIdentity = {
 };
 
 export type RebuildFreeTextReport = {
+  service: {
+    rebuild_algorithm: string;
+    started_at: string;
+  };
   form_id: string;
   dry_run: boolean;
   examined: number;
   rebuilt: number;
   unchanged: number;
   skipped: number;
+  // כמה שורות הוחרגו כשדות זהות. אפס על טופס עם מפתחות מותאמים לשם,
+  // טלפון או דוא"ל פירושו שהזיהוי לא תפס — בלי זה אי אפשר לראות את זה
+  // מבחוץ אלא דרך תוכן ה-samples, שמכיל פרטים אמיתיים.
+  identity_lines_excluded: number;
   samples: Array<{
     inquiry_id: string;
     before: string | null;
@@ -184,15 +199,34 @@ function rebuiltText(
   rawPayload: unknown,
   questions: Map<string, RebuildQuestion>,
   identity: LeadIdentity,
-): string {
+): { text: string; identityExcluded: number } {
   const entries = fieldData(rawPayload);
-  if (!entries) return "";
-  return entries
-    .map((entry) => rebuildEntry(entry, questions, identity))
-    .filter((line): line is string => line !== null)
-    .join("\n");
-}
+  if (!entries) return { text: "", identityExcluded: 0 };
 
+  let identityExcluded = 0;
+  const lines: string[] = [];
+  for (const entry of entries) {
+    // הבחנה בין "הוחרג כשדה זהות" לבין "אין ממנו מה לבנות": רק הראשון
+    // מעיד שהזיהוי עבד, וזה מה שאי אפשר היה לראות מבחוץ בלי לשלוף samples
+    // שמכילים פרטים אמיתיים.
+    const values =
+      Array.isArray(entry.values)
+        ? entry.values.filter((v): v is string => typeof v === "string")
+        : [];
+    if (
+      typeof entry.name === "string" &&
+      !LEAD_FIELD_NAMES.has(entry.name) &&
+      values.length > 0 &&
+      isIdentityValue(values, identity)
+    ) {
+      identityExcluded += 1;
+      continue;
+    }
+    const line = rebuildEntry(entry, questions, identity);
+    if (line !== null) lines.push(line);
+  }
+  return { text: lines.join(String.fromCharCode(10)), identityExcluded };
+}
 function json(value: unknown): string {
   return JSON.stringify(value);
 }
@@ -235,22 +269,29 @@ export async function rebuildFreeText(
     }
 
     const report: RebuildFreeTextReport = {
+      service: {
+        rebuild_algorithm: REBUILD_ALGORITHM,
+        started_at: PROCESS_STARTED_AT,
+      },
       form_id: formId,
       dry_run: dryRun,
       examined: inquiries.length,
       rebuilt: 0,
       unchanged: 0,
       skipped: 0,
+      identity_lines_excluded: 0,
       samples: [],
     };
 
     for (const inquiry of inquiries) {
       const before = inquiry.free_text;
-      const after = rebuiltText(
+      const rebuild = rebuiltText(
         inquiry.raw_payload,
         questions,
         leadIdentity(inquiry),
       );
+      const after = rebuild.text;
+      report.identity_lines_excluded += rebuild.identityExcluded;
 
       if (!after.trim()) {
         report.skipped += 1;
