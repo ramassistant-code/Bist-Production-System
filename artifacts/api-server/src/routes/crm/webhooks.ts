@@ -64,8 +64,11 @@ router.post(
     const questions = body["questions"];
     const dryRun = body["dry_run"] !== false;
 
+    // בקשה פגומה היא שגיאת קורא, ולכן 400. הכלל "ה-4xx היחיד הוא סוד שגוי"
+    // שייך ל-webhook של הלידים, שם 4xx גורם למטא לנסות שוב — כאן הקורא הוא
+    // n8n בג'וב תחזוקה, ו-500 היה שולח מפעיל לחפש תקלת שרת שאינה קיימת.
     if (!formId || !Array.isArray(questions)) {
-      res.status(500).json({ error: "גוף הבקשה לשחזור אינו תקין" });
+      res.status(400).json({ error: "גוף הבקשה לשחזור אינו תקין" });
       return;
     }
 
@@ -74,7 +77,7 @@ router.post(
       res.status(200).json(report);
     } catch (err) {
       if (err instanceof RebuildFreeTextError) {
-        res.status(500).json({ error: err.message });
+        res.status(400).json({ error: err.message });
         return;
       }
       req.log.error({ err, formId }, "Failed to rebuild CRM inquiry free text");
