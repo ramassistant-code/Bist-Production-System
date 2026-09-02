@@ -25,6 +25,17 @@ type InquiryRow = {
   id: string;
   free_text: string | null;
   raw_payload: unknown;
+  lead_name: string | null;
+  lead_phone_e164: string | null;
+  lead_phone_raw: string | null;
+  lead_email: string | null;
+};
+
+// ערכי הזהות של הליד, לצורך זיהוי שדות זהות בטופס
+type LeadIdentity = {
+  names: Set<string>;
+  emails: Set<string>;
+  phoneDigits: Set<string>;
 };
 
 export type RebuildFreeTextReport = {
@@ -97,9 +108,58 @@ function fieldData(rawPayload: unknown): FieldDataEntry[] | null {
   );
 }
 
+function collapse(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function digitsOf(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function leadIdentity(inquiry: InquiryRow): LeadIdentity {
+  const names = new Set<string>();
+  const emails = new Set<string>();
+  const phoneDigits = new Set<string>();
+
+  if (inquiry.lead_name) names.add(collapse(inquiry.lead_name));
+  if (inquiry.lead_email) emails.add(collapse(inquiry.lead_email));
+  for (const phone of [inquiry.lead_phone_e164, inquiry.lead_phone_raw]) {
+    const digits = phone ? digitsOf(phone) : "";
+    // רק שבע ספרות ומעלה — מספר קצר מדי היה תואם תשובות מספריות תמימות
+    if (digits.length >= 7) phoneDigits.add(digits);
+  }
+  return { names, emails, phoneDigits };
+}
+
+// שדה זהות = שדה שהערך שלו כבר שמור כעמודה על הליד.
+//
+// הרשימה הקנונית של מטא לא מספיקה: שלושה מהטפסים משתמשים במפתחות
+// מותאמים בעברית לשם, לטלפון ולדוא"ל, ואז 27 מתוך 38 הפניות היו מקבלות
+// "Phone number: ..." בתוך free_text כאילו זו תשובה בטופס.
+//
+// ההשוואה היא לפי הערך ולא לפי דפוס במפתח. דפוס כמו name|שם היה מוחק
+// בשקט שאלה לגיטימית כמו "מה שם העסק שלך?" — וכאן טעות היא מחיקת תוכן,
+// לא שדה ריק. השוואת ערך אינה יכולה לטעות כך.
+function isIdentityValue(values: string[], identity: LeadIdentity): boolean {
+  return values.some((value) => {
+    const text = collapse(value);
+    if (!text) return false;
+    if (identity.names.has(text) || identity.emails.has(text)) return true;
+    const digits = digitsOf(value);
+    if (digits.length >= 7) {
+      for (const known of identity.phoneDigits) {
+        // מטא מחזירה לעתים 0501234567 ולעתים +972501234567
+        if (known.endsWith(digits) || digits.endsWith(known)) return true;
+      }
+    }
+    return false;
+  });
+}
+
 function rebuildEntry(
   entry: FieldDataEntry,
   questions: Map<string, RebuildQuestion>,
+  identity: LeadIdentity,
 ): string | null {
   if (typeof entry.name !== "string" || LEAD_FIELD_NAMES.has(entry.name)) {
     return null;
@@ -113,6 +173,9 @@ function rebuildEntry(
   );
   if (values.length === 0) return null;
 
+  // מפתח מותאם שערכו הוא שם, טלפון או דוא"ל של הליד — שדה זהות, לא שאלה
+  if (isIdentityValue(values, identity)) return null;
+
   const answers = values.map((value) => question?.options.get(value) ?? value);
   return `${questionText}: ${answers.join(", ")}`;
 }
@@ -120,11 +183,12 @@ function rebuildEntry(
 function rebuiltText(
   rawPayload: unknown,
   questions: Map<string, RebuildQuestion>,
+  identity: LeadIdentity,
 ): string {
   const entries = fieldData(rawPayload);
   if (!entries) return "";
   return entries
-    .map((entry) => rebuildEntry(entry, questions))
+    .map((entry) => rebuildEntry(entry, questions, identity))
     .filter((line): line is string => line !== null)
     .join("\n");
 }
@@ -148,12 +212,19 @@ export async function rebuildFreeText(
     `);
 
     const inquiryResult = await tx.execute(sql`
-      select id, free_text, raw_payload
-      from crm_inquiries
-      where form_id = ${formId}
-      order by id
+      select i.id,
+             i.free_text,
+             i.raw_payload,
+             l.name       as lead_name,
+             l.phone_e164 as lead_phone_e164,
+             l.phone_raw  as lead_phone_raw,
+             l.email      as lead_email
+      from crm_inquiries i
+      join crm_leads l on l.id = i.lead_id
+      where i.form_id = ${formId}
+      order by i.id
       limit ${MAX_INQUIRIES + 1}
-      for update
+      for update of i
     `);
     const inquiries = inquiryResult.rows as InquiryRow[];
 
@@ -175,7 +246,11 @@ export async function rebuildFreeText(
 
     for (const inquiry of inquiries) {
       const before = inquiry.free_text;
-      const after = rebuiltText(inquiry.raw_payload, questions);
+      const after = rebuiltText(
+        inquiry.raw_payload,
+        questions,
+        leadIdentity(inquiry),
+      );
 
       if (!after.trim()) {
         report.skipped += 1;
