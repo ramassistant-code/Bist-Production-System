@@ -225,7 +225,7 @@ function rebuiltText(
     const line = rebuildEntry(entry, questions, identity);
     if (line !== null) lines.push(line);
   }
-  return { text: lines.join(String.fromCharCode(10)), identityExcluded };
+  return { text: lines.join("\n"), identityExcluded };
 }
 function json(value: unknown): string {
   return JSON.stringify(value);
