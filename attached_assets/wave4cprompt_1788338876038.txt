@@ -1,0 +1,133 @@
+MILESTONE: CRM Wave 4c - rebuild free_text on existing inquiries.
+One endpoint. Backend only.
+
+CONTEXT
+Pull main first. Waves 1-4 are done and verified at runtime, and real Meta
+leads are already in the database.
+
+WHY THIS EXISTS - read it, it changes how carefully you treat the write
+crm_inquiries.free_text was built from Meta's field_data, where each entry
+carries a slugified KEY, not the text a person saw:
+
+  "name":   "מה_הייתם_הכי_רוצים_שיקרה_בעקבות_יום_הצילום?"
+  "values": ["שאשמע_טבעי/ת_כמו_בשיחה_עם_לקוח"]
+
+Those keys are frozen at the moment the form question was created. When the
+campaign manager later edits the wording, Meta does NOT update the key. A
+real example from the live form: one option has
+
+  key   = _שיהיה_לי_תוכן_מוכן_לשבועות_קדימה
+  value = סרטונים לרשתות החברתיות
+
+Two completely different answers. So the stored free_text is not ugly, it
+is WRONG - a salesperson reads an answer the customer never chose, and
+nothing about it looks like a bug. That is why this job overwrites content
+that already exists, and why every safeguard below is required rather than
+nice to have.
+
+Do NOT try to fix this by replacing underscores with spaces. That produces
+confident, wrong text.
+
+THE DIVISION OF LABOUR
+Only n8n has the Facebook token, so only n8n can read a form's schema. Only
+the CRM has form_id and raw_payload on every inquiry. So n8n sends the
+mapping, the CRM does the data work. The CRM must NOT call Facebook - there
+is no Graph API call anywhere in this codebase today and none is to be
+added, and there is no token to add one with.
+
+BUILD - one endpoint
+
+POST /api/crm/jobs/rebuild-free-text
+
+1. Auth and mounting
+   - Same shared secret as the lead webhook: header x-crm-intake-secret,
+     value from CRM_INTAKE_SECRET. Reuse the comparison already written in
+     routes/crm/webhooks.ts - do not write a second one.
+   - Mount it in that same router, which is deliberately registered BEFORE
+     requireAuth in routes/crm/index.ts. Machine to machine, no user auth.
+   - A bad or missing secret is 401. That is the only 4xx.
+
+2. Body
+   {
+     "form_id": "1388077500139226",
+     "questions": [
+       { "key": "...", "label": "...",
+         "options": [ { "key": "...", "value": "..." } ] }
+     ],
+     "dry_run": true
+   }
+   options may be absent for free-text questions. dry_run defaults to
+   FALSE only when explicitly sent as false; anything else is a dry run.
+   Make the caller opt in to writing.
+
+3. What it does
+   For every crm_inquiries row with that form_id, rebuild free_text from
+   that row's own raw_payload:
+   - Read raw_payload -> field_data. If it is missing or not an array,
+     skip the row and count it as skipped. Never guess.
+   - Skip the entries that are already stored as their own columns on the
+     lead: full_name, first_name, last_name, phone, phone_number, email.
+     Match those exactly as ingestLead's flattening does - do not invent
+     new patterns.
+   - For every remaining entry:
+       question text = questions[].label where questions[].key === entry.name
+                       falling back to entry.name unchanged
+       each value    = options[].value where options[].key === the value
+                       falling back to the value unchanged
+   - A key that is not in the mapping stays raw. Never invent a label.
+   - Join multiple values with ", ".
+   - One line per question, formatted exactly "question: answer", lines
+     joined with "\n". This must match the format the rows already use, so
+     repaired rows and newly ingested rows read identically. State the
+     format you produced in your REPORT.
+
+4. Safeguards - all of them
+   - Never write an empty or whitespace-only free_text over a non-empty
+     one. Count it as skipped instead.
+   - If the rebuilt text equals the stored text, do not write. Count it as
+     unchanged. The job must be idempotent: running it twice in a row must
+     report zero rebuilt on the second run.
+   - One crm_audit_log row per row actually rewritten:
+     entity_type 'crm_inquiry', entity_id the inquiry id, action
+     'free_text_rebuilt', actor_user_id null, details carrying form_id and
+     BOTH the previous and the new text. This is a content overwrite; the
+     previous value has to survive somewhere or the operation is
+     irreversible.
+   - One transaction for the whole call.
+   - Cap at 2000 inquiries per call and reject a form with more rather
+     than silently doing part of the work.
+
+5. Response - 200 with
+   { form_id, dry_run, examined, rebuilt, unchanged, skipped,
+     samples: [ { inquiry_id, before, after } ] }   // at most 5
+   On a dry run, samples is the whole point: it is how a human checks the
+   mapping is right before anything is written.
+
+DO NOT TOUCH
+- services/crm/intake.ts - ingestLead's own flattening is not in scope
+- services/crm/scope.ts, status-machine.ts
+- routes/leads.ts (the legacy one), quotes.ts, deals.ts, payments.ts
+- lib/db/src/schema/** - the mirror matches the database. Never run
+  drizzle-kit push.
+- Anything under artifacts/bist-app/ - there is no UI in this milestone.
+- lib/api-spec/openapi.yaml - this endpoint is machine to machine, like the
+  lead webhook, and stays out of the generated client. No codegen run.
+
+ACCEPTANCE
+- pnpm run typecheck passes.
+- A missing or wrong secret returns 401 and touches nothing.
+- A body without dry_run:false performs no writes and still returns
+  samples.
+- Running the same call twice with dry_run:false reports rebuilt 0 the
+  second time.
+- An inquiry whose raw_payload has no field_data is counted as skipped and
+  its free_text is untouched.
+- A question key absent from the mapping appears in the output unchanged,
+  not blanked and not guessed.
+- Every rewritten row has an audit entry containing its previous text.
+
+REPORT
+What was built, files changed, the exact free_text format you emit, how you
+matched the name/phone/email fields, what happens to a question with
+multiple selected values, and the counts from a dry run against the real
+data currently in the database.

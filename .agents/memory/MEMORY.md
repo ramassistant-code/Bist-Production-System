@@ -6,3 +6,4 @@
 - [API client codegen barrel](api-client-codegen-barrel.md) — after Orval codegen, deduplicate exports in the handwritten client barrel; never edit generated files
 - [Express mounted router guards](express-mounted-router-guards.md) — scope router middleware to its URL prefix so it cannot block unrelated sibling routes.
 - [CRM RoundRobin lock exhaustion](crm-roundrobin-lock-exhaustion.md) — a null SKIP LOCKED result during intake may mean all active reps are briefly locked, not that the queue is empty.
+- [CRM maintenance-job serialization](crm-maintenance-job-serialization.md) — form-scoped rewrite jobs must serialize reads, writes, and audits to preserve idempotency under concurrency.
