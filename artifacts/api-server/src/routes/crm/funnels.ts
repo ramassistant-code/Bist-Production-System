@@ -20,9 +20,12 @@ function stringOrNull(value: unknown): string | null | undefined {
   return value === null ? null : typeof value === "string" ? value : undefined;
 }
 
+// רשימת המשפכים היא lookup לתצוגה, וכל משתמש CRM מקבל מסנן משפך במסך
+// הלידים ובכרטיס. הגבלתה למנהלים הפכה את המסנן הזה לריק אצל אנשי מכירות,
+// בלי הודעת שגיאה. היצירה, העדכון והיסטוריית העלות נשארים לאדמין בלבד —
+// שם יושב הכסף.
 router.get(
   "/funnels",
-  requireRole("sales_manager", "admin"),
   async (req: Request, res: Response): Promise<void> => {
   try {
     const funnels = await db
