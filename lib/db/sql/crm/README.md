@@ -27,6 +27,7 @@
 | 11 | `11_crm_intake.sql` | `crm_intake_failures` (ללא FK), `form_id` על הפניות, היררכיית קמפיין על `crm_ads`. **לפני גל 4** |
 | 12 | `12_crm_ads_fetch_failed_meaning.sql` | `fetch_failed` = רשומה חלקית, לא כשל משיכה. מאפס דגלים שנדלקו בטעות |
 | 13 | `13_crm_inquiries_funnel_lock.sql` | `funnel_locked_at/by` — מילוי רטרואקטיבי לא ידרוס שיוך משפך ידני |
+| 14 | `14_crm_inquiries_platform.sql` | `platform` ו-`is_organic` על הפנייה, כולל השלמה רטרואקטיבית מ-`raw_payload` |
 | — | `90_dev_scope_test_seed.sql` | זריעת נתוני בדיקה: לידי scope ותור זמינות. **פיתוח בלבד** |
 | — | `91_dev_test_data_cleanup.sql` | מחיקת כל נתוני הבדיקה של גלים 2–4. **פיתוח בלבד** |
 | — | `99_rollback.sql` | ביטול מלא של 01–06. **לא להריץ אחרי הקשירה בגל 7ב** |

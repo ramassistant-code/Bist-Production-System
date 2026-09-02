@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -20,6 +20,10 @@ export const crmInquiriesTable = pgTable("crm_inquiries", {
   source_ref: text("source_ref"),
   // מלא = המשפך נקבע ידנית. כל מילוי רטרואקטיבי חייב לדלג על שורות כאלה,
   // אחרת תיקון של מנהל נמחק בשקט. ראו 13_crm_inquiries_funnel_lock.sql
+  // ig | fb | msg כפי שמטא מדווחת. תכונה של ההשארה ולא של האדם —
+  // אותו ליד יכול להשאיר פרטים פעם באינסטגרם ופעם בפייסבוק.
+  platform: text("platform"),
+  is_organic: boolean("is_organic"),
   funnel_locked_at: timestamp("funnel_locked_at", { withTimezone: true }),
   funnel_locked_by: uuid("funnel_locked_by"),
   created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -17,6 +17,8 @@ export type LeadIntakePayload = Record<string, unknown> & {
   adset_name?: unknown;
   form_id?: unknown;
   form_name?: unknown;
+  platform?: unknown;
+  is_organic?: unknown;
   free_text?: unknown;
   inquiry_at?: unknown;
   raw_payload?: unknown;
@@ -73,6 +75,21 @@ function optionalString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed || null;
+}
+
+// שם אדם בלבד. מטא מחזירה לעתים רווח כפול ("אהובית  גוסלה") כי כך הוקלד
+// בטופס. מכווץ רצפי רווחים לרווח אחד — בטוח לשמות, ואסור על free_text
+// שבו שורות חדשות הן חלק מהתוכן.
+function personName(value: unknown): string | null {
+  const text = optionalString(value);
+  return text ? text.replace(/\s+/g, " ") : null;
+}
+
+function optionalBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
 }
 
 function rawPayload(payload: LeadIntakePayload): unknown {
@@ -222,7 +239,7 @@ export async function ingestLead(
             name, phone_e164, phone_raw, email, status_code, source, source_ref
           )
           values (
-            ${optionalString(payload.name) ?? "ליד ללא שם"},
+            ${personName(payload.name) ?? "ליד ללא שם"},
             ${phoneE164},
             ${phoneRaw},
             ${optionalString(payload.email)},
@@ -298,7 +315,7 @@ export async function ingestLead(
       const insertedInquiry = await tx.execute(sql`
         insert into crm_inquiries (
           lead_id, source, source_ref, form_id, form_name, free_text,
-          inquiry_at, raw_payload, ad_id, funnel_id
+          inquiry_at, raw_payload, ad_id, funnel_id, platform, is_organic
         )
         values (
           ${lead.id},
@@ -310,7 +327,9 @@ export async function ingestLead(
           ${inquiryDate(payload.inquiry_at)},
           ${json(rawPayload(payload))}::jsonb,
           ${ad?.id ?? null},
-          ${ad?.funnel_id ?? null}
+          ${ad?.funnel_id ?? null},
+          ${optionalString(payload.platform)},
+          ${optionalBoolean(payload.is_organic)}
         )
         on conflict (source, source_ref) where source_ref is not null
         do nothing
