@@ -266,6 +266,14 @@ export async function ingestLead(
                 ?.funnel_id ?? null;
           }
 
+          // fetch_failed פירושו "רשומה חלקית שדורשת השלמה", לא "היה ניסיון
+          // והוא נכשל" — ה-CRM אינו פונה לפייסבוק כלל. n8n כבר מביא שם
+          // מודעה, קמפיין וקבוצת מודעות מתוך ה-payload של הליד, ולכן רשומה
+          // עם שם היא שלמה לכל צורך מעשי. רק ad_url עדיין חסר, והוא ימולא
+          // בגל 6. הדלקת הדגל על רשומה מלאה מציגה "שגיאת סנכרון" אדומה על
+          // כל שורה במסך המודעות ומאמנת את האדמין להתעלם ממנו.
+          const adName = optionalString(payload.ad_name);
+
           const insertedAd = await tx.execute(sql`
             insert into crm_ads (
               facebook_ad_id, name, funnel_id, fetch_failed,
@@ -273,9 +281,9 @@ export async function ingestLead(
             )
             values (
               ${facebookAdId},
-              ${optionalString(payload.ad_name)},
+              ${adName},
               ${inheritedFunnelId},
-              true,
+              ${adName === null},
               ${campaignId},
               ${optionalString(payload.campaign_name)},
               ${optionalString(payload.adset_id)},
