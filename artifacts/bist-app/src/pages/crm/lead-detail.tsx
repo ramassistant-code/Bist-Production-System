@@ -74,8 +74,14 @@ function localDateTime(value?: string | null): string {
 
 function sourceLabel(source: string): string {
   const labels: Record<string, string> = {
-    status_auto: "אוטומטי",
+    // הערכים שהמערכת באמת כותבת. facebook_lead_ads הוא מה ש-n8n שולח
+    // בקליטה ממטא, ובלעדיו הליד הראשון האמיתי הוצג כ"מקור חיצוני".
+    facebook_lead_ads: "פייסבוק — טופס ליד",
+    crm: "נוצר במערכת",
+    monday: "מנדיי",
     manual: "ידני",
+    status_auto: "אוטומטי",
+    // ערכים אפשריים לערוצים עתידיים
     facebook: "פייסבוק",
     instagram: "אינסטגרם",
     whatsapp: "וואטסאפ",
