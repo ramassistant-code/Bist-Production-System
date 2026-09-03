@@ -1073,6 +1073,10 @@ components:
         account_manager_id:
           type: string
           nullable: true
+        first_salesperson_id:
+          description: The first salesperson who closed this customer (app_users.id). Set once on the customer's first deal.
+          type: string
+          nullable: true
         invoice_name:
           type: string
           nullable: true
@@ -1166,6 +1170,9 @@ components:
         pain_points:
           type: string
           nullable: true
+        first_salesperson_id:
+          type: string
+          nullable: true
       required:
         - name
 
@@ -1202,6 +1209,9 @@ components:
           type: string
           nullable: true
         pain_points:
+          type: string
+          nullable: true
+        first_salesperson_id:
           type: string
           nullable: true
 

@@ -134,6 +134,8 @@ export interface Customer {
   joined_at?: string | null;
   birthday?: string | null;
   account_manager_id?: string | null;
+  /** The first salesperson who closed this customer (app_users.id). Set once on the customer's first deal. */
+  first_salesperson_id?: string | null;
   invoice_name?: string | null;
   tax_id?: string | null;
   invoice_email?: string | null;
@@ -166,6 +168,7 @@ export interface CreateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
+  first_salesperson_id?: string | null;
 }
 
 export interface UpdateCustomerBody {
@@ -180,6 +183,7 @@ export interface UpdateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
+  first_salesperson_id?: string | null;
 }
 
 export interface Product {

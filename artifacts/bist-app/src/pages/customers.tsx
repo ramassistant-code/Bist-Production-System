@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useState, useCallback, useMemo } from "react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -104,9 +104,30 @@ const customerFormSchema = z.object({
     .regex(UUID_REGEX, "יש לבחור מהרשימה")
     .nullable()
     .optional(),
+  first_salesperson_id: z
+    .string()
+    .regex(UUID_REGEX, "יש לבחור מהרשימה")
+    .nullable()
+    .optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
+
+// ── Users (id → display name) — for the first-salesperson column/details ─────
+
+type UserLite = { id: string; full_name: string | null; role?: string | null; is_active: boolean };
+
+function useUserNames(): Record<string, string> {
+  const { data } = useQuery({
+    queryKey: ["users", "names"],
+    queryFn: () => apiFetch<UserLite[]>("/api/users"),
+    staleTime: 60_000,
+  });
+  return useMemo(
+    () => Object.fromEntries((data ?? []).map((u) => [u.id, u.full_name ?? u.id])),
+    [data],
+  );
+}
 
 function toFormValues(c?: Customer | null): CustomerFormValues {
   return {
@@ -125,6 +146,7 @@ function toFormValues(c?: Customer | null): CustomerFormValues {
     pain_points: c?.pain_points ?? "",
     account_manager_id: c?.account_manager_id ?? null,
     lead_id: c?.lead_id ?? null,
+    first_salesperson_id: c?.first_salesperson_id ?? null,
   };
 }
 
@@ -196,6 +218,18 @@ function CustomerFormSupabase({
     const users = await apiFetch<Array<{ id: string; full_name: string | null }>>("/api/users");
     const u = users.find((u) => u.id === id);
     return u ? { id: u.id, label: u.full_name ?? u.id } : null;
+  }, []);
+
+  // First closing salesperson — same audience as the quote's salesperson dropdown
+  // (sales + admin). Active users only for NEW picks; an existing value that
+  // belongs to an inactive user still resolves by id via fetchManagerById.
+  const fetchSalespeople = useCallback(async (term: string): Promise<ComboboxOption[]> => {
+    const users = await apiFetch<UserLite[]>("/api/users");
+    return users
+      .filter((u) => u.is_active && (u.role === "sales" || u.role === "admin"))
+      .filter((u) => !term || (u.full_name ?? "").toLowerCase().includes(term.toLowerCase()))
+      .map((u) => ({ id: u.id, label: u.full_name ?? u.id }))
+      .slice(0, 50);
   }, []);
 
   const fetchLeads = useCallback(async (term: string): Promise<ComboboxOption[]> => {
@@ -331,6 +365,31 @@ function CustomerFormSupabase({
         )}
       </div>
 
+      {/* First closing salesperson (combobox) — stamped automatically on the first deal */}
+      <div className="space-y-1">
+        <Label>איש מכירות ראשון (סוגר)</Label>
+        <Controller
+          name="first_salesperson_id"
+          control={control}
+          render={({ field }) => (
+            <ComboboxField
+              value={field.value ?? null}
+              onChange={field.onChange}
+              fetchOptions={fetchSalespeople}
+              fetchById={fetchManagerById}
+              placeholder="נקבע אוטומטית בעסקה הראשונה..."
+              disabled={isLoading}
+            />
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          נשמר אוטומטית בעת פתיחת העסקה הראשונה של הלקוח ולא משתנה בעסקאות הבאות. לשנות רק לתיקון.
+        </p>
+        {errors.first_salesperson_id && (
+          <p className="text-sm text-destructive">{errors.first_salesperson_id.message}</p>
+        )}
+      </div>
+
       {/* Contact Status + Contact Date */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
@@ -432,9 +491,10 @@ function CustomerFormSupabase({
 
 interface CustomerDetailsProps {
   customer: Customer;
+  userNames: Record<string, string>;
 }
 
-function CustomerDetails({ customer }: CustomerDetailsProps) {
+function CustomerDetails({ customer, userNames }: CustomerDetailsProps) {
   const mondayRaw = customer.monday_raw_data
     ? JSON.stringify(customer.monday_raw_data, null, 2)
     : null;
@@ -456,6 +516,12 @@ function CustomerDetails({ customer }: CustomerDetailsProps) {
     { label: "מחזור עסקאות (LTV)", value: formatCurrency(customer.ltv_amount) },
     { label: "צבר עסקאות (לפני מע״מ)", value: formatCurrency(customer.pipeline_amount_ex_vat) },
     { label: "מנהל תיק (ID)", value: empty(customer.account_manager_id) },
+    {
+      label: "איש מכירות ראשון (סוגר)",
+      value: customer.first_salesperson_id
+        ? (userNames[customer.first_salesperson_id] ?? customer.first_salesperson_id)
+        : "—",
+    },
     { label: "סטטוס יצירת קשר", value: empty(customer.account_manager_contact_status) },
     { label: "תאריך יצירת קשר", value: formatDate(customer.account_manager_contact_date) },
     { label: "ליד מקושר (ID)", value: empty(customer.lead_id) },
@@ -512,6 +578,7 @@ export default function Customers() {
   });
 
   const { data: customers, isLoading, isError } = useListCustomers();
+  const userNames = useUserNames();
 
   const filteredCustomers =
     customers?.filter((c) => {
@@ -607,6 +674,7 @@ export default function Customers() {
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">טלפון</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">אימייל</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">סוג לקוח</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">איש מכירות ראשון</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">הצטרף</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -650,6 +718,16 @@ export default function Customers() {
                       <td className="px-4 py-3 hidden lg:table-cell">
                         {customer.customer_type ? (
                           <Badge variant="outline">{customer.customer_type}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
+                        {customer.first_salesperson_id ? (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {userNames[customer.first_salesperson_id] ?? "…"}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground/40">—</span>
                         )}
@@ -724,7 +802,7 @@ export default function Customers() {
               {detailsCustomer?.name}
             </DialogTitle>
           </DialogHeader>
-          {detailsCustomer && <CustomerDetails customer={detailsCustomer} />}
+          {detailsCustomer && <CustomerDetails customer={detailsCustomer} userNames={userNames} />}
         </DialogContent>
       </Dialog>
 

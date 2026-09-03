@@ -22,6 +22,10 @@ export const customersTable = pgTable("customers", {
   pipeline_amount_ex_vat: numeric("pipeline_amount_ex_vat"),
   account_manager_contact_status: text("account_manager_contact_status"),
   account_manager_contact_date: date("account_manager_contact_date"),
+  // The FIRST salesperson who closed this customer (app_users.id). Stamped once
+  // when the customer's first deal is opened and never overwritten; the deal
+  // itself keeps its own salesperson_id. Mirrored to Monday's "איש מכירות ראשון".
+  first_salesperson_id: uuid("first_salesperson_id"),
   monday_board_id: text("monday_board_id"),
   monday_item_id: text("monday_item_id"),
   monday_group_id: text("monday_group_id"),
@@ -43,6 +47,7 @@ const USER_EDITABLE_FIELDS = {
   customer_type: true,
   industry: true,
   pain_points: true,
+  first_salesperson_id: true,
 } as const;
 
 export const insertCustomerSchema = createInsertSchema(customersTable)
@@ -50,6 +55,7 @@ export const insertCustomerSchema = createInsertSchema(customersTable)
   .extend({
     name: z.string().min(1, "שם הלקוח הוא שדה חובה"),
     email: z.string().email("כתובת אימייל אינה תקינה").nullable().optional(),
+    first_salesperson_id: z.uuid("יש לבחור איש מכירות מהרשימה").nullable().optional(),
   });
 
 export const updateCustomerSchema = createUpdateSchema(customersTable)
@@ -57,6 +63,7 @@ export const updateCustomerSchema = createUpdateSchema(customersTable)
   .extend({
     name: z.string().min(1, "שם הלקוח הוא שדה חובה").optional(),
     email: z.email("כתובת אימייל אינה תקינה").nullable().optional(),
+    first_salesperson_id: z.uuid("יש לבחור איש מכירות מהרשימה").nullable().optional(),
   });
 
 export type Customer = typeof customersTable.$inferSelect;
