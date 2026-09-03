@@ -428,7 +428,32 @@ router.post("/deals/standalone", async (req: Request, res: Response): Promise<vo
       .returning();
 
     const created = rows[0] ?? null;
-    if (created) void notifySync({ action: "deal_created", id: created.id });
+
+    // First closing salesperson: write-once on the customer (see POST /deals Step 4b)
+    let stampedCustomerId: string | null = null;
+    if (created?.customer_id && created.salesperson_id) {
+      const stamped = await db
+        .update(customersTable)
+        .set({ first_salesperson_id: created.salesperson_id, updated_at: new Date() })
+        .where(
+          and(
+            eq(customersTable.id, created.customer_id),
+            isNull(customersTable.deleted_at),
+            isNull(customersTable.first_salesperson_id),
+          )
+        )
+        .returning({ id: customersTable.id });
+      if (stamped.length > 0) stampedCustomerId = created.customer_id;
+    }
+
+    if (created) {
+      void notifySync({
+        action: "deal_created",
+        id: created.id,
+        ...(stampedCustomerId ? { customerId: stampedCustomerId } : {}),
+      });
+      if (stampedCustomerId) void notifySync({ action: "customer_upserted", id: stampedCustomerId });
+    }
     res.status(201).json(created);
   } catch (err) {
     logger.error({ err }, "POST /deals/standalone error");
@@ -511,6 +536,9 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
   }
 
   let newlyCreatedCustomerId: string | null = null;
+  // Existing customer whose first_salesperson_id was stamped by THIS deal (its
+  // first ever) — it changed, so it must ride the Monday sync like a new one.
+  let firstSalespersonStampedCustomerId: string | null = null;
 
   try {
     const result = await db.transaction(async (tx) => {
@@ -679,6 +707,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
                 tax_id: customerTaxId,
                 lead_id: snapLeadId,
                 joined_at: new Date().toISOString().split("T")[0],
+                // First closer = the salesperson opening this (first) deal
+                first_salesperson_id: salesperson_user_id ?? null,
               })
               .returning({ id: customersTable.id });
             resolvedCustomerId = inserted[0]!.id;
@@ -748,6 +778,8 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
                 phone: rawPhone || null,
                 email: (snap["email"] as string) || null,
                 joined_at: new Date().toISOString().split("T")[0],
+                // First closer = the salesperson opening this (first) deal
+                first_salesperson_id: salesperson_user_id ?? null,
               })
               .returning({ id: customersTable.id });
             resolvedCustomerId = inserted[0]!.id;
@@ -764,6 +796,28 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
             400,
           );
         }
+      }
+
+      // ── Step 4b: Stamp the customer's FIRST closing salesperson ─────────────
+      // Business rule: the first salesperson to close a customer stays on the
+      // customer for good (customers.first_salesperson_id); every deal keeps its
+      // own salesperson_id. The WHERE ... IS NULL makes this write-once — an
+      // existing customer with a value is left alone, so a second deal by a
+      // different salesperson never overwrites the first. Customers created
+      // above were inserted with the value already, so they don't match here.
+      if (resolvedCustomerId && salesperson_user_id) {
+        const stamped = await tx
+          .update(customersTable)
+          .set({ first_salesperson_id: salesperson_user_id, updated_at: new Date() })
+          .where(
+            and(
+              eq(customersTable.id, resolvedCustomerId),
+              isNull(customersTable.deleted_at),
+              isNull(customersTable.first_salesperson_id),
+            )
+          )
+          .returning({ id: customersTable.id });
+        if (stamped.length > 0) firstSalespersonStampedCustomerId = resolvedCustomerId;
       }
 
       // ── Step 5: Amount validation + ex-VAT computation ─────────────────────
@@ -1029,8 +1083,16 @@ router.post("/deals", async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    void notifySync({ action: "deal_created", id: result.dealId });
-    if (newlyCreatedCustomerId) void notifySync({ action: "customer_upserted", id: newlyCreatedCustomerId });
+    // A customer that was created OR had its first salesperson stamped by this
+    // deal changed in the DB, so it rides the deal cascade and gets its own push
+    // (the sync service only pushes the customer it is told about).
+    const changedCustomerId = newlyCreatedCustomerId ?? firstSalespersonStampedCustomerId;
+    void notifySync({
+      action: "deal_created",
+      id: result.dealId,
+      ...(changedCustomerId ? { customerId: changedCustomerId } : {}),
+    });
+    if (changedCustomerId) void notifySync({ action: "customer_upserted", id: changedCustomerId });
 
     // ── Invoice WhatsApp notification (fire-and-forget) ──────────────────────
     // Sent only for new deals (not retries) with cash or bank_transfer payment.

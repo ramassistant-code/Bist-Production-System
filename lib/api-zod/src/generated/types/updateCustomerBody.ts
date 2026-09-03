@@ -18,4 +18,5 @@ export interface UpdateCustomerBody {
   customer_type?: string | null;
   industry?: string | null;
   pain_points?: string | null;
+  first_salesperson_id?: string | null;
 }

@@ -49,6 +49,7 @@ export const ListCustomersResponseItem = zod.object({
   "joined_at": zod.string().nullish(),
   "birthday": zod.string().nullish(),
   "account_manager_id": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish().describe('The first salesperson who closed this customer (app_users.id). Set once on the customer\'s first deal.'),
   "invoice_name": zod.string().nullish(),
   "tax_id": zod.string().nullish(),
   "invoice_email": zod.string().nullish(),
@@ -85,7 +86,8 @@ export const CreateCustomerBody = zod.object({
   "invoice_email": zod.string().nullish(),
   "customer_type": zod.string().nullish(),
   "industry": zod.string().nullish(),
-  "pain_points": zod.string().nullish()
+  "pain_points": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish()
 })
 
 export const CreateCustomerResponse = zod.object({
@@ -97,6 +99,7 @@ export const CreateCustomerResponse = zod.object({
   "joined_at": zod.string().nullish(),
   "birthday": zod.string().nullish(),
   "account_manager_id": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish().describe('The first salesperson who closed this customer (app_users.id). Set once on the customer\'s first deal.'),
   "invoice_name": zod.string().nullish(),
   "tax_id": zod.string().nullish(),
   "invoice_email": zod.string().nullish(),
@@ -134,6 +137,7 @@ export const GetCustomerResponse = zod.object({
   "joined_at": zod.string().nullish(),
   "birthday": zod.string().nullish(),
   "account_manager_id": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish().describe('The first salesperson who closed this customer (app_users.id). Set once on the customer\'s first deal.'),
   "invoice_name": zod.string().nullish(),
   "tax_id": zod.string().nullish(),
   "invoice_email": zod.string().nullish(),
@@ -173,7 +177,8 @@ export const UpdateCustomerBody = zod.object({
   "invoice_email": zod.string().nullish(),
   "customer_type": zod.string().nullish(),
   "industry": zod.string().nullish(),
-  "pain_points": zod.string().nullish()
+  "pain_points": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish()
 })
 
 export const UpdateCustomerResponse = zod.object({
@@ -185,6 +190,7 @@ export const UpdateCustomerResponse = zod.object({
   "joined_at": zod.string().nullish(),
   "birthday": zod.string().nullish(),
   "account_manager_id": zod.string().nullish(),
+  "first_salesperson_id": zod.string().nullish().describe('The first salesperson who closed this customer (app_users.id). Set once on the customer\'s first deal.'),
   "invoice_name": zod.string().nullish(),
   "tax_id": zod.string().nullish(),
   "invoice_email": zod.string().nullish(),
