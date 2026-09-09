@@ -345,7 +345,11 @@ router.post("/quotes", async (req: Request, res: Response): Promise<void> => {
         customer_note: comp.customer_note ?? null,
         internal_note: comp.internal_note ?? null,
       }));
-      const internalCost = components.reduce((s, c) => s + c.total_cost_snapshot, 0);
+      // Component quantities are per ONE unit of the product (credits are created
+      // as product qty × component qty in deals.ts), so the line's internal cost
+      // must scale by the product quantity too. Without this, a line with qty > 1
+      // reports a cost of a single unit against the revenue of all units.
+      const internalCost = qty * components.reduce((s, c) => s + c.total_cost_snapshot, 0);
       return {
         line_id: item.line_id ?? crypto.randomUUID(),
         source_type: item.source_type ?? "product",
