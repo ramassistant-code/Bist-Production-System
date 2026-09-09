@@ -656,15 +656,21 @@ function ProductSelector({ onAdd, onClose }: ProductSelectorProps) {
 // ── Component Row ──────────────────────────────────────────────────────────
 
 function ComponentRow({
-  comp, customerNoteOpen, onToggleCustomerNote, onChange, onRemove,
+  comp, itemQuantity, customerNoteOpen, onToggleCustomerNote, onChange, onRemove,
 }: {
   comp: BasketComponent;
+  /** Product-line quantity. Component quantity is per ONE product unit. */
+  itemQuantity: number;
   customerNoteOpen: boolean;
   onToggleCustomerNote: () => void;
   onChange: (updated: BasketComponent) => void;
   onRemove: () => void;
 }) {
   const hasCustomerNote = Boolean(comp.customer_note?.trim());
+  // This is exactly what deals.ts turns into credits: product qty × component qty.
+  // Shown here so a salesperson who types the total into BOTH fields sees 81, not 9.
+  const totalUnits = itemQuantity * comp.quantity;
+  const bothMultiplied = itemQuantity > 1 && comp.quantity > 1;
 
   return (
     <div className="rounded-md bg-muted/40 border border-border/50">
@@ -677,13 +683,23 @@ function ComponentRow({
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <Label className="text-sm text-muted-foreground">כמות</Label>
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">כמות ליחידה</Label>
           <Input type="number" min={0} step={1} value={comp.quantity} className="w-20 h-9 text-base"
             onChange={(e) => onChange({ ...comp, quantity: parseFloat(e.target.value) || 0 })} />
         </div>
+        <span
+          className={`shrink-0 text-sm whitespace-nowrap tabular-nums rounded px-2 py-0.5 ${
+            bothMultiplied
+              ? "bg-warning/15 text-warning-accent font-medium"
+              : "text-muted-foreground"
+          }`}
+          title={`${itemQuantity} × ${comp.quantity} — כמות המוצר כפול הכמות ליחידה. זו הכמות שתיכנס לקרדיטים.`}
+        >
+          סה״כ לביצוע: {totalUnits.toLocaleString("he-IL", { maximumFractionDigits: 2 })}
+        </span>
         {comp.unit_cost_snapshot > 0 && (
           <span className="shrink-0 w-32 text-left text-sm text-muted-foreground whitespace-nowrap tabular-nums">
-            עלות: ₪{(comp.unit_cost_snapshot * comp.quantity).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
+            עלות: ₪{(comp.unit_cost_snapshot * totalUnits).toLocaleString("he-IL", { maximumFractionDigits: 0 })}
           </span>
         )}
         {/* Toggle only the customer-facing note — internal note is always visible below */}
@@ -840,6 +856,7 @@ function BasketRow({
                   <ComponentRow
                     key={comp.line_id}
                     comp={comp}
+                    itemQuantity={item.quantity}
                     customerNoteOpen={openComponentCustomerNotes.includes(comp.line_id)}
                     onToggleCustomerNote={() => toggleComponentCustomerNote(comp.line_id)}
                     onChange={(updated) => {
